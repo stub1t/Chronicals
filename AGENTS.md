@@ -147,3 +147,9 @@ PORT            Server port (default: 3000)
 ## Core Principles
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards
+
+---
+
+## Local Workflow Rules
+- Always commit repository changes after completing a change set.
+- After committing, always rebuild and restart the `chronicals` web UI container so the latest changes are visible locally.
