@@ -11,6 +11,7 @@ const builtInText = {
 		Headache: 'Kopfschmerz',
 		Stomachache: 'Bauchschmerzen',
 		Allergy: 'Allergie',
+		'Allergy / Hayfever': 'Allergie / Heuschnupfen',
 		Hypo: 'Unterzuckerung',
 		'Medication Change': 'Medikationsaenderung',
 		Period: 'Periode',

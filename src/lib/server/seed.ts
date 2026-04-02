@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import * as schema from '../db/schema.js';
 
@@ -124,7 +124,7 @@ const BUILT_IN_ENTRY_TYPES = [
 	},
 	{
 		id: 'builtin-allergy',
-		name: 'Allergy',
+		name: 'Allergy / Hayfever',
 		icon: 'A',
 		color: '#22c55e',
 		category: 'symptom',
@@ -280,7 +280,7 @@ const BUILT_IN_ENTRY_TYPES = [
 	{
 		id: 'builtin-period',
 		name: 'Period',
-		icon: '♀',
+		icon: 'P',
 		color: '#ec4899',
 		category: 'symptom',
 		sortOrder: 5,
@@ -379,7 +379,7 @@ const BUILT_IN_TRIGGERS = [
 ];
 
 export function seedBuiltIns(db: BetterSQLite3Database<typeof schema>) {
-	// Seed entry types — insert if missing, always refresh metricSchema for built-ins
+	// Seed entry types — insert if missing, always refresh built-in data
 	for (const type of BUILT_IN_ENTRY_TYPES) {
 		const existing = db
 			.select({ id: schema.entryTypes.id })
@@ -389,12 +389,37 @@ export function seedBuiltIns(db: BetterSQLite3Database<typeof schema>) {
 		if (!existing) {
 			db.insert(schema.entryTypes).values({ ...type, isBuiltIn: true }).run();
 		} else {
-			// Refresh form schema so field changes deploy automatically
+			// Refresh built-in presentation and schema so updates deploy automatically
 			db.update(schema.entryTypes)
-				.set({ metricSchema: type.metricSchema })
+				.set({
+					name: type.name,
+					icon: type.icon,
+					color: type.color,
+					category: type.category,
+					sortOrder: type.sortOrder,
+					metricSchema: type.metricSchema
+				})
 				.where(eq(schema.entryTypes.id, type.id))
 				.run();
 		}
+	}
+
+	// Merge accidental custom period duplicates into the built-in type so old logs survive.
+	const duplicatePeriods = db
+		.select({ id: schema.entryTypes.id })
+		.from(schema.entryTypes)
+		.where(
+			sql`lower(${schema.entryTypes.name}) = 'period' and ${schema.entryTypes.isBuiltIn} = 0`
+		)
+		.all();
+
+	for (const duplicate of duplicatePeriods) {
+		db.update(schema.entryTypeLogs)
+			.set({ entryTypeId: 'builtin-period' })
+			.where(eq(schema.entryTypeLogs.entryTypeId, duplicate.id))
+			.run();
+
+		db.delete(schema.entryTypes).where(eq(schema.entryTypes.id, duplicate.id)).run();
 	}
 
 	// Seed triggers
