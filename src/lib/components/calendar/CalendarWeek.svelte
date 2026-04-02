@@ -3,6 +3,7 @@
 	import { formatTime } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 
 	interface Props {
 		weekStart: string; // 'YYYY-MM-DD' Monday
@@ -205,7 +206,7 @@
 							role="button"
 							tabindex="0"
 						>
-							<span class="event-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
+							<EntryTypeIcon entryType={et ?? null} size={14} class="event-icon" />
 							<span class="event-name">{et ? localizeBuiltInText(et.name) : ''}</span>
 							<span class="event-time">{formatTime(log.startTime)}</span>
 						</div>
@@ -409,8 +410,6 @@
 	}
 
 	.event-icon {
-		font-size: 0.75rem;
-		line-height: 1;
 		flex-shrink: 0;
 	}
 

@@ -171,7 +171,7 @@
 					>
 						<option value={null} disabled>{t('analysis_choose_type')}</option>
 						{#each data.entryTypes as et (et.id)}
-							<option value={et.id}>{et.icon ?? ''} {localizeBuiltInText(et.name)}</option>
+							<option value={et.id}>{localizeBuiltInText(et.name)}</option>
 						{/each}
 					</select>
 				</div>

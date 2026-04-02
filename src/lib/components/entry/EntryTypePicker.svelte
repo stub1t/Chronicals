@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { EntryType, EntryCategory } from '$lib/types';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 
 	interface Props {
 		entryTypes: EntryType[];
@@ -74,11 +75,7 @@
 									style={et.color ? `--accent: ${et.color}` : '--accent: var(--text-muted)'}
 									onclick={() => onselect?.(et)}
 								>
-									{#if et.icon}
-										<span class="type-icon">{et.icon}</span>
-									{:else}
-										<span class="type-icon type-icon--fallback" aria-hidden="true">●</span>
-									{/if}
+									<EntryTypeIcon entryType={et} size={22} class="type-icon" />
 									<span class="type-name">{localizeBuiltInText(et.name)}</span>
 									<span class="type-category">{CATEGORY_LABELS[et.category as EntryCategory]}</span>
 								</button>
@@ -214,13 +211,7 @@
 	}
 
 	.type-icon {
-		font-size: 1.5rem;
-		line-height: 1;
-	}
-
-	.type-icon--fallback {
-		color: var(--accent);
-		font-size: 1rem;
+		margin-bottom: 2px;
 	}
 
 	.type-name {

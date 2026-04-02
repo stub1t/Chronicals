@@ -4,6 +4,7 @@
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import EntryTypePicker from '$lib/components/entry/EntryTypePicker.svelte';
 	import { fetchOrQueue } from '$lib/utils/offline-queue';
 	import MetricForm from '$lib/components/symptom/MetricForm.svelte';
@@ -436,7 +437,7 @@
 										></div>
 										<div class="log-body">
 											<div class="log-title-row">
-												<span class="log-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
+												<EntryTypeIcon entryType={et ?? null} size={18} class="log-icon" />
 												<span class="log-name">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</span>
 												<span class="log-time">{formatTime(log.startTime)}</span>
 												{#if log.endTime}
@@ -569,7 +570,7 @@
 	<div class="modal-backdrop" onclick={(e) => { if ((e.target as HTMLElement).classList.contains('modal-backdrop')) closeLogEditor(); }} role="presentation">
 		<div class="modal" role="dialog" aria-modal="true" aria-label={t('drawer_edit_entry', { name: et ? localizeBuiltInText(et.name) : t('drawer_unknown') })}>
 			<div class="modal-header">
-				<span class="modal-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
+				<EntryTypeIcon entryType={et ?? null} size={20} class="modal-icon" />
 				<h3 class="modal-title">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</h3>
 				<button class="close-btn" onclick={closeLogEditor} aria-label={t('close')}>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -920,8 +921,6 @@
 	}
 
 	.log-icon {
-		font-size: 1.1rem;
-		line-height: 1;
 		flex-shrink: 0;
 	}
 
@@ -1201,7 +1200,7 @@
 	}
 
 	.modal-icon {
-		font-size: 1.2rem;
+		flex-shrink: 0;
 	}
 
 	.modal-title {

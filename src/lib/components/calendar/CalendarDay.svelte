@@ -4,6 +4,7 @@
 	import { intensityColor } from '$lib/utils/date';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 
 	interface Props {
 		date: string;
@@ -116,7 +117,7 @@
 						onkeydown={(e) => { if (e.key === 'Enter') handleEditClick(e, log.id); }}
 					>
 						<div class="event-header">
-							<span class="event-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
+							<EntryTypeIcon entryType={et ?? null} size={16} class="event-icon" />
 							<span class="event-name">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</span>
 						</div>
 						<div class="event-meta">
@@ -293,8 +294,6 @@
 	}
 
 	.event-icon {
-		font-size: 0.85rem;
-		line-height: 1;
 		flex-shrink: 0;
 	}
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import type { EntryType } from '$lib/types/index.js';
 
@@ -72,7 +73,7 @@
 	<div class="list">
 		{#each entryTypes as type}
 			<div class="type-row" style="border-left: 4px solid {type.color ?? '#888'}">
-				<span class="type-icon">{type.icon}</span>
+				<EntryTypeIcon entryType={type} size={20} class="type-icon" />
 				<div class="type-info">
 					<span class="type-name">{localizeBuiltInText(type.name)}</span>
 					<span class="type-cat">{categoryLabel(type.category)}</span>
@@ -118,7 +119,7 @@
 	.back { color: var(--text-muted); text-decoration: none; font-size: 0.875rem; }
 	.list { display: flex; flex-direction: column; gap: 0.5rem; }
 	.type-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--bg-card); border-radius: 0.5rem; }
-	.type-icon { font-size: 1.25rem; }
+	.type-icon { color: var(--text); }
 	.type-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 	.type-name { font-weight: 500; font-size: 0.9rem; }
 	.type-cat { font-size: 0.75rem; color: var(--text-subtle); text-transform: capitalize; }

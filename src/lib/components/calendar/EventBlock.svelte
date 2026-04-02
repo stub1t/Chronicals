@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { intensityColor, formatTime, formatDuration } from '$lib/utils/date.js';
 	import { localizeBuiltInText } from '$lib/stores/locale.js';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import type { EntryTypeLog } from '$lib/types/index.js';
 
 	let {
@@ -45,7 +46,7 @@
 	onclick={() => onclick?.(log)}
 	title="{log.entryType?.name ? localizeBuiltInText(log.entryType.name) : 'Entry'} — {formatTime(log.startTime)}"
 >
-	<span class="event-icon">{log.entryType?.icon ?? '●'}</span>
+	<EntryTypeIcon entryType={log.entryType ?? null} size={14} class="event-icon" />
 	{#if heightPx() > 36}
 		<div class="event-body">
 			<span class="event-name">{log.entryType?.name ? localizeBuiltInText(log.entryType.name) : 'Entry'}</span>
@@ -79,8 +80,6 @@
 	}
 
 	.event-icon {
-		font-size: 0.75rem;
-		line-height: 1.4;
 		flex-shrink: 0;
 	}
 
