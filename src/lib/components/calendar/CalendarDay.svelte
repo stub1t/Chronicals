@@ -2,6 +2,7 @@
 	import type { Entry, EntryType, EnvironmentalData, EntryTypeLog } from '$lib/types';
 	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
+	import { t } from '$lib/stores/locale.js';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
 
 	interface Props {
@@ -72,9 +73,9 @@
 		{#if !entry?.logs || entry.logs.length === 0}
 			<div class="empty-overlay">
 				<span class="empty-icon" aria-hidden="true">📋</span>
-			<p class="empty-text">Keine Eintraege fuer diesen Tag</p>
+			<p class="empty-text">{t('day_no_entries')}</p>
 			<button class="empty-add-btn" onclick={() => onadd(9)}>
-				Eintrag hinzufuegen
+				{t('day_add_entry')}
 			</button>
 			</div>
 		{/if}
@@ -87,7 +88,7 @@
 					class="hour-row"
 					role="button"
 					tabindex="0"
-					aria-label={`Add entry at ${String(hour).padStart(2, '0')}:00`}
+					aria-label={t('day_add_entry_at', { time: `${String(hour).padStart(2, '0')}:00` })}
 					onclick={() => onadd(hour)}
 					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') onadd(hour); }}
 				>
@@ -110,13 +111,13 @@
 						style={logBlockStyle(log)}
 						role="button"
 						tabindex="0"
-						aria-label={`${et?.name ?? 'Event'} at ${formatTime(log.startTime)}`}
+						aria-label={t('day_event_at', { name: et?.name ?? t('drawer_unknown'), time: formatTime(log.startTime) })}
 						onclick={(e) => handleEditClick(e, log.id)}
 						onkeydown={(e) => { if (e.key === 'Enter') handleEditClick(e, log.id); }}
 					>
 						<div class="event-header">
 							<span class="event-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-							<span class="event-name">{et?.name ?? 'Unbekannt'}</span>
+							<span class="event-name">{et?.name ?? t('drawer_unknown')}</span>
 						</div>
 						<div class="event-meta">
 							<span class="event-time">{formatTime(log.startTime)}</span>

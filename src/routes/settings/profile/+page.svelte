@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/stores/locale.js';
 	import type { UserProfile } from '$lib/types';
 
 	interface GeoResult {
@@ -89,13 +90,13 @@
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				saveError = err.message ?? 'Failed to save';
+				saveError = err.message ?? t('profile_save_failed');
 			} else {
 				saveSuccess = true;
 				setTimeout(() => { saveSuccess = false; }, 3000);
 			}
 		} catch (e) {
-			saveError = 'Network error';
+			saveError = t('network_error');
 		} finally {
 			saving = false;
 		}
@@ -104,19 +105,19 @@
 
 <div class="page">
 	<header class="page-header">
-		<a href="/settings" class="back-link">← Settings</a>
-		<h1 class="page-title">Profile</h1>
+		<a href="/settings" class="back-link">← {t('settings_title')}</a>
+		<h1 class="page-title">{t('profile_title')}</h1>
 	</header>
 
 	<form class="form" onsubmit={(e) => { e.preventDefault(); save(); }}>
 		<!-- Display name -->
 		<div class="field">
-			<label class="field-label" for="display-name">Display name</label>
+			<label class="field-label" for="display-name">{t('profile_display_name')}</label>
 			<input
 				id="display-name"
 				type="text"
 				class="input"
-				placeholder="Your name"
+				placeholder={t('profile_display_name_placeholder')}
 				bind:value={displayName}
 				autocomplete="name"
 			/>
@@ -124,10 +125,10 @@
 
 		<!-- Blood type -->
 		<div class="field">
-			<label class="field-label" for="blood-type">Blood type</label>
+			<label class="field-label" for="blood-type">{t('profile_blood_type')}</label>
 			<div class="select-wrap">
 				<select id="blood-type" class="input select" bind:value={bloodType}>
-					<option value="">Not set</option>
+					<option value="">{t('profile_blood_type_unset')}</option>
 					{#each bloodTypes as bt (bt)}
 						<option value={bt}>{bt}</option>
 					{/each}
@@ -137,7 +138,7 @@
 
 		<!-- Location -->
 		<div class="field">
-			<label class="field-label" for="city-search">Location</label>
+			<label class="field-label" for="city-search">{t('profile_location')}</label>
 
 			{#if locationName}
 				<div class="location-selected">
@@ -150,7 +151,7 @@
 						type="button"
 						class="location-clear"
 						onclick={clearLocation}
-						aria-label="Clear location"
+						aria-label={t('profile_location_clear')}
 					>×</button>
 				</div>
 			{:else}
@@ -159,7 +160,7 @@
 						id="city-search"
 						type="text"
 						class="input"
-						placeholder="Search city…"
+						placeholder={t('profile_location_search')}
 						bind:value={citySearch}
 						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchLocation(); } }}
 					/>
@@ -169,14 +170,14 @@
 						onclick={searchLocation}
 						disabled={geoLoading || !citySearch.trim()}
 					>
-						{geoLoading ? '…' : 'Search'}
+						{geoLoading ? '…' : t('profile_location_search_button')}
 					</button>
 				</div>
 			{/if}
 
 			<!-- Geo results dropdown -->
 			{#if geoResults.length > 0}
-				<ul class="geo-results" role="listbox" aria-label="Location suggestions">
+				<ul class="geo-results" role="listbox" aria-label={t('profile_location_suggestions')}>
 					{#each geoResults as result (result.id)}
 						<li
 							class="geo-result"
@@ -198,10 +199,10 @@
 		<!-- Save -->
 		<div class="save-row">
 			<button type="submit" class="save-btn" disabled={saving}>
-				{saving ? 'Saving…' : 'Save'}
+				{saving ? t('entry_types_saving') : t('save')}
 			</button>
 			{#if saveSuccess}
-				<span class="save-feedback success">Saved ✓</span>
+				<span class="save-feedback success">{t('profile_save_success')} ✓</span>
 			{/if}
 			{#if saveError}
 				<span class="save-feedback error">{saveError}</span>

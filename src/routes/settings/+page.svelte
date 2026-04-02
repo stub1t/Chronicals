@@ -1,35 +1,36 @@
 <script lang="ts">
 	import { themeStore } from '$lib/stores/theme.js';
+	import { language, localeStore, type Language, t } from '$lib/stores/locale.js';
 	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
 
 	type ThemeOption = 'system' | 'light' | 'dark';
 
-	const themeOptions: { value: ThemeOption; label: string }[] = [
-		{ value: 'system', label: 'System' },
-		{ value: 'light', label: 'Light' },
-		{ value: 'dark', label: 'Dark' }
-	];
-
 	let currentTheme = $state<ThemeOption>('system');
+	let currentLanguage = $state<Language>('de');
 
 	onMount(() => {
 		currentTheme = themeStore.current;
+		currentLanguage = localeStore.current;
 	});
 
 	function setTheme(t: ThemeOption) {
 		currentTheme = t;
 		themeStore.set(t);
 	}
+
+	function setLanguage(lang: Language) {
+		currentLanguage = lang;
+		localeStore.set(lang);
+	}
 </script>
 
 <div class="page">
 	<header class="page-header">
-		<h1 class="page-title">Settings</h1>
+		<h1 class="page-title">{t('settings_title')}</h1>
 	</header>
 
 	<!-- Nav cards -->
-	<nav class="nav-list" aria-label="Settings sections">
+	<nav class="nav-list" aria-label={t('settings_sections')}>
 		<a href="/settings/profile" class="nav-card">
 			<span class="nav-icon" aria-hidden="true">
 				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -38,8 +39,8 @@
 				</svg>
 			</span>
 			<div class="nav-text">
-				<span class="nav-label">Profile</span>
-				<span class="nav-desc">Name, blood type, location</span>
+				<span class="nav-label">{t('settings_profile')}</span>
+				<span class="nav-desc">{t('settings_profile_desc')}</span>
 			</div>
 			<span class="nav-arrow" aria-hidden="true">›</span>
 		</a>
@@ -51,8 +52,8 @@
 				</svg>
 			</span>
 			<div class="nav-text">
-				<span class="nav-label">Medications</span>
-				<span class="nav-desc">Active meds and change history</span>
+				<span class="nav-label">{t('settings_meds')}</span>
+				<span class="nav-desc">{t('settings_meds_desc')}</span>
 			</div>
 			<span class="nav-arrow" aria-hidden="true">›</span>
 		</a>
@@ -64,8 +65,8 @@
 				</svg>
 			</span>
 			<div class="nav-text">
-				<span class="nav-label">Entry Types</span>
-				<span class="nav-desc">Manage symptom and event types</span>
+				<span class="nav-label">{t('settings_entry_types')}</span>
+				<span class="nav-desc">{t('settings_entry_types_desc')}</span>
 			</div>
 			<span class="nav-arrow" aria-hidden="true">›</span>
 		</a>
@@ -76,18 +77,22 @@
 				</svg>
 			</span>
 			<div class="nav-text">
-				<span class="nav-label">Triggers</span>
-				<span class="nav-desc">Manage trigger library</span>
+				<span class="nav-label">{t('settings_triggers')}</span>
+				<span class="nav-desc">{t('settings_triggers_desc')}</span>
 			</div>
 			<span class="nav-arrow" aria-hidden="true">›</span>
 		</a>
 	</nav>
 
 	<!-- Theme toggle -->
-	<section class="theme-section" aria-label="Theme">
-		<p class="theme-title">Theme</p>
-		<div class="theme-pills" role="group" aria-label="Choose theme">
-			{#each themeOptions as opt (opt.value)}
+	<section class="theme-section" aria-label={t('settings_theme')}>
+		<p class="theme-title">{t('settings_theme')}</p>
+		<div class="theme-pills" role="group" aria-label={t('settings_choose_theme')}>
+			{#each ([
+				{ value: 'system', label: t('settings_theme_system') },
+				{ value: 'light', label: t('settings_theme_light') },
+				{ value: 'dark', label: t('settings_theme_dark') }
+			] as const) as opt (opt.value)}
 				<button
 					class="theme-pill"
 					class:active={currentTheme === opt.value}
@@ -97,6 +102,28 @@
 					{opt.label}
 				</button>
 			{/each}
+		</div>
+	</section>
+
+	<section class="theme-section" aria-label={t('settings_language')}>
+		<p class="theme-title">{t('settings_language')}</p>
+		<div class="theme-pills" role="group" aria-label={t('settings_choose_language')}>
+			<button
+				class="theme-pill"
+				class:active={currentLanguage === 'de'}
+				onclick={() => setLanguage('de')}
+				aria-pressed={currentLanguage === 'de'}
+			>
+				{t('settings_language_de')}
+			</button>
+			<button
+				class="theme-pill"
+				class:active={currentLanguage === 'en'}
+				onclick={() => setLanguage('en')}
+				aria-pressed={currentLanguage === 'en'}
+			>
+				{t('settings_language_en')}
+			</button>
 		</div>
 	</section>
 </div>

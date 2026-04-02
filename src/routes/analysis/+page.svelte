@@ -6,6 +6,7 @@
 		EnvironmentalCorrelation
 	} from '$lib/types';
 	import { toYearMonth, formatMonthLabel, getDaysInMonth, intensityColor } from '$lib/utils/date';
+	import { t } from '$lib/stores/locale.js';
 	import PressureDeltaChart from '$lib/components/analysis/PressureDeltaChart.svelte';
 
 	interface CorrelationData {
@@ -39,8 +40,8 @@
 		selectedRange === 1
 			? formatMonthLabel(selectedMonth)
 			: selectedRange === 3
-				? 'Letzte 3 Monate'
-				: 'Letzte 12 Monate'
+				? t('analysis_last_three_months')
+				: t('analysis_last_year')
 	);
 
 	let daysInMonth = $derived(getDaysInMonth(selectedMonth));
@@ -115,7 +116,7 @@
 			if (corrRes.ok) correlations = await corrRes.json();
 			if (pressureRes.ok) pressureData = await pressureRes.json();
 		} catch (e) {
-			console.error('Analyse konnte nicht geladen werden', e);
+			console.error('Failed to load analysis', e);
 		} finally {
 			loading = false;
 		}
@@ -152,8 +153,8 @@
 <div class="page">
 	<!-- ── Header ─────────────────────────────────────────────────────────── -->
 	<header class="page-header">
-		<h1 class="page-title">Analyse</h1>
-		<p class="page-subtitle">Welche Ausloeser haengen mit deinen Eintraegen zusammen?</p>
+		<h1 class="page-title">{t('analysis_title')}</h1>
+		<p class="page-subtitle">{t('analysis_subtitle')}</p>
 	</header>
 
 	<!-- ── Section 1: Selectors ───────────────────────────────────────────── -->
@@ -161,14 +162,14 @@
 		<div class="selectors">
 			<!-- Entry type dropdown -->
 			<div class="field">
-				<label class="field-label" for="entry-type-select">Eintragstyp</label>
+				<label class="field-label" for="entry-type-select">{t('analysis_entry_type')}</label>
 				<div class="select-wrap">
 					<select
 						id="entry-type-select"
 						class="pill-select"
 						bind:value={selectedTypeId}
 					>
-						<option value={null} disabled>Typ waehlen…</option>
+						<option value={null} disabled>{t('analysis_choose_type')}</option>
 						{#each data.entryTypes as et (et.id)}
 							<option value={et.id}>{et.icon ?? ''} {et.name}</option>
 						{/each}
@@ -178,7 +179,7 @@
 
 			<!-- Range selector -->
 			<div class="field">
-				<span class="field-label">Zeitraum</span>
+				<span class="field-label">{t('analysis_range')}</span>
 				<div class="range-tabs">
 					{#each ([1, 3, 12] as const) as r}
 						<button
@@ -193,11 +194,11 @@
 			<!-- Month picker (only for single-month range) -->
 			{#if selectedRange === 1}
 				<div class="field">
-					<span class="field-label" id="month-picker-label">Monat</span>
+					<span class="field-label" id="month-picker-label">{t('analysis_month')}</span>
 					<div class="month-picker" aria-labelledby="month-picker-label">
-						<button class="arrow-btn" onclick={prevMonth} aria-label="Vorheriger Monat">‹</button>
-						<span class="month-display">{selectedMonth}</span>
-						<button class="arrow-btn" onclick={nextMonth} disabled={!canGoNext} aria-label="Naechster Monat">›</button>
+						<button class="arrow-btn" onclick={prevMonth} aria-label={t('prev_month')}>‹</button>
+						<span class="month-display">{formatMonthLabel(selectedMonth)}</span>
+						<button class="arrow-btn" onclick={nextMonth} disabled={!canGoNext} aria-label={t('next_month')}>›</button>
 					</div>
 				</div>
 			{/if}
@@ -208,7 +209,7 @@
 			onclick={analyse}
 			disabled={!selectedTypeId || loading}
 		>
-			{#if loading}Analysiere…{:else}Analyse starten{/if}
+			{#if loading}{t('analysis_loading')}{:else}{t('analysis_start')}{/if}
 		</button>
 	</section>
 
@@ -216,25 +217,25 @@
 	{#if stats}
 		{@const color = selectedType?.color ?? '#888888'}
 		<section class="section card">
-			<h2 class="section-title">Ueberblick</h2>
+			<h2 class="section-title">{t('analysis_overview')}</h2>
 
 			<div class="stat-row">
 				<div class="stat-big">
 					<span class="stat-number">{stats.frequency}</span>
-					<span class="stat-label">Eintraege in {monthLabel}</span>
+					<span class="stat-label">{t('analysis_entries_in', { label: monthLabel })}</span>
 				</div>
 
 				{#if stats.avgDurationMinutes !== null}
 					<div class="stat-chip">
 						<span class="stat-chip-value">{formatDurationMinutes(stats.avgDurationMinutes)}</span>
-						<span class="stat-chip-label">mittlere Dauer</span>
+						<span class="stat-chip-label">{t('analysis_avg_duration')}</span>
 					</div>
 				{/if}
 			</div>
 
 			{#if stats.avgIntensity !== null}
 				<div class="intensity-row">
-					<span class="intensity-label">Mittlere Staerke</span>
+					<span class="intensity-label">{t('analysis_avg_intensity')}</span>
 					<div class="intensity-track">
 						<div
 							class="intensity-fill"
@@ -248,7 +249,7 @@
 			<!-- Day heatmap (single month only) -->
 			{#if selectedRange === 1}
 				<div class="heatmap-wrap">
-					<div class="heatmap-legend">Tage im Monat</div>
+					<div class="heatmap-legend">{t('analysis_days_in_month')}</div>
 					<div class="heatmap">
 						{#each Array.from({ length: daysInMonth }, (_, i) => i + 1) as day}
 							<div
@@ -267,35 +268,32 @@
 	<!-- ── Section 3: Trigger correlations ───────────────────────────────── -->
 	{#if sortedTriggers.length > 0}
 		<section class="section card">
-			<h2 class="section-title">Trigger-Korrelationen</h2>
-			<p class="section-hint">
-				"Gemeinsame Tage" sind Tage, an denen Trigger und Eintrag zusammen vorkamen.
-				"Mit Trigger" und "ohne Trigger" zeigen die durchschnittliche Intensitaet.
-			</p>
+			<h2 class="section-title">{t('analysis_trigger_corr')}</h2>
+			<p class="section-hint">{t('analysis_trigger_hint')}</p>
 			<div class="table-scroll">
 				<table class="corr-table">
 					<thead>
 						<tr>
-							<th>Trigger</th>
-							<th class="num-col">Gemeinsame Tage</th>
-							<th class="num-col">Mit Trigger</th>
-							<th class="num-col">Ohne Trigger</th>
-							<th class="badge-col">Staerke</th>
+							<th>{t('analysis_trigger')}</th>
+							<th class="num-col">{t('analysis_shared_days')}</th>
+							<th class="num-col">{t('analysis_with_trigger')}</th>
+							<th class="num-col">{t('analysis_without_trigger')}</th>
+							<th class="badge-col">{t('analysis_strength')}</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each sortedTriggers as t (t.triggerId)}
+						{#each sortedTriggers as trigger (trigger.triggerId)}
 							<tr>
 								<td>
-									<span class="trigger-name">{t.triggerName}</span>
-									<span class="trigger-cat">{t.triggerCategory}</span>
+									<span class="trigger-name">{trigger.triggerName}</span>
+									<span class="trigger-cat">{trigger.triggerCategory}</span>
 								</td>
-								<td class="num-col">{t.coOccurrences}</td>
-								<td class="num-col">{t.avgIntensityWith !== null ? t.avgIntensityWith.toFixed(1) : '—'}</td>
-								<td class="num-col">{t.avgIntensityWithout !== null ? t.avgIntensityWithout.toFixed(1) : '—'}</td>
+								<td class="num-col">{trigger.coOccurrences}</td>
+								<td class="num-col">{trigger.avgIntensityWith !== null ? trigger.avgIntensityWith.toFixed(1) : '—'}</td>
+								<td class="num-col">{trigger.avgIntensityWithout !== null ? trigger.avgIntensityWithout.toFixed(1) : '—'}</td>
 								<td class="badge-col">
-									<span class={`badge ${strengthBadgeClass(t.strength)}`}>
-										{t.strength === 'strong' ? 'Stark' : t.strength === 'possible' ? 'Moeglich' : 'Keine'}
+									<span class={`badge ${strengthBadgeClass(trigger.strength)}`}>
+										{trigger.strength === 'strong' ? t('badge_strong') : trigger.strength === 'possible' ? t('badge_possible') : t('badge_none')}
 									</span>
 								</td>
 							</tr>
@@ -309,8 +307,8 @@
 	<!-- ── Section 4: Pressure chart ────────────────────────────────────── -->
 	{#if pressureData.length > 0}
 		<section class="section">
-			<h2 class="section-title">Luftdruck</h2>
-			<p class="section-hint">Markierte Tage zeigen Eintraege. Relevant ist vor allem ein deutlicher Druckabfall.</p>
+			<h2 class="section-title">{t('analysis_pressure')}</h2>
+			<p class="section-hint">{t('analysis_pressure_hint')}</p>
 			<PressureDeltaChart data={pressureData} color={selectedType?.color ?? '#3b82f6'} />
 		</section>
 	{/if}
@@ -318,14 +316,14 @@
 	<!-- ── Section 5: Environmental correlations ─────────────────────────── -->
 	{#if significantEnv.length > 0}
 		<section class="section">
-			<h2 class="section-title">Umweltfaktoren</h2>
+			<h2 class="section-title">{t('analysis_environment')}</h2>
 			<div class="env-cards">
 				{#each significantEnv as env (env.variable)}
 					<div class="env-card">
 						<div class="env-header">
 							<span class="env-label">{env.label}</span>
 							<span class={`badge ${strengthBadgeClass(env.strength)}`}>
-								{env.strength === 'strong' ? 'Stark' : 'Moeglich'}
+								{env.strength === 'strong' ? t('badge_strong') : t('badge_possible')}
 							</span>
 						</div>
 						<div class="phi-track">
@@ -336,9 +334,9 @@
 						</div>
 						{#if env.avgIntensityHigh !== null && env.avgIntensityLow !== null}
 							<p class="env-detail">
-								An Tagen mit hohem {env.label.toLowerCase()}: mittlere Intensitaet
+								{t('analysis_high_days', { label: env.label.toLowerCase() })}
 								<strong>{env.avgIntensityHigh.toFixed(1)}</strong>
-								gegenueber niedrigen Tagen: <strong>{env.avgIntensityLow.toFixed(1)}</strong>
+								{t('analysis_vs_low')} <strong>{env.avgIntensityLow.toFixed(1)}</strong>
 							</p>
 						{/if}
 					</div>
@@ -352,7 +350,7 @@
 		<section class="section">
 			<div class="med-banner">
 				<div>
-					<p class="med-banner-title">Medikationsaenderungen in diesem Zeitraum</p>
+					<p class="med-banner-title">{t('analysis_med_flags')}</p>
 					{#each correlations.medicationFlags as flag}
 						<p class="med-banner-item">{flag.changeDate}: {flag.description}</p>
 					{/each}
@@ -364,13 +362,13 @@
 	<!-- ── Empty state ────────────────────────────────────────────────────── -->
 	{#if !loading && !stats && selectedTypeId}
 		<div class="empty-state">
-			<p>Keine Daten fuer diesen Eintragstyp im gewaehlten Zeitraum.</p>
+			<p>{t('analysis_no_data')}</p>
 		</div>
 	{/if}
 
 	{#if !selectedTypeId && !loading}
 		<div class="empty-state">
-			<p>Eintragstyp waehlen und Analyse starten.</p>
+			<p>{t('analysis_select_type')}</p>
 		</div>
 	{/if}
 </div>

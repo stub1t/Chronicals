@@ -2,6 +2,7 @@
 	import type { Entry, EntryType, Trigger, EntryTypeLog } from '$lib/types';
 	import { formatTime } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
+	import { t } from '$lib/stores/locale.js';
 
 	interface Props {
 		weekStart: string; // 'YYYY-MM-DD' Monday
@@ -150,10 +151,10 @@
 				<!-- Special event badges -->
 				<div class="special-badges" aria-hidden="true">
 					{#if special.hypo}
-						<span class="special-badge special-badge-hypo" title="Unterzuckerung">!</span>
+						<span class="special-badge special-badge-hypo" title={t('week_hypo')}>!</span>
 					{/if}
 					{#if special.medChange}
-						<span class="special-badge special-badge-med" title="Medikationsaenderung">Rx</span>
+						<span class="special-badge special-badge-med" title={t('week_med_change')}>Rx</span>
 					{/if}
 				</div>
 			</div>

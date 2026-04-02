@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger } from '$lib/types';
 	import { formatDayMonth, toDateString, toYearMonth } from '$lib/utils/date';
+	import { dateLocale, t } from '$lib/stores/locale.js';
 	import CalendarWeek from '$lib/components/calendar/CalendarWeek.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
 
@@ -28,7 +29,7 @@
 		const end = new Date(weekStart + 'T00:00:00');
 		end.setDate(start.getDate() + 6);
 		const startLabel = formatDayMonth(weekStart);
-		const endLabel = end.toLocaleDateString('de-AT', { day: 'numeric', month: 'short', year: 'numeric' });
+		const endLabel = end.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 		return `${startLabel} – ${endLabel}`;
 	}
 
@@ -121,7 +122,7 @@
 	<!-- Header -->
 	<header class="week-page-header">
 			<div class="nav-row">
-				<button class="nav-btn" onclick={prevWeek} aria-label="Vorherige Woche">
+				<button class="nav-btn" onclick={prevWeek} aria-label={t('prev_week')}>
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 				</svg>
@@ -130,11 +131,11 @@
 			<div class="nav-center">
 				<span class="week-label">{formatWeekLabel(weekStart)}</span>
 				{#if !isCurrentWeek()}
-						<button class="today-btn" onclick={goToCurrentWeek}>Diese Woche</button>
+						<button class="today-btn" onclick={goToCurrentWeek}>{t('this_week')}</button>
 				{/if}
 			</div>
 
-				<button class="nav-btn" onclick={nextWeek} aria-label="Naechste Woche">
+				<button class="nav-btn" onclick={nextWeek} aria-label={t('next_week')}>
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 				</svg>
@@ -142,8 +143,8 @@
 		</div>
 
 		<div class="view-tabs">
-				<a href="/calendar" class="view-tab">Monat</a>
-				<span class="view-tab active">Woche</span>
+				<a href="/calendar" class="view-tab">{t('month_view')}</a>
+				<span class="view-tab active">{t('week_view')}</span>
 		</div>
 	</header>
 

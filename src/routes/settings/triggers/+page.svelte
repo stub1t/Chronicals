@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/stores/locale.js';
 	import type { Trigger, TriggerCategory } from '$lib/types/index.js';
 
 	let { data } = $props();
@@ -10,10 +11,10 @@
 
 	const categories: TriggerCategory[] = ['food', 'activity', 'custom'];
 	const categoryLabels: Record<TriggerCategory, string> = {
-		food: 'Essen & Trinken',
-		environment: 'Umwelt',
-		activity: 'Aktivitaet',
-		custom: 'Eigene Trigger'
+		food: t('trigger_food'),
+		environment: t('analysis_environment'),
+		activity: t('trigger_activity'),
+		custom: t('trigger_custom')
 	};
 
 	function groupedTriggers() {
@@ -48,8 +49,8 @@
 
 <div class="page">
 	<header class="page-header">
-		<a href="/settings" class="back">‹ Einstellungen</a>
-		<h1>Trigger</h1>
+		<a href="/settings" class="back">‹ {t('settings_title')}</a>
+		<h1>{t('triggers_title')}</h1>
 	</header>
 
 	{#each categories as cat}
@@ -70,13 +71,13 @@
 	{/each}
 
 	<div class="add-form">
-		<input bind:value={newName} placeholder="Neuer Trigger" class="input" onkeydown={(e) => e.key === 'Enter' && addTrigger()} />
+		<input bind:value={newName} placeholder={t('triggers_new_placeholder')} class="input" onkeydown={(e) => e.key === 'Enter' && addTrigger()} />
 		<select bind:value={newCategory} class="select">
 			{#each categories as cat}
 				<option value={cat}>{categoryLabels[cat]}</option>
 			{/each}
 		</select>
-		<button onclick={addTrigger} disabled={saving || !newName.trim()} class="add-btn">Hinzufuegen</button>
+		<button onclick={addTrigger} disabled={saving || !newName.trim()} class="add-btn">{t('triggers_add')}</button>
 	</div>
 </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger, EnvironmentalData, EntryTypeLog } from '$lib/types';
+	import { t } from '$lib/stores/locale.js';
 	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
 	import EntryTypePicker from '$lib/components/entry/EntryTypePicker.svelte';
@@ -273,7 +274,7 @@
 			}
 		}
 		if (log.intensityCache !== null) {
-			parts.unshift(`Staerke ${log.intensityCache}/5`);
+			parts.unshift(t('drawer_strength', { value: log.intensityCache }));
 		}
 		return parts.slice(0, 2).join(' · ');
 	}
@@ -290,9 +291,9 @@
 	});
 
 	const TRIGGER_CATEGORY_LABELS: Record<string, string> = {
-		food: 'Essen & Trinken',
-		activity: 'Aktivitaet',
-		custom: 'Eigene Trigger'
+		food: t('trigger_food'),
+		activity: t('trigger_activity'),
+		custom: t('trigger_custom')
 	};
 
 	const TRIGGER_CATEGORY_ORDER = ['food', 'activity', 'custom'];
@@ -321,7 +322,7 @@
 		class:visible={drawerVisible}
 		role="dialog"
 		aria-modal="true"
-		aria-label={`Eintrag fuer ${date}`}
+		aria-label={t('drawer_for_date', { date })}
 	>
 		<!-- Drag handle -->
 		<div class="drag-handle" aria-hidden="true">
@@ -332,7 +333,7 @@
 		<div class="drawer-header">
 			<div class="header-top">
 				<h2 class="date-heading">{formatFullDate(date)}</h2>
-				<button class="close-btn" onclick={handleClose} aria-label="Ansicht schliessen">
+				<button class="close-btn" onclick={handleClose} aria-label={t('drawer_close')}>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
 					</svg>
@@ -345,9 +346,9 @@
 					class="env-toggle"
 					onclick={() => (envExpanded = !envExpanded)}
 					aria-expanded={envExpanded}
-					aria-label="Toggle environmental data"
+					aria-label={t('drawer_toggle_environment')}
 				>
-					<span class="env-toggle-label">Wetter</span>
+					<span class="env-toggle-label">{t('drawer_weather')}</span>
 					<svg
 						class="env-chevron"
 						class:rotated={envExpanded}
@@ -377,7 +378,7 @@
 				aria-selected={activeTab === 'logs'}
 				onclick={() => (activeTab = 'logs')}
 			>
-				Symptome / Ereignisse
+				{t('drawer_logs')}
 			</button>
 			<button
 				class="tab"
@@ -386,7 +387,7 @@
 				aria-selected={activeTab === 'triggers'}
 				onclick={() => (activeTab = 'triggers')}
 			>
-				Trigger
+				{t('drawer_triggers')}
 			</button>
 			<button
 				class="tab"
@@ -395,7 +396,7 @@
 				aria-selected={activeTab === 'note'}
 				onclick={() => (activeTab = 'note')}
 			>
-				Notiz
+				{t('drawer_note')}
 			</button>
 		</div>
 
@@ -406,7 +407,7 @@
 				<div class="logs-panel" role="tabpanel">
 					{#if ongoingLogs.length > 0}
 						<div class="ongoing-reminder">
-							{ongoingLogs.length} laufende{ongoingLogs.length > 1 ? ' Eintraege haben' : 'r Eintrag hat'} noch keine Endzeit.
+							{ongoingLogs.length === 1 ? t('drawer_ongoing_one') : t('drawer_ongoing_many', { count: ongoingLogs.length })}
 						</div>
 					{/if}
 					{#if loading}
@@ -417,8 +418,8 @@
 						</div>
 					{:else if !entry?.logs || entry.logs.length === 0}
 						<div class="empty-state">
-							<p class="empty-text">Noch keine Symptome oder Ereignisse fuer diesen Tag.</p>
-							<p class="empty-subtext">Mit <strong>+</strong> fuegst du einen Eintrag hinzu.</p>
+							<p class="empty-text">{t('drawer_empty_logs')}</p>
+							<p class="empty-subtext">{t('drawer_empty_logs_hint')}</p>
 						</div>
 					{:else}
 						<ul class="logs-list" role="list">
@@ -426,7 +427,7 @@
 								{@const et = getEntryTypeForLog(log)}
 								{@const summary = formatMetricSummary(log)}
 								<li class="log-card">
-									<button class="log-card-btn" onclick={() => openLogEditor(log)} aria-label={`Eintrag bearbeiten: ${et?.name ?? 'Eintrag'}`}>
+									<button class="log-card-btn" onclick={() => openLogEditor(log)} aria-label={t('drawer_edit_entry', { name: et?.name ?? t('drawer_unknown') })}>
 										<div
 											class="log-color-bar"
 											style={et?.color ? `background: ${et.color}` : 'background: var(--border)'}
@@ -434,7 +435,7 @@
 										<div class="log-body">
 											<div class="log-title-row">
 												<span class="log-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-												<span class="log-name">{et?.name ?? 'Unbekannt'}</span>
+												<span class="log-name">{et?.name ?? t('drawer_unknown')}</span>
 												<span class="log-time">{formatTime(log.startTime)}</span>
 												{#if log.endTime}
 													<span class="log-duration">
@@ -450,7 +451,7 @@
 									<button
 										class="log-delete-btn"
 										onclick={() => deleteLog(log.id)}
-										aria-label={`Eintrag loeschen: ${et?.name ?? 'Eintrag'}`}
+										aria-label={t('drawer_delete_entry', { name: et?.name ?? t('drawer_unknown') })}
 									>
 										<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 											<path d="M2 4h10M5 4V2.5h4V4M6 6.5v4M8 6.5v4M3 4l.7 7.5h6.6L11 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -462,11 +463,11 @@
 					{/if}
 
 					<!-- Add log button inside tab -->
-					<button class="add-log-btn" onclick={() => (showTypePicker = true)} aria-label="Neuen Eintrag hinzufuegen">
+					<button class="add-log-btn" onclick={() => (showTypePicker = true)} aria-label={t('drawer_add_log')}>
 						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 							<path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 						</svg>
-						Symptom / Ereignis hinzufuegen
+						{t('drawer_add_log')}
 					</button>
 				</div>
 			{/if}
@@ -500,7 +501,7 @@
 										<input
 											type="text"
 											class="trigger-add-input"
-											placeholder={cat === 'food' ? 'Lebensmittel oder Getraenk hinzufuegen…' : 'Eigenen Trigger hinzufuegen…'}
+											placeholder={cat === 'food' ? t('drawer_add_food') : t('drawer_add_custom_trigger')}
 											value={inputValue}
 											oninput={(e) => { if (cat === 'food') newFoodInput = (e.target as HTMLInputElement).value; else newCustomInput = (e.target as HTMLInputElement).value; }}
 											onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (cat === 'food') { createAndToggleTrigger(newFoodInput, 'food'); newFoodInput = ''; } else { createAndToggleTrigger(newCustomInput, 'custom'); newCustomInput = ''; } } }}
@@ -511,7 +512,7 @@
 											class="trigger-add-btn"
 											disabled={!inputValue.trim()}
 											onclick={() => { if (cat === 'food') { createAndToggleTrigger(newFoodInput, 'food'); newFoodInput = ''; } else { createAndToggleTrigger(newCustomInput, 'custom'); newCustomInput = ''; } }}
-											aria-label="Trigger hinzufuegen"
+											aria-label={t('drawer_add_trigger')}
 										>+</button>
 									</div>
 								{/if}
@@ -526,13 +527,13 @@
 				<div class="note-panel" role="tabpanel">
 					<textarea
 						class="note-textarea"
-						placeholder="Notiz fuer diesen Tag…"
+						placeholder={t('drawer_note_placeholder')}
 						value={noteValue}
 						oninput={handleNoteInput}
 						rows="6"
-						aria-label="Tagesnotiz"
+						aria-label={t('drawer_note')}
 					></textarea>
-					<p class="note-hint">Wird automatisch gespeichert</p>
+					<p class="note-hint">{t('drawer_note_saved')}</p>
 				</div>
 			{/if}
 		</div>
@@ -541,7 +542,7 @@
 		<button
 			class="fab"
 			onclick={() => (showTypePicker = true)}
-			aria-label="Neuen Eintrag hinzufuegen"
+			aria-label={t('drawer_add_log')}
 		>
 			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 				<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
@@ -564,11 +565,11 @@
 	{@const et = getEntryTypeForLog(editingLog)}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-backdrop" onclick={(e) => { if ((e.target as HTMLElement).classList.contains('modal-backdrop')) closeLogEditor(); }} role="presentation">
-		<div class="modal" role="dialog" aria-modal="true" aria-label={`Eintrag bearbeiten: ${et?.name ?? 'Eintrag'}`}>
+		<div class="modal" role="dialog" aria-modal="true" aria-label={t('drawer_edit_entry', { name: et?.name ?? t('drawer_unknown') })}>
 			<div class="modal-header">
 				<span class="modal-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-				<h3 class="modal-title">{et?.name ?? 'Eintrag'}</h3>
-				<button class="close-btn" onclick={closeLogEditor} aria-label="Schliessen">
+				<h3 class="modal-title">{et?.name ?? t('drawer_unknown')}</h3>
+				<button class="close-btn" onclick={closeLogEditor} aria-label={t('close')}>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
 					</svg>
@@ -579,7 +580,7 @@
 				<!-- Time pickers -->
 				<div class="time-row">
 					<div class="time-field">
-						<label class="time-label" for="edit-start-time">Beginn</label>
+						<label class="time-label" for="edit-start-time">{t('drawer_start')}</label>
 						<input
 							id="edit-start-time"
 							class="time-input"
@@ -588,7 +589,7 @@
 						/>
 					</div>
 					<div class="time-field">
-						<label class="time-label" for="edit-end-time">Ende (optional)</label>
+						<label class="time-label" for="edit-end-time">{t('drawer_end_optional')}</label>
 						<input
 							id="edit-end-time"
 							class="time-input"
@@ -609,8 +610,8 @@
 			</div>
 
 			<div class="modal-footer">
-				<button class="btn-cancel" onclick={closeLogEditor}>Abbrechen</button>
-				<button class="btn-save" onclick={saveLogEdit}>Speichern</button>
+				<button class="btn-cancel" onclick={closeLogEditor}>{t('cancel')}</button>
+				<button class="btn-save" onclick={saveLogEdit}>{t('save')}</button>
 			</div>
 		</div>
 	</div>

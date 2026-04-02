@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import CalendarDay from '$lib/components/calendar/CalendarDay.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
+	import { dateLocale, t } from '$lib/stores/locale.js';
 	import type { EntryType, Trigger } from '$lib/types/index.js';
 
 	import type { Entry } from '$lib/types/index.js';
@@ -33,8 +34,8 @@
 		goto(`/calendar/day/${d.toISOString().split('T')[0]}`);
 	}
 
-	function formatDayHeader(date: string) {
-		return new Date(date + 'T12:00:00').toLocaleDateString('default', {
+	function formatLocalizedDayHeader(date: string) {
+		return new Date(date + 'T12:00:00').toLocaleDateString(dateLocale(), {
 			weekday: 'long',
 			month: 'long',
 			day: 'numeric'
@@ -47,10 +48,10 @@
 		<a href="/calendar" class="back-btn">‹</a>
 		<div class="day-nav">
 			<button onclick={prevDay} class="nav-btn">‹</button>
-			<h1 class="day-title">{formatDayHeader(data.date)}</h1>
+			<h1 class="day-title">{formatLocalizedDayHeader(data.date)}</h1>
 			<button onclick={nextDay} class="nav-btn">›</button>
 		</div>
-		<a href="/calendar/week" class="view-switch">Woche</a>
+		<a href="/calendar/week" class="view-switch">{t('week_view')}</a>
 	</header>
 
 	<CalendarDay

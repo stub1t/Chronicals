@@ -1,4 +1,8 @@
-const APP_LOCALE = 'de-AT';
+import { dateLocale, localeStore } from '$lib/stores/locale.js';
+
+function currentLocale(): string {
+	return dateLocale(localeStore.current);
+}
 
 export function toYearMonth(date: Date): string {
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -11,7 +15,7 @@ export function toDateString(date: Date): string {
 export function formatMonthLabel(yearMonth: string): string {
 	const [year, month] = yearMonth.split('-');
 	const d = new Date(Number(year), Number(month) - 1, 1);
-	return d.toLocaleDateString(APP_LOCALE, { month: 'long', year: 'numeric' });
+	return d.toLocaleDateString(currentLocale(), { month: 'long', year: 'numeric' });
 }
 
 export function getDaysInMonth(yearMonth: string): number {
@@ -39,14 +43,14 @@ export function nextMonth(yearMonth: string): string {
 }
 
 export function formatTime(isoString: string): string {
-	return new Date(isoString).toLocaleTimeString(APP_LOCALE, {
+	return new Date(isoString).toLocaleTimeString(currentLocale(), {
 		hour: '2-digit',
 		minute: '2-digit'
 	});
 }
 
 export function formatDuration(startIso: string, endIso: string | null): string {
-	if (!endIso) return 'laeuft';
+	if (!endIso) return localeStore.current === 'en' ? 'ongoing' : 'laeuft';
 	const mins = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
 	if (mins < 60) return `${mins}m`;
 	const h = Math.floor(mins / 60);
@@ -56,7 +60,7 @@ export function formatDuration(startIso: string, endIso: string | null): string 
 
 export function formatFullDate(dateString: string): string {
 	const d = new Date(`${dateString}T00:00:00`);
-	return d.toLocaleDateString(APP_LOCALE, {
+	return d.toLocaleDateString(currentLocale(), {
 		weekday: 'long',
 		day: 'numeric',
 		month: 'long'
@@ -65,7 +69,7 @@ export function formatFullDate(dateString: string): string {
 
 export function formatDayMonth(dateString: string): string {
 	const d = new Date(`${dateString}T00:00:00`);
-	return d.toLocaleDateString(APP_LOCALE, {
+	return d.toLocaleDateString(currentLocale(), {
 		day: 'numeric',
 		month: 'short'
 	});
@@ -73,7 +77,7 @@ export function formatDayMonth(dateString: string): string {
 
 export function formatDayMonthYear(dateString: string): string {
 	const d = new Date(`${dateString}T00:00:00`);
-	return d.toLocaleDateString(APP_LOCALE, {
+	return d.toLocaleDateString(currentLocale(), {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric'
@@ -82,7 +86,7 @@ export function formatDayMonthYear(dateString: string): string {
 
 export function getWeekdayLabels(): string[] {
 	return Array.from({ length: 7 }, (_, i) =>
-		new Date(2024, 0, 1 + i).toLocaleDateString(APP_LOCALE, { weekday: 'short' })
+		new Date(2024, 0, 1 + i).toLocaleDateString(currentLocale(), { weekday: 'short' })
 	);
 }
 

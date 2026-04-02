@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MetricSchema, MetricField } from '$lib/types';
+	import { t } from '$lib/stores/locale.js';
 
 	interface Props {
 		schema: MetricSchema;
@@ -99,7 +100,7 @@
 					value={String(getValue(field.key, ''))}
 					onchange={(e) => onchange?.(field.key, (e.target as HTMLSelectElement).value)}
 				>
-					<option value="" disabled>Choose…</option>
+					<option value="" disabled>{t('metric_choose')}</option>
 					{#each field.config.options ?? [] as opt}
 						<option value={opt}>{opt}</option>
 					{/each}

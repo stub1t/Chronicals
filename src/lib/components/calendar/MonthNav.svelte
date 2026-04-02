@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatMonthLabel, toYearMonth } from '$lib/utils/date';
+	import { t } from '$lib/stores/locale.js';
 
 	interface Props {
 		yearMonth: string;
@@ -14,8 +15,8 @@
 	let isCurrentMonth = $derived(yearMonth === toYearMonth(new Date()));
 </script>
 
-<nav class="month-nav" aria-label="Monatsnavigation">
-	<button class="nav-btn" onclick={onprev} aria-label="Vorheriger Monat">
+<nav class="month-nav" aria-label={t('month_nav')}>
+	<button class="nav-btn" onclick={onprev} aria-label={t('prev_month')}>
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 			<path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 		</svg>
@@ -24,11 +25,11 @@
 	<div class="center">
 		<span class="month-label">{label}</span>
 			{#if !isCurrentMonth}
-				<button class="today-btn" onclick={ontoday}>Heute</button>
-		{/if}
-	</div>
+				<button class="today-btn" onclick={ontoday}>{t('today')}</button>
+			{/if}
+		</div>
 
-	<button class="nav-btn" onclick={onnext} aria-label="Naechster Monat">
+	<button class="nav-btn" onclick={onnext} aria-label={t('next_month')}>
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 			<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 		</svg>

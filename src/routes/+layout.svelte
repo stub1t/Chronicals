@@ -4,6 +4,7 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { themeStore } from '$lib/stores/theme.js';
+	import { language, localeStore, t } from '$lib/stores/locale.js';
 	import { flush, pendingCount } from '$lib/utils/offline-queue.js';
 
 	let { children } = $props();
@@ -12,6 +13,7 @@
 
 	onMount(() => {
 		themeStore.init();
+		localeStore.init();
 
 		if (!browser) return;
 
@@ -39,37 +41,41 @@
 
 <div class="app-shell">
 	{#if !isOnline}
-		<div class="offline-banner">Offline — changes will sync when reconnected</div>
+		<div class="offline-banner">{t('app_offline')}</div>
 	{/if}
 
 	{#if syncPending > 0}
-		<div class="sync-banner">{syncPending} change{syncPending > 1 ? 's' : ''} pending sync</div>
+		<div class="sync-banner">
+			{syncPending === 1 ? t('app_sync_pending_one') : t('app_sync_pending_many', { count: syncPending })}
+		</div>
 	{/if}
 
-	<main class="content">
-		{@render children()}
-	</main>
+	{#key $language}
+		<main class="content">
+			{@render children()}
+		</main>
+	{/key}
 
-	<nav class="bottom-nav" aria-label="Main navigation">
-		<a href="/calendar" class="nav-item" class:active={isActive('/calendar')} aria-label="Calendar">
+	<nav class="bottom-nav" aria-label={t('nav_settings')}>
+		<a href="/calendar" class="nav-item" class:active={isActive('/calendar')} aria-label={t('nav_calendar')}>
 			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<rect x="3" y="4" width="18" height="18" rx="3"/>
 				<path d="M16 2v4M8 2v4M3 10h18"/>
 			</svg>
-			<span class="nav-label">Calendar</span>
+			<span class="nav-label">{t('nav_calendar')}</span>
 		</a>
-		<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label="Analyse">
+		<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label={t('nav_analysis')}>
 			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<path d="M3 18l4-8 4 5 3-3 4 6"/>
 			</svg>
-			<span class="nav-label">Analyse</span>
+			<span class="nav-label">{t('nav_analysis')}</span>
 		</a>
-		<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label="Settings">
+		<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label={t('nav_settings')}>
 			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<circle cx="12" cy="12" r="3"/>
 				<path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
 			</svg>
-			<span class="nav-label">Settings</span>
+			<span class="nav-label">{t('nav_settings')}</span>
 		</a>
 	</nav>
 </div>

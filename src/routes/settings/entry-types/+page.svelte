@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/stores/locale.js';
 	import type { EntryType } from '$lib/types/index.js';
 
 	let { data } = $props();
@@ -50,16 +51,22 @@
 	}
 
 	async function deleteType(id: string) {
-		if (!confirm('Delete this entry type? Existing logs will remain but lose their type reference.')) return;
+		if (!confirm(t('entry_types_delete_confirm'))) return;
 		await fetch(`/api/entry-types/${id}`, { method: 'DELETE' });
 		entryTypes = entryTypes.filter((t) => t.id !== id);
+	}
+
+	function categoryLabel(category: string): string {
+		if (category === 'symptom') return t('entry_category_symptom');
+		if (category === 'event') return t('entry_category_event');
+		return category;
 	}
 </script>
 
 <div class="page">
 	<header class="page-header">
-		<a href="/settings" class="back">‹ Settings</a>
-		<h1>Entry Types</h1>
+		<a href="/settings" class="back">‹ {t('settings_title')}</a>
+		<h1>{t('entry_types_title')}</h1>
 	</header>
 
 	<div class="list">
@@ -68,12 +75,12 @@
 				<span class="type-icon">{type.icon}</span>
 				<div class="type-info">
 					<span class="type-name">{type.name}</span>
-					<span class="type-cat">{type.category}</span>
+					<span class="type-cat">{categoryLabel(type.category)}</span>
 				</div>
 				{#if !type.isBuiltIn}
 					<button class="delete-btn" onclick={() => deleteType(type.id)}>✕</button>
 				{:else}
-					<span class="built-in-badge">built-in</span>
+					<span class="built-in-badge">{t('entry_types_builtin')}</span>
 				{/if}
 			</div>
 		{/each}
@@ -81,26 +88,26 @@
 
 	{#if showForm}
 		<div class="form-card">
-			<input bind:value={newName} placeholder="Type name" class="input" />
+			<input bind:value={newName} placeholder={t('entry_types_name_placeholder')} class="input" />
 			<div class="row">
 				<div class="field">
-					<label for="new-type-icon">Icon</label>
+					<label for="new-type-icon">{t('entry_types_icon')}</label>
 					<input id="new-type-icon" bind:value={newIcon} class="input small" maxlength="2" />
 				</div>
 				<div class="field">
-					<label for="new-type-color">Color</label>
+					<label for="new-type-color">{t('entry_types_color')}</label>
 					<input id="new-type-color" type="color" bind:value={newColor} class="color-input" />
 				</div>
 			</div>
 			<div class="form-actions">
-				<button onclick={() => { showForm = false; }} class="btn-secondary">Cancel</button>
+				<button onclick={() => { showForm = false; }} class="btn-secondary">{t('cancel')}</button>
 				<button onclick={addType} disabled={saving || !newName.trim()} class="btn-primary">
-					{saving ? 'Saving…' : 'Add Type'}
+					{saving ? t('entry_types_saving') : t('entry_types_add')}
 				</button>
 			</div>
 		</div>
 	{:else}
-		<button onclick={() => { showForm = true; }} class="add-btn">+ Add custom type</button>
+		<button onclick={() => { showForm = true; }} class="add-btn">+ {t('entry_types_add_custom')}</button>
 	{/if}
 </div>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CalendarDayData } from '$lib/types';
+	import { t } from '$lib/stores/locale.js';
 	import DayDot from './DayDot.svelte';
 
 	interface Props {
@@ -30,10 +31,10 @@
 
 	<div class="indicators">
 		{#if dayData?.hasHypo}
-			<span class="badge badge-hypo" title="Hypoglycemia">!</span>
+			<span class="badge badge-hypo" title={t('week_hypo')}>!</span>
 		{/if}
 		{#if dayData?.hasMedChange}
-			<span class="badge badge-med" title="Medication change">Rx</span>
+			<span class="badge badge-med" title={t('week_med_change')}>Rx</span>
 		{/if}
 	</div>
 

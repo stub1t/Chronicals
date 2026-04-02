@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EntryType, EntryCategory } from '$lib/types';
+	import { t } from '$lib/stores/locale.js';
 
 	interface Props {
 		entryTypes: EntryType[];
@@ -10,9 +11,9 @@
 	let { entryTypes, onselect, onclose }: Props = $props();
 
 	const CATEGORY_LABELS: Record<EntryCategory, string> = {
-		symptom: 'Symptom',
-		event: 'Event',
-		note: 'Note'
+		symptom: t('category_symptom'),
+		event: t('category_event'),
+		note: t('category_note')
 	};
 
 	// Group by category for display order
@@ -44,7 +45,7 @@
 	role="dialog"
 	tabindex="-1"
 	aria-modal="true"
-	aria-label="Choose entry type"
+	aria-label={t('entry_type_choose')}
 	onclick={handleOverlayClick}
 	onkeydown={handleKeydown}
 >
@@ -52,8 +53,8 @@
 		<div class="sheet-handle" aria-hidden="true"></div>
 
 		<div class="sheet-header">
-			<h2 class="sheet-title">What happened?</h2>
-			<button class="close-btn" onclick={onclose} aria-label="Close">
+			<h2 class="sheet-title">{t('entry_type_what_happened')}</h2>
+			<button class="close-btn" onclick={onclose} aria-label={t('close')}>
 				<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
 					<path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
 				</svg>
@@ -65,7 +66,7 @@
 				{@const types = grouped.get(category) ?? []}
 				{#if types.length > 0}
 					<div class="category-section">
-						<h3 class="category-heading">{CATEGORY_LABELS[category]}s</h3>
+						<h3 class="category-heading">{CATEGORY_LABELS[category]}</h3>
 						<div class="type-grid">
 							{#each types as et (et.id)}
 								<button

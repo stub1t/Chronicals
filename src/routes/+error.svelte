@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { t } from '$lib/stores/locale.js';
 </script>
 
 <div class="error-page">
@@ -7,15 +8,15 @@
 		<span class="error-code">{page.status}</span>
 		<h1 class="error-title">
 			{#if page.status === 404}
-				Page not found
+				{t('error_not_found')}
 			{:else if page.status === 500}
-				Something went wrong
+				{t('error_server')}
 			{:else}
-				Error
+				{t('error_generic')}
 			{/if}
 		</h1>
-		<p class="error-message">{page.error?.message ?? 'An unexpected error occurred.'}</p>
-		<a href="/calendar" class="error-home">Go to Calendar</a>
+		<p class="error-message">{page.error?.message ?? t('error_fallback')}</p>
+		<a href="/calendar" class="error-home">{t('error_go_calendar')}</a>
 	</div>
 </div>
 

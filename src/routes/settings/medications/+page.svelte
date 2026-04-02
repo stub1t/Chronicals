@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dateLocale, t } from '$lib/stores/locale.js';
 	import type { Medication, MedicationChange, MedicationChangeType } from '$lib/types';
 
 	interface Props {
@@ -55,7 +56,7 @@
 	}
 
 	async function submitAddMed() {
-		if (!newMedName.trim()) { addMedError = 'Name is required'; return; }
+		if (!newMedName.trim()) { addMedError = t('medications_name_required'); return; }
 		addMedSaving = true;
 		addMedError = null;
 		try {
@@ -71,14 +72,14 @@
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				addMedError = err.message ?? 'Failed to add medication';
+				addMedError = err.message ?? t('medications_add_failed');
 			} else {
 				const med: Medication = await res.json();
 				medications = [...medications, med];
 				showAddMed = false;
 			}
 		} catch {
-			addMedError = 'Network error';
+			addMedError = t('network_error');
 		} finally {
 			addMedSaving = false;
 		}
@@ -117,14 +118,14 @@
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				changeError = err.message ?? 'Failed to log change';
+				changeError = err.message ?? t('medications_log_failed');
 			} else {
 				const change: MedicationChange = await res.json();
 				changes = [change, ...changes];
 				changeMedId = null;
 			}
 		} catch {
-			changeError = 'Network error';
+			changeError = t('network_error');
 		} finally {
 			changeSaving = false;
 		}
@@ -132,32 +133,32 @@
 
 	function formatDate(dateStr: string): string {
 		const d = new Date(dateStr + 'T00:00:00');
-		return d.toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' });
+		return d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 	}
 
-	function changeTypeLabel(t: string): string {
-		if (t === 'started') return 'Started';
-		if (t === 'stopped') return 'Stopped';
-		if (t === 'dosage_change') return 'Dosage change';
-		return t;
+	function changeTypeLabel(changeKind: string): string {
+		if (changeKind === 'started') return t('medications_change_started');
+		if (changeKind === 'stopped') return t('medications_change_stopped');
+		if (changeKind === 'dosage_change') return t('medications_change_dosage');
+		return changeKind;
 	}
 </script>
 
 <div class="page">
 	<header class="page-header">
-		<a href="/settings" class="back-link">← Settings</a>
-		<h1 class="page-title">Medications</h1>
+		<a href="/settings" class="back-link">← {t('settings_title')}</a>
+		<h1 class="page-title">{t('medications_title')}</h1>
 	</header>
 
 	<!-- ── Active medications ─────────────────────────────────────────────── -->
 	<section class="section">
 		<div class="section-head">
-			<h2 class="section-title">Active medications</h2>
-			<button class="add-btn" onclick={openAddMed}>+ Add</button>
+			<h2 class="section-title">{t('medications_active')}</h2>
+			<button class="add-btn" onclick={openAddMed}>+ {t('medications_add')}</button>
 		</div>
 
 		{#if activeMeds.length === 0}
-			<p class="empty-text">No active medications.</p>
+			<p class="empty-text">{t('medications_empty_active')}</p>
 		{:else}
 			<ul class="med-list">
 				{#each activeMeds as med (med.id)}
@@ -167,13 +168,13 @@
 							{#if med.dosage}
 								<span class="med-dosage">{med.dosage}{med.unit ? ' ' + med.unit : ''}</span>
 							{/if}
-							<span class="med-date">since {formatDate(med.startDate)}</span>
+							<span class="med-date">{t('medications_since', { date: formatDate(med.startDate) })}</span>
 						</div>
 						<button
 							class="change-btn"
 							onclick={() => openChangeModal(med.id)}
 						>
-							Log change
+							{t('medications_log_change')}
 						</button>
 					</li>
 				{/each}
@@ -189,7 +190,7 @@
 				onclick={() => { showPast = !showPast; }}
 				aria-expanded={showPast}
 			>
-				<span>Past medications ({pastMeds.length})</span>
+				<span>{t('medications_past', { count: pastMeds.length })}</span>
 				<span class="collapse-arrow" class:open={showPast}>›</span>
 			</button>
 
@@ -217,7 +218,7 @@
 	<!-- ── Medication change timeline ────────────────────────────────────── -->
 	{#if sortedChanges.length > 0}
 		<section class="section">
-			<h2 class="section-title">Change history</h2>
+			<h2 class="section-title">{t('medications_history')}</h2>
 			<ul class="timeline">
 				{#each sortedChanges as change (change.id)}
 					{@const med = medForChange(change.medicationId)}
@@ -253,29 +254,29 @@
 {#if showAddMed}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showAddMed = false; }}>
-		<div class="modal" role="dialog" aria-modal="true" aria-label="Add medication">
+		<div class="modal" role="dialog" aria-modal="true" aria-label={t('medications_add_title')}>
 			<div class="modal-header">
-				<h3 class="modal-title">Add medication</h3>
-				<button class="modal-close" onclick={() => { showAddMed = false; }} aria-label="Close">×</button>
+				<h3 class="modal-title">{t('medications_add_title')}</h3>
+				<button class="modal-close" onclick={() => { showAddMed = false; }} aria-label={t('close')}>×</button>
 			</div>
 
 			<form class="modal-form" onsubmit={(e) => { e.preventDefault(); submitAddMed(); }}>
 				<div class="field">
-					<label class="field-label" for="new-med-name">Name *</label>
-					<input id="new-med-name" type="text" class="input" bind:value={newMedName} placeholder="e.g. Ibuprofen" required />
+					<label class="field-label" for="new-med-name">{t('medications_name')} *</label>
+					<input id="new-med-name" type="text" class="input" bind:value={newMedName} placeholder={t('medications_name_placeholder')} required />
 				</div>
 				<div class="field-row">
 					<div class="field">
-						<label class="field-label" for="new-med-dosage">Dosage</label>
-						<input id="new-med-dosage" type="text" class="input" bind:value={newMedDosage} placeholder="400" />
+						<label class="field-label" for="new-med-dosage">{t('medications_dosage')}</label>
+						<input id="new-med-dosage" type="text" class="input" bind:value={newMedDosage} placeholder={t('medications_dosage_placeholder')} />
 					</div>
 					<div class="field">
-						<label class="field-label" for="new-med-unit">Unit</label>
-						<input id="new-med-unit" type="text" class="input" bind:value={newMedUnit} placeholder="mg" />
+						<label class="field-label" for="new-med-unit">{t('medications_unit')}</label>
+						<input id="new-med-unit" type="text" class="input" bind:value={newMedUnit} placeholder={t('medications_unit_placeholder')} />
 					</div>
 				</div>
 				<div class="field">
-					<label class="field-label" for="new-med-start">Start date</label>
+					<label class="field-label" for="new-med-start">{t('medications_start_date')}</label>
 					<input id="new-med-start" type="date" class="input" bind:value={newMedStartDate} />
 				</div>
 
@@ -284,9 +285,9 @@
 				{/if}
 
 				<div class="modal-actions">
-					<button type="button" class="btn-ghost" onclick={() => { showAddMed = false; }}>Cancel</button>
+					<button type="button" class="btn-ghost" onclick={() => { showAddMed = false; }}>{t('cancel')}</button>
 					<button type="submit" class="btn-primary" disabled={addMedSaving}>
-						{addMedSaving ? 'Adding…' : 'Add medication'}
+						{addMedSaving ? t('medications_adding') : t('medications_add_title')}
 					</button>
 				</div>
 			</form>
@@ -299,34 +300,34 @@
 	{@const med = medForChange(changeMedId)}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) closeChangeModal(); }}>
-		<div class="modal" role="dialog" aria-modal="true" aria-label="Log medication change">
+		<div class="modal" role="dialog" aria-modal="true" aria-label={t('medications_log_title', { name: med?.name ?? '' })}>
 			<div class="modal-header">
-				<h3 class="modal-title">Log change — {med?.name}</h3>
-				<button class="modal-close" onclick={closeChangeModal} aria-label="Close">×</button>
+				<h3 class="modal-title">{t('medications_log_title', { name: med?.name ?? '' })}</h3>
+				<button class="modal-close" onclick={closeChangeModal} aria-label={t('close')}>×</button>
 			</div>
 
 			<form class="modal-form" onsubmit={(e) => { e.preventDefault(); submitChange(); }}>
 				<div class="field">
-					<label class="field-label" for="change-type">Change type</label>
+					<label class="field-label" for="change-type">{t('medications_change_type')}</label>
 					<select id="change-type" class="input select" bind:value={changeType}>
-						<option value="dosage_change">Dosage change</option>
-						<option value="started">Started</option>
-						<option value="stopped">Stopped</option>
+						<option value="dosage_change">{t('medications_change_dosage')}</option>
+						<option value="started">{t('medications_change_started')}</option>
+						<option value="stopped">{t('medications_change_stopped')}</option>
 					</select>
 				</div>
 				<div class="field-row">
 					<div class="field">
-						<label class="field-label" for="change-old-dosage">Old dosage</label>
-						<input id="change-old-dosage" type="text" class="input" bind:value={changeOldDosage} placeholder="e.g. 400mg" />
+						<label class="field-label" for="change-old-dosage">{t('medications_old_dosage')}</label>
+						<input id="change-old-dosage" type="text" class="input" bind:value={changeOldDosage} placeholder={t('medications_old_dosage_placeholder')} />
 					</div>
 					<div class="field">
-						<label class="field-label" for="change-new-dosage">New dosage</label>
-						<input id="change-new-dosage" type="text" class="input" bind:value={changeNewDosage} placeholder="e.g. 800mg" />
+						<label class="field-label" for="change-new-dosage">{t('medications_new_dosage')}</label>
+						<input id="change-new-dosage" type="text" class="input" bind:value={changeNewDosage} placeholder={t('medications_new_dosage_placeholder')} />
 					</div>
 				</div>
 				<div class="field">
-					<label class="field-label" for="change-reason">Reason</label>
-					<input id="change-reason" type="text" class="input" bind:value={changeReason} placeholder="Optional note" />
+					<label class="field-label" for="change-reason">{t('medications_reason')}</label>
+					<input id="change-reason" type="text" class="input" bind:value={changeReason} placeholder={t('medications_reason_placeholder')} />
 				</div>
 
 				{#if changeError}
@@ -334,9 +335,9 @@
 				{/if}
 
 				<div class="modal-actions">
-					<button type="button" class="btn-ghost" onclick={closeChangeModal}>Cancel</button>
+					<button type="button" class="btn-ghost" onclick={closeChangeModal}>{t('cancel')}</button>
 					<button type="submit" class="btn-primary" disabled={changeSaving}>
-						{changeSaving ? 'Saving…' : 'Log change'}
+						{changeSaving ? t('medications_logging') : t('medications_log_change')}
 					</button>
 				</div>
 			</form>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EnvironmentalData } from '$lib/types';
+	import { t } from '$lib/stores/locale.js';
 
 	interface Props {
 		data: EnvironmentalData | null;
@@ -50,9 +51,9 @@
 
 	{:else if !data}
 		<p class="no-data">
-			Keine Wetterdaten.
-			<a href="/settings" class="settings-link">Ort in den Einstellungen setzen</a>
-			, um Umweltdaten zu aktivieren.
+			{t('env_no_data')}
+			<a href="/settings" class="settings-link">{t('env_set_location')}</a>
+			{t('env_enable')}
 		</p>
 
 	{:else}

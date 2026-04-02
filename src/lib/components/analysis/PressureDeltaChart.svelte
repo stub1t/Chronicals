@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { t } from '$lib/stores/locale.js';
 
 	interface DataPoint {
 		date: string;
@@ -96,11 +97,11 @@
 </script>
 
 <div class="chart-wrap">
-	<p class="chart-title">Pressure change (hPa/day) — red bars = drops</p>
+	<p class="chart-title">{t('pressure_chart_title')}</p>
 	<canvas bind:this={canvas} class="chart"></canvas>
 	<p class="chart-legend">
-		<span class="legend-dot symptom"></span> Day with symptom &nbsp;
-		<span class="legend-dot no-symptom"></span> Day without
+		<span class="legend-dot symptom"></span> {t('pressure_chart_with_symptom')} &nbsp;
+		<span class="legend-dot no-symptom"></span> {t('pressure_chart_without_symptom')}
 	</p>
 </div>
 
