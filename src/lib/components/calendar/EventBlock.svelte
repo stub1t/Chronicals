@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { intensityColor, formatTime, formatDuration } from '$lib/utils/date.js';
+	import { localizeBuiltInText } from '$lib/stores/locale.js';
 	import type { EntryTypeLog } from '$lib/types/index.js';
 
 	let {
@@ -42,12 +43,12 @@
 	class:event-type={isEvent}
 	style="top: {topPx()}px; height: {heightPx()}px; border-left: 3px solid {color}; background: {bgColor}20;"
 	onclick={() => onclick?.(log)}
-	title="{log.entryType?.name ?? 'Entry'} — {formatTime(log.startTime)}"
+	title="{log.entryType?.name ? localizeBuiltInText(log.entryType.name) : 'Entry'} — {formatTime(log.startTime)}"
 >
 	<span class="event-icon">{log.entryType?.icon ?? '●'}</span>
 	{#if heightPx() > 36}
 		<div class="event-body">
-			<span class="event-name">{log.entryType?.name ?? 'Entry'}</span>
+			<span class="event-name">{log.entryType?.name ? localizeBuiltInText(log.entryType.name) : 'Entry'}</span>
 			<span class="event-time">{formatTime(log.startTime)}{log.endTime ? ` – ${formatDuration(log.startTime, log.endTime)}` : ''}</span>
 		</div>
 	{/if}

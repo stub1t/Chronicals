@@ -6,7 +6,7 @@
 		EnvironmentalCorrelation
 	} from '$lib/types';
 	import { toYearMonth, formatMonthLabel, getDaysInMonth, intensityColor } from '$lib/utils/date';
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import PressureDeltaChart from '$lib/components/analysis/PressureDeltaChart.svelte';
 
 	interface CorrelationData {
@@ -171,7 +171,7 @@
 					>
 						<option value={null} disabled>{t('analysis_choose_type')}</option>
 						{#each data.entryTypes as et (et.id)}
-							<option value={et.id}>{et.icon ?? ''} {et.name}</option>
+							<option value={et.id}>{et.icon ?? ''} {localizeBuiltInText(et.name)}</option>
 						{/each}
 					</select>
 				</div>
@@ -285,8 +285,8 @@
 						{#each sortedTriggers as trigger (trigger.triggerId)}
 							<tr>
 								<td>
-									<span class="trigger-name">{trigger.triggerName}</span>
-									<span class="trigger-cat">{trigger.triggerCategory}</span>
+									<span class="trigger-name">{localizeBuiltInText(trigger.triggerName)}</span>
+									<span class="trigger-cat">{localizeBuiltInText(trigger.triggerCategory)}</span>
 								</td>
 								<td class="num-col">{trigger.coOccurrences}</td>
 								<td class="num-col">{trigger.avgIntensityWith !== null ? trigger.avgIntensityWith.toFixed(1) : '—'}</td>

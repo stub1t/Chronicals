@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { MetricSchema, MetricField } from '$lib/types';
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 
 	interface Props {
 		schema: MetricSchema;
@@ -64,7 +64,7 @@
 	{#each schema.fields as field (field.key)}
 		<div class="field-group">
 			<label class="field-label" for={`field-${field.key}`}>
-				{field.label}
+				{localizeBuiltInText(field.label)}
 				{#if field.required}<span class="required" aria-hidden="true">*</span>{/if}
 			</label>
 
@@ -102,7 +102,7 @@
 				>
 					<option value="" disabled>{t('metric_choose')}</option>
 					{#each field.config.options ?? [] as opt}
-						<option value={opt}>{opt}</option>
+						<option value={opt}>{localizeBuiltInText(opt)}</option>
 					{/each}
 				</select>
 
@@ -117,7 +117,7 @@
 							onclick={() => toggleChecklist(field.key, opt)}
 							aria-pressed={active}
 						>
-							{opt}
+							{localizeBuiltInText(opt)}
 						</button>
 					{/each}
 				</div>
@@ -127,7 +127,7 @@
 					id={`field-${field.key}`}
 					class="textarea-input"
 					rows={3}
-					placeholder={field.config.placeholder ?? ''}
+					placeholder={localizeBuiltInText(field.config.placeholder ?? '')}
 					value={String(getValue(field.key, ''))}
 					oninput={(e) => onchange?.(field.key, (e.target as HTMLTextAreaElement).value)}
 				></textarea>
@@ -137,7 +137,7 @@
 					id={`field-${field.key}`}
 					type="text"
 					class="text-input"
-					placeholder={field.config.placeholder ?? ''}
+					placeholder={localizeBuiltInText(field.config.placeholder ?? '')}
 					value={String(getValue(field.key, ''))}
 					oninput={(e) => onchange?.(field.key, (e.target as HTMLInputElement).value)}
 				/>

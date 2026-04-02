@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import type { EntryType } from '$lib/types/index.js';
 
 	let { data } = $props();
@@ -74,7 +74,7 @@
 			<div class="type-row" style="border-left: 4px solid {type.color ?? '#888'}">
 				<span class="type-icon">{type.icon}</span>
 				<div class="type-info">
-					<span class="type-name">{type.name}</span>
+					<span class="type-name">{localizeBuiltInText(type.name)}</span>
 					<span class="type-cat">{categoryLabel(type.category)}</span>
 				</div>
 				{#if !type.isBuiltIn}

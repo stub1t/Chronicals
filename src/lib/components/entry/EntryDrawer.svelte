@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger, EnvironmentalData, EntryTypeLog } from '$lib/types';
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
 	import EntryTypePicker from '$lib/components/entry/EntryTypePicker.svelte';
@@ -267,9 +267,11 @@
 			const val = log.metricValues[field.key];
 			if (val !== undefined && val !== null && val !== '') {
 				if (field.type === 'slider') {
-					parts.push(`${field.label}: ${val}`);
+					parts.push(`${localizeBuiltInText(field.label)}: ${val}`);
 				} else if (field.type === 'select' || field.type === 'text') {
-					parts.push(String(val));
+					parts.push(localizeBuiltInText(String(val)));
+				} else if (field.type === 'checklist' && Array.isArray(val)) {
+					parts.push(val.map((item) => localizeBuiltInText(String(item))).join(', '));
 				}
 			}
 		}
@@ -427,7 +429,7 @@
 								{@const et = getEntryTypeForLog(log)}
 								{@const summary = formatMetricSummary(log)}
 								<li class="log-card">
-									<button class="log-card-btn" onclick={() => openLogEditor(log)} aria-label={t('drawer_edit_entry', { name: et?.name ?? t('drawer_unknown') })}>
+									<button class="log-card-btn" onclick={() => openLogEditor(log)} aria-label={t('drawer_edit_entry', { name: et ? localizeBuiltInText(et.name) : t('drawer_unknown') })}>
 										<div
 											class="log-color-bar"
 											style={et?.color ? `background: ${et.color}` : 'background: var(--border)'}
@@ -435,7 +437,7 @@
 										<div class="log-body">
 											<div class="log-title-row">
 												<span class="log-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-												<span class="log-name">{et?.name ?? t('drawer_unknown')}</span>
+												<span class="log-name">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</span>
 												<span class="log-time">{formatTime(log.startTime)}</span>
 												{#if log.endTime}
 													<span class="log-duration">
@@ -451,7 +453,7 @@
 									<button
 										class="log-delete-btn"
 										onclick={() => deleteLog(log.id)}
-										aria-label={t('drawer_delete_entry', { name: et?.name ?? t('drawer_unknown') })}
+										aria-label={t('drawer_delete_entry', { name: et ? localizeBuiltInText(et.name) : t('drawer_unknown') })}
 									>
 										<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 											<path d="M2 4h10M5 4V2.5h4V4M6 6.5v4M8 6.5v4M3 4l.7 7.5h6.6L11 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -490,7 +492,7 @@
 												onclick={() => toggleTrigger(trigger.id)}
 												aria-pressed={active}
 											>
-												{trigger.name}
+												{localizeBuiltInText(trigger.name)}
 											</button>
 										{/each}
 									</div>
@@ -565,10 +567,10 @@
 	{@const et = getEntryTypeForLog(editingLog)}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-backdrop" onclick={(e) => { if ((e.target as HTMLElement).classList.contains('modal-backdrop')) closeLogEditor(); }} role="presentation">
-		<div class="modal" role="dialog" aria-modal="true" aria-label={t('drawer_edit_entry', { name: et?.name ?? t('drawer_unknown') })}>
+		<div class="modal" role="dialog" aria-modal="true" aria-label={t('drawer_edit_entry', { name: et ? localizeBuiltInText(et.name) : t('drawer_unknown') })}>
 			<div class="modal-header">
 				<span class="modal-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-				<h3 class="modal-title">{et?.name ?? t('drawer_unknown')}</h3>
+				<h3 class="modal-title">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</h3>
 				<button class="close-btn" onclick={closeLogEditor} aria-label={t('close')}>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>

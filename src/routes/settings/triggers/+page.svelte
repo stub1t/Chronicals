@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import type { Trigger, TriggerCategory } from '$lib/types/index.js';
 
 	let { data } = $props();
@@ -60,7 +60,7 @@
 			<div class="chip-grid">
 				{#each group as trigger}
 					<div class="chip">
-						{trigger.name}
+						{localizeBuiltInText(trigger.name)}
 						{#if !trigger.isBuiltIn}
 							<button onclick={() => deleteTrigger(trigger.id)} class="chip-delete">✕</button>
 						{/if}

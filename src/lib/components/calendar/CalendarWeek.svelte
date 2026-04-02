@@ -2,7 +2,7 @@
 	import type { Entry, EntryType, Trigger, EntryTypeLog } from '$lib/types';
 	import { formatTime } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 
 	interface Props {
 		weekStart: string; // 'YYYY-MM-DD' Monday
@@ -201,12 +201,12 @@
 						<div
 							class="event-block"
 							style={logBlockStyle(log, et)}
-							title={`${et?.name ?? ''} – ${formatTime(log.startTime)}`}
+							title={`${et ? localizeBuiltInText(et.name) : ''} – ${formatTime(log.startTime)}`}
 							role="button"
 							tabindex="0"
 						>
 							<span class="event-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-							<span class="event-name">{et?.name ?? ''}</span>
+							<span class="event-name">{et ? localizeBuiltInText(et.name) : ''}</span>
 							<span class="event-time">{formatTime(log.startTime)}</span>
 						</div>
 					{/each}

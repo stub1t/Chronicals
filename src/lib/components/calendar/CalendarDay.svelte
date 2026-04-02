@@ -2,7 +2,7 @@
 	import type { Entry, EntryType, EnvironmentalData, EntryTypeLog } from '$lib/types';
 	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
 
 	interface Props {
@@ -111,13 +111,13 @@
 						style={logBlockStyle(log)}
 						role="button"
 						tabindex="0"
-						aria-label={t('day_event_at', { name: et?.name ?? t('drawer_unknown'), time: formatTime(log.startTime) })}
+						aria-label={t('day_event_at', { name: et ? localizeBuiltInText(et.name) : t('drawer_unknown'), time: formatTime(log.startTime) })}
 						onclick={(e) => handleEditClick(e, log.id)}
 						onkeydown={(e) => { if (e.key === 'Enter') handleEditClick(e, log.id); }}
 					>
 						<div class="event-header">
 							<span class="event-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-							<span class="event-name">{et?.name ?? t('drawer_unknown')}</span>
+							<span class="event-name">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</span>
 						</div>
 						<div class="event-meta">
 							<span class="event-time">{formatTime(log.startTime)}</span>

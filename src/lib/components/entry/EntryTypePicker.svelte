@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { EntryType, EntryCategory } from '$lib/types';
-	import { t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 
 	interface Props {
 		entryTypes: EntryType[];
@@ -79,7 +79,7 @@
 									{:else}
 										<span class="type-icon type-icon--fallback" aria-hidden="true">●</span>
 									{/if}
-									<span class="type-name">{et.name}</span>
+									<span class="type-name">{localizeBuiltInText(et.name)}</span>
 									<span class="type-category">{CATEGORY_LABELS[et.category as EntryCategory]}</span>
 								</button>
 							{/each}
