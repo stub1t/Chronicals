@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger } from '$lib/types';
-	import { toDateString, toYearMonth } from '$lib/utils/date';
+	import { formatDayMonth, toDateString, toYearMonth } from '$lib/utils/date';
 	import CalendarWeek from '$lib/components/calendar/CalendarWeek.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
 
@@ -27,8 +27,8 @@
 		const start = new Date(weekStart + 'T00:00:00');
 		const end = new Date(weekStart + 'T00:00:00');
 		end.setDate(start.getDate() + 6);
-		const startLabel = start.toLocaleDateString('default', { day: 'numeric', month: 'short' });
-		const endLabel = end.toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' });
+		const startLabel = formatDayMonth(weekStart);
+		const endLabel = end.toLocaleDateString('de-AT', { day: 'numeric', month: 'short', year: 'numeric' });
 		return `${startLabel} – ${endLabel}`;
 	}
 
@@ -120,8 +120,8 @@
 <div class="page">
 	<!-- Header -->
 	<header class="week-page-header">
-		<div class="nav-row">
-			<button class="nav-btn" onclick={prevWeek} aria-label="Previous week">
+			<div class="nav-row">
+				<button class="nav-btn" onclick={prevWeek} aria-label="Vorherige Woche">
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 				</svg>
@@ -130,11 +130,11 @@
 			<div class="nav-center">
 				<span class="week-label">{formatWeekLabel(weekStart)}</span>
 				{#if !isCurrentWeek()}
-					<button class="today-btn" onclick={goToCurrentWeek}>This week</button>
+						<button class="today-btn" onclick={goToCurrentWeek}>Diese Woche</button>
 				{/if}
 			</div>
 
-			<button class="nav-btn" onclick={nextWeek} aria-label="Next week">
+				<button class="nav-btn" onclick={nextWeek} aria-label="Naechste Woche">
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 				</svg>
@@ -142,8 +142,8 @@
 		</div>
 
 		<div class="view-tabs">
-			<a href="/calendar" class="view-tab">Month</a>
-			<span class="view-tab active">Week</span>
+				<a href="/calendar" class="view-tab">Monat</a>
+				<span class="view-tab active">Woche</span>
 		</div>
 	</header>
 

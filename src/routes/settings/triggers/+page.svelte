@@ -8,7 +8,13 @@
 	let newCategory = $state<TriggerCategory>('custom');
 	let saving = $state(false);
 
-	const categories: TriggerCategory[] = ['food', 'environment', 'activity', 'custom'];
+	const categories: TriggerCategory[] = ['food', 'activity', 'custom'];
+	const categoryLabels: Record<TriggerCategory, string> = {
+		food: 'Essen & Trinken',
+		environment: 'Umwelt',
+		activity: 'Aktivitaet',
+		custom: 'Eigene Trigger'
+	};
 
 	function groupedTriggers() {
 		const map = new Map<string, Trigger[]>();
@@ -42,14 +48,14 @@
 
 <div class="page">
 	<header class="page-header">
-		<a href="/settings" class="back">‹ Settings</a>
-		<h1>Triggers</h1>
+		<a href="/settings" class="back">‹ Einstellungen</a>
+		<h1>Trigger</h1>
 	</header>
 
 	{#each categories as cat}
 		{@const group = groupedTriggers().get(cat) ?? []}
 		<section class="category-section">
-			<h2 class="cat-title">{cat.charAt(0).toUpperCase() + cat.slice(1)}</h2>
+			<h2 class="cat-title">{categoryLabels[cat]}</h2>
 			<div class="chip-grid">
 				{#each group as trigger}
 					<div class="chip">
@@ -64,13 +70,13 @@
 	{/each}
 
 	<div class="add-form">
-		<input bind:value={newName} placeholder="New trigger name" class="input" onkeydown={(e) => e.key === 'Enter' && addTrigger()} />
+		<input bind:value={newName} placeholder="Neuer Trigger" class="input" onkeydown={(e) => e.key === 'Enter' && addTrigger()} />
 		<select bind:value={newCategory} class="select">
 			{#each categories as cat}
-				<option value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+				<option value={cat}>{categoryLabels[cat]}</option>
 			{/each}
 		</select>
-		<button onclick={addTrigger} disabled={saving || !newName.trim()} class="add-btn">Add</button>
+		<button onclick={addTrigger} disabled={saving || !newName.trim()} class="add-btn">Hinzufuegen</button>
 	</div>
 </div>
 

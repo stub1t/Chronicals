@@ -16,7 +16,7 @@
 	let { weekStart, entries, entryTypes, allTriggers, ondayclick, onprevweek, onnextweek }: Props = $props();
 
 	const HOURS = Array.from({ length: 24 }, (_, i) => i);
-	const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+	const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 	const HOUR_HEIGHT = 56; // px per hour row
 
 	// Touch swipe
@@ -150,10 +150,10 @@
 				<!-- Special event badges -->
 				<div class="special-badges" aria-hidden="true">
 					{#if special.hypo}
-						<span class="special-badge special-badge-hypo" title="Hypoglycemia">!</span>
+						<span class="special-badge special-badge-hypo" title="Unterzuckerung">!</span>
 					{/if}
 					{#if special.medChange}
-						<span class="special-badge special-badge-med" title="Medication change">Rx</span>
+						<span class="special-badge special-badge-med" title="Medikationsaenderung">Rx</span>
 					{/if}
 				</div>
 			</div>

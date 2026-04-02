@@ -50,7 +50,7 @@
 			<h1 class="day-title">{formatDayHeader(data.date)}</h1>
 			<button onclick={nextDay} class="nav-btn">›</button>
 		</div>
-		<a href="/calendar/week" class="view-switch">Week</a>
+		<a href="/calendar/week" class="view-switch">Woche</a>
 	</header>
 
 	<CalendarDay

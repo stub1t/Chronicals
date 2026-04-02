@@ -1,3 +1,5 @@
+const APP_LOCALE = 'de-AT';
+
 export function toYearMonth(date: Date): string {
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -9,7 +11,7 @@ export function toDateString(date: Date): string {
 export function formatMonthLabel(yearMonth: string): string {
 	const [year, month] = yearMonth.split('-');
 	const d = new Date(Number(year), Number(month) - 1, 1);
-	return d.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+	return d.toLocaleDateString(APP_LOCALE, { month: 'long', year: 'numeric' });
 }
 
 export function getDaysInMonth(yearMonth: string): number {
@@ -37,16 +39,51 @@ export function nextMonth(yearMonth: string): string {
 }
 
 export function formatTime(isoString: string): string {
-	return new Date(isoString).toLocaleTimeString('default', { hour: '2-digit', minute: '2-digit' });
+	return new Date(isoString).toLocaleTimeString(APP_LOCALE, {
+		hour: '2-digit',
+		minute: '2-digit'
+	});
 }
 
 export function formatDuration(startIso: string, endIso: string | null): string {
-	if (!endIso) return 'ongoing';
+	if (!endIso) return 'laeuft';
 	const mins = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
 	if (mins < 60) return `${mins}m`;
 	const h = Math.floor(mins / 60);
 	const m = mins % 60;
 	return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+export function formatFullDate(dateString: string): string {
+	const d = new Date(`${dateString}T00:00:00`);
+	return d.toLocaleDateString(APP_LOCALE, {
+		weekday: 'long',
+		day: 'numeric',
+		month: 'long'
+	});
+}
+
+export function formatDayMonth(dateString: string): string {
+	const d = new Date(`${dateString}T00:00:00`);
+	return d.toLocaleDateString(APP_LOCALE, {
+		day: 'numeric',
+		month: 'short'
+	});
+}
+
+export function formatDayMonthYear(dateString: string): string {
+	const d = new Date(`${dateString}T00:00:00`);
+	return d.toLocaleDateString(APP_LOCALE, {
+		day: 'numeric',
+		month: 'short',
+		year: 'numeric'
+	});
+}
+
+export function getWeekdayLabels(): string[] {
+	return Array.from({ length: 7 }, (_, i) =>
+		new Date(2024, 0, 1 + i).toLocaleDateString(APP_LOCALE, { weekday: 'short' })
+	);
 }
 
 /** Intensity 1-5 → opacity 0.2-1.0 */

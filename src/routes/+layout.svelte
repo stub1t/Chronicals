@@ -58,11 +58,11 @@
 			</svg>
 			<span class="nav-label">Calendar</span>
 		</a>
-		<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label="Analysis">
+		<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label="Analyse">
 			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<path d="M3 18l4-8 4 5 3-3 4 6"/>
 			</svg>
-			<span class="nav-label">Analysis</span>
+			<span class="nav-label">Analyse</span>
 		</a>
 		<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label="Settings">
 			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

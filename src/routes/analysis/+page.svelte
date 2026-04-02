@@ -39,8 +39,8 @@
 		selectedRange === 1
 			? formatMonthLabel(selectedMonth)
 			: selectedRange === 3
-				? 'Last 3 months'
-				: 'Last 12 months'
+				? 'Letzte 3 Monate'
+				: 'Letzte 12 Monate'
 	);
 
 	let daysInMonth = $derived(getDaysInMonth(selectedMonth));
@@ -115,7 +115,7 @@
 			if (corrRes.ok) correlations = await corrRes.json();
 			if (pressureRes.ok) pressureData = await pressureRes.json();
 		} catch (e) {
-			console.error('Analysis fetch failed', e);
+			console.error('Analyse konnte nicht geladen werden', e);
 		} finally {
 			loading = false;
 		}
@@ -152,8 +152,8 @@
 <div class="page">
 	<!-- ── Header ─────────────────────────────────────────────────────────── -->
 	<header class="page-header">
-		<h1 class="page-title">Analysis</h1>
-		<p class="page-subtitle">Find what triggers your symptoms</p>
+		<h1 class="page-title">Analyse</h1>
+		<p class="page-subtitle">Welche Ausloeser haengen mit deinen Eintraegen zusammen?</p>
 	</header>
 
 	<!-- ── Section 1: Selectors ───────────────────────────────────────────── -->
@@ -161,14 +161,14 @@
 		<div class="selectors">
 			<!-- Entry type dropdown -->
 			<div class="field">
-				<label class="field-label" for="entry-type-select">Entry type</label>
+				<label class="field-label" for="entry-type-select">Eintragstyp</label>
 				<div class="select-wrap">
 					<select
 						id="entry-type-select"
 						class="pill-select"
 						bind:value={selectedTypeId}
 					>
-						<option value={null} disabled>Choose a type…</option>
+						<option value={null} disabled>Typ waehlen…</option>
 						{#each data.entryTypes as et (et.id)}
 							<option value={et.id}>{et.icon ?? ''} {et.name}</option>
 						{/each}
@@ -178,7 +178,7 @@
 
 			<!-- Range selector -->
 			<div class="field">
-				<span class="field-label">Range</span>
+				<span class="field-label">Zeitraum</span>
 				<div class="range-tabs">
 					{#each ([1, 3, 12] as const) as r}
 						<button
@@ -193,11 +193,11 @@
 			<!-- Month picker (only for single-month range) -->
 			{#if selectedRange === 1}
 				<div class="field">
-					<span class="field-label" id="month-picker-label">Month</span>
+					<span class="field-label" id="month-picker-label">Monat</span>
 					<div class="month-picker" aria-labelledby="month-picker-label">
-						<button class="arrow-btn" onclick={prevMonth} aria-label="Previous month">‹</button>
+						<button class="arrow-btn" onclick={prevMonth} aria-label="Vorheriger Monat">‹</button>
 						<span class="month-display">{selectedMonth}</span>
-						<button class="arrow-btn" onclick={nextMonth} disabled={!canGoNext} aria-label="Next month">›</button>
+						<button class="arrow-btn" onclick={nextMonth} disabled={!canGoNext} aria-label="Naechster Monat">›</button>
 					</div>
 				</div>
 			{/if}
@@ -208,7 +208,7 @@
 			onclick={analyse}
 			disabled={!selectedTypeId || loading}
 		>
-			{#if loading}Analysing…{:else}Analyse{/if}
+			{#if loading}Analysiere…{:else}Analyse starten{/if}
 		</button>
 	</section>
 
@@ -216,25 +216,25 @@
 	{#if stats}
 		{@const color = selectedType?.color ?? '#888888'}
 		<section class="section card">
-			<h2 class="section-title">Overview</h2>
+			<h2 class="section-title">Ueberblick</h2>
 
 			<div class="stat-row">
 				<div class="stat-big">
 					<span class="stat-number">{stats.frequency}</span>
-					<span class="stat-label">times in {monthLabel}</span>
+					<span class="stat-label">Eintraege in {monthLabel}</span>
 				</div>
 
 				{#if stats.avgDurationMinutes !== null}
 					<div class="stat-chip">
 						<span class="stat-chip-value">{formatDurationMinutes(stats.avgDurationMinutes)}</span>
-						<span class="stat-chip-label">avg duration</span>
+						<span class="stat-chip-label">mittlere Dauer</span>
 					</div>
 				{/if}
 			</div>
 
 			{#if stats.avgIntensity !== null}
 				<div class="intensity-row">
-					<span class="intensity-label">Avg intensity</span>
+					<span class="intensity-label">Mittlere Staerke</span>
 					<div class="intensity-track">
 						<div
 							class="intensity-fill"
@@ -247,15 +247,18 @@
 
 			<!-- Day heatmap (single month only) -->
 			{#if selectedRange === 1}
-				<div class="heatmap">
-					{#each Array.from({ length: daysInMonth }, (_, i) => i + 1) as day}
-						<div
-							class="heatmap-cell"
-							style={`background: ${heatmapColor(day)};`}
-							title={`${selectedMonth}-${String(day).padStart(2, '0')}`}
-							aria-label={`Day ${day}`}
-						></div>
-					{/each}
+				<div class="heatmap-wrap">
+					<div class="heatmap-legend">Tage im Monat</div>
+					<div class="heatmap">
+						{#each Array.from({ length: daysInMonth }, (_, i) => i + 1) as day}
+							<div
+								class="heatmap-cell"
+								style={`background: ${heatmapColor(day)};`}
+								title={`${selectedMonth}-${String(day).padStart(2, '0')}`}
+								aria-label={`Tag ${day}`}
+							>{day}</div>
+						{/each}
+					</div>
 				</div>
 			{/if}
 		</section>
@@ -264,16 +267,20 @@
 	<!-- ── Section 3: Trigger correlations ───────────────────────────────── -->
 	{#if sortedTriggers.length > 0}
 		<section class="section card">
-			<h2 class="section-title">Trigger correlations</h2>
+			<h2 class="section-title">Trigger-Korrelationen</h2>
+			<p class="section-hint">
+				"Gemeinsame Tage" sind Tage, an denen Trigger und Eintrag zusammen vorkamen.
+				"Mit Trigger" und "ohne Trigger" zeigen die durchschnittliche Intensitaet.
+			</p>
 			<div class="table-scroll">
 				<table class="corr-table">
 					<thead>
 						<tr>
 							<th>Trigger</th>
-							<th class="num-col">Days</th>
-							<th class="num-col">Intensity with</th>
-							<th class="num-col">Intensity without</th>
-							<th class="badge-col">Correlation</th>
+							<th class="num-col">Gemeinsame Tage</th>
+							<th class="num-col">Mit Trigger</th>
+							<th class="num-col">Ohne Trigger</th>
+							<th class="badge-col">Staerke</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -288,7 +295,7 @@
 								<td class="num-col">{t.avgIntensityWithout !== null ? t.avgIntensityWithout.toFixed(1) : '—'}</td>
 								<td class="badge-col">
 									<span class={`badge ${strengthBadgeClass(t.strength)}`}>
-										{t.strength === 'strong' ? 'Strong' : t.strength === 'possible' ? 'Possible' : 'None'}
+										{t.strength === 'strong' ? 'Stark' : t.strength === 'possible' ? 'Moeglich' : 'Keine'}
 									</span>
 								</td>
 							</tr>
@@ -302,7 +309,8 @@
 	<!-- ── Section 4: Pressure chart ────────────────────────────────────── -->
 	{#if pressureData.length > 0}
 		<section class="section">
-			<h2 class="section-title">Barometric pressure</h2>
+			<h2 class="section-title">Luftdruck</h2>
+			<p class="section-hint">Markierte Tage zeigen Eintraege. Relevant ist vor allem ein deutlicher Druckabfall.</p>
 			<PressureDeltaChart data={pressureData} color={selectedType?.color ?? '#3b82f6'} />
 		</section>
 	{/if}
@@ -310,14 +318,14 @@
 	<!-- ── Section 5: Environmental correlations ─────────────────────────── -->
 	{#if significantEnv.length > 0}
 		<section class="section">
-			<h2 class="section-title">Environmental factors</h2>
+			<h2 class="section-title">Umweltfaktoren</h2>
 			<div class="env-cards">
 				{#each significantEnv as env (env.variable)}
 					<div class="env-card">
 						<div class="env-header">
 							<span class="env-label">{env.label}</span>
 							<span class={`badge ${strengthBadgeClass(env.strength)}`}>
-								{env.strength === 'strong' ? 'Strong' : 'Possible'}
+								{env.strength === 'strong' ? 'Stark' : 'Moeglich'}
 							</span>
 						</div>
 						<div class="phi-track">
@@ -328,9 +336,9 @@
 						</div>
 						{#if env.avgIntensityHigh !== null && env.avgIntensityLow !== null}
 							<p class="env-detail">
-								On high {env.label.toLowerCase()} days: avg intensity
+								An Tagen mit hohem {env.label.toLowerCase()}: mittlere Intensitaet
 								<strong>{env.avgIntensityHigh.toFixed(1)}</strong>
-								vs low days: <strong>{env.avgIntensityLow.toFixed(1)}</strong>
+								gegenueber niedrigen Tagen: <strong>{env.avgIntensityLow.toFixed(1)}</strong>
 							</p>
 						{/if}
 					</div>
@@ -343,9 +351,8 @@
 	{#if correlations?.medicationFlags && correlations.medicationFlags.length > 0}
 		<section class="section">
 			<div class="med-banner">
-				<span class="med-banner-icon" aria-hidden="true">⚠️</span>
 				<div>
-					<p class="med-banner-title">Medication changes during this period</p>
+					<p class="med-banner-title">Medikationsaenderungen in diesem Zeitraum</p>
 					{#each correlations.medicationFlags as flag}
 						<p class="med-banner-item">{flag.changeDate}: {flag.description}</p>
 					{/each}
@@ -357,13 +364,13 @@
 	<!-- ── Empty state ────────────────────────────────────────────────────── -->
 	{#if !loading && !stats && selectedTypeId}
 		<div class="empty-state">
-			<p>No data found for this entry type and month.</p>
+			<p>Keine Daten fuer diesen Eintragstyp im gewaehlten Zeitraum.</p>
 		</div>
 	{/if}
 
 	{#if !selectedTypeId && !loading}
 		<div class="empty-state">
-			<p>Select an entry type and click Analyse to begin.</p>
+			<p>Eintragstyp waehlen und Analyse starten.</p>
 		</div>
 	{/if}
 </div>
@@ -415,6 +422,13 @@
 		font-weight: 700;
 		color: var(--text);
 		margin: 0;
+	}
+
+	.section-hint {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		margin: -4px 0 0;
+		line-height: 1.45;
 	}
 
 	/* Selectors */
@@ -634,6 +648,17 @@
 	}
 
 	/* Heatmap */
+	.heatmap-wrap {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.heatmap-legend {
+		font-size: 0.78rem;
+		color: var(--text-muted);
+	}
+
 	.heatmap {
 		display: flex;
 		flex-wrap: nowrap;
@@ -643,10 +668,15 @@
 
 	.heatmap-cell {
 		flex-shrink: 0;
-		width: 14px;
-		height: 14px;
+		width: 24px;
+		height: 24px;
 		border-radius: 3px;
 		transition: background 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.7rem;
+		color: var(--text-muted);
 	}
 
 	/* Correlation table */

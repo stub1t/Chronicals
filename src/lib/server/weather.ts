@@ -1,32 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { environmentalData } from '../db/schema.js';
-import type { EnvironmentalData, PollenLevel, PollenStatus } from '../types/index.js';
+import type { EnvironmentalData } from '../types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 
-const POLLEN_THRESHOLDS = {
-	moderate: 10,
-	high: 50
-};
-
-function pollenLevel(value: number | null): PollenLevel {
-	if (value === null) return null;
-	if (value >= POLLEN_THRESHOLDS.high) return 'HIGH';
-	if (value >= POLLEN_THRESHOLDS.moderate) return 'MODERATE';
-	return 'LOW';
-}
-
-function computePollenStatus(data: EnvironmentalData): PollenStatus {
-	return {
-		grass: pollenLevel(data.pollenGrass),
-		birch: pollenLevel(data.pollenBirch),
-		alder: pollenLevel(data.pollenAlder),
-		mugwort: pollenLevel(data.pollenMugwort)
-	};
-}
-
 function formatRow(row: typeof environmentalData.$inferSelect): EnvironmentalData {
-	const data: EnvironmentalData = {
+	return {
 		id: row.id,
 		date: row.date,
 		temperatureC: row.temperatureC,
@@ -40,8 +19,6 @@ function formatRow(row: typeof environmentalData.$inferSelect): EnvironmentalDat
 		uvIndex: row.uvIndex,
 		fetchedAt: row.fetchedAt
 	};
-	data.pollenStatus = computePollenStatus(data);
-	return data;
 }
 
 export function getEnvDataForDate(date: string): EnvironmentalData | null {
@@ -84,20 +61,9 @@ export async function fetchAndCacheEnvData(
 			`&daily=temperature_2m_max,temperature_2m_min,surface_pressure_mean,uv_index_max,precipitation_sum,weather_code` +
 			`&start_date=${date}&end_date=${date}&timezone=auto`;
 
-		// Fetch air quality / pollen
-		const airUrl =
-			`https://air-quality-api.open-meteo.com/v1/air-quality` +
-			`?latitude=${lat}&longitude=${lon}` +
-			`&daily=grass_pollen,birch_pollen,alder_pollen,mugwort_pollen` +
-			`&start_date=${date}&end_date=${date}&timezone=auto`;
+		const weatherRes = await fetch(weatherUrl).then((r) => r.json());
 
-		const [weatherRes, airRes] = await Promise.allSettled([
-			fetch(weatherUrl).then((r) => r.json()),
-			fetch(airUrl).then((r) => r.json())
-		]);
-
-		const weather = weatherRes.status === 'fulfilled' ? weatherRes.value : null;
-		const air = airRes.status === 'fulfilled' ? airRes.value : null;
+		const weather = weatherRes ?? null;
 
 		const tempMax = weather?.daily?.temperature_2m_max?.[0] ?? null;
 		const tempMin = weather?.daily?.temperature_2m_min?.[0] ?? null;
@@ -105,11 +71,6 @@ export async function fetchAndCacheEnvData(
 		const pressure = weather?.daily?.surface_pressure_mean?.[0] ?? null;
 		const uvIndex = weather?.daily?.uv_index_max?.[0] ?? null;
 		const weatherCode = weather?.daily?.weather_code?.[0] ?? null;
-
-		const pollenGrass = air?.daily?.grass_pollen?.[0] ?? null;
-		const pollenBirch = air?.daily?.birch_pollen?.[0] ?? null;
-		const pollenAlder = air?.daily?.alder_pollen?.[0] ?? null;
-		const pollenMugwort = air?.daily?.mugwort_pollen?.[0] ?? null;
 
 		// Compute pressure delta from previous day
 		const prevPressure = getPreviousDayPressure(date);
@@ -127,10 +88,10 @@ export async function fetchAndCacheEnvData(
 					airPressureHpa: pressure,
 					pressureDeltaHpa: pressureDelta,
 					weatherCondition,
-					pollenGrass,
-					pollenBirch,
-					pollenAlder,
-					pollenMugwort,
+					pollenGrass: null,
+					pollenBirch: null,
+					pollenAlder: null,
+					pollenMugwort: null,
 					uvIndex,
 					fetchedAt: new Date().toISOString()
 				})
@@ -145,10 +106,10 @@ export async function fetchAndCacheEnvData(
 					airPressureHpa: pressure,
 					pressureDeltaHpa: pressureDelta,
 					weatherCondition,
-					pollenGrass,
-					pollenBirch,
-					pollenAlder,
-					pollenMugwort,
+					pollenGrass: null,
+					pollenBirch: null,
+					pollenAlder: null,
+					pollenMugwort: null,
 					uvIndex
 				})
 				.run();

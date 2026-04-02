@@ -50,22 +50,21 @@
 
 	{:else if !data}
 		<p class="no-data">
-			No weather data.
-			<a href="/settings" class="settings-link">Set location in Settings</a>
-			to enable environmental tracking.
+			Keine Wetterdaten.
+			<a href="/settings" class="settings-link">Ort in den Einstellungen setzen</a>
+			, um Umweltdaten zu aktivieren.
 		</p>
 
 	{:else}
 		<div class="data-scroll">
-			<!-- Weather row -->
 			<div class="row weather-row">
-				<span class="stat" title="Temperature">
+				<span class="stat" title="Temperatur">
 					<span class="stat-label-abbr" aria-hidden="true">Temp</span>
 					<span class="stat-value">{tempDisplay(data.temperatureC)}</span>
 				</span>
 
 				{#if data.airPressureHpa !== null}
-					<span class="stat" title="Air pressure">
+					<span class="stat" title="Luftdruck">
 						<span class="stat-label-abbr" aria-hidden="true">hPa</span>
 						<span class="stat-value">
 							{Math.round(data.airPressureHpa)}
@@ -82,14 +81,14 @@
 				{/if}
 
 				{#if data.uvIndex !== null}
-					<span class="stat" title="UV index">
+					<span class="stat" title="UV-Index">
 						<span class="stat-label-abbr" aria-hidden="true">UV</span>
 						<span class="stat-value">{data.uvIndex}</span>
 					</span>
 				{/if}
 
 				{#if data.weatherCondition}
-					<span class="stat" title="Weather condition">
+					<span class="stat" title="Wetterlage">
 						<span class="stat-value">{capitalize(data.weatherCondition)}</span>
 					</span>
 				{/if}

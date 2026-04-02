@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { CalendarDayData } from '$lib/types';
-	import { getDaysInMonth, getFirstDayOfMonth, toDateString } from '$lib/utils/date';
+	import { getDaysInMonth, getFirstDayOfMonth, getWeekdayLabels, toDateString } from '$lib/utils/date';
 	import CalendarCell from './CalendarCell.svelte';
 
 	interface Props {
@@ -15,9 +15,7 @@
 	let { yearMonth, dayDataMap, selectedDate, ondayselect, onprevmonth, onnextmonth }: Props = $props();
 
 	// Locale-aware day names Mon–Sun (Jan 1 2024 was a Monday)
-	const WEEKDAYS = Array.from({ length: 7 }, (_, i) =>
-		new Date(2024, 0, 1 + i).toLocaleDateString('default', { weekday: 'short' })
-	);
+	const WEEKDAYS = getWeekdayLabels();
 	const todayStr = toDateString(new Date());
 
 	let daysInMonth = $derived(getDaysInMonth(yearMonth));

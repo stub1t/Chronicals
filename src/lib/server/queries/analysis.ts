@@ -240,12 +240,8 @@ export function getEnvironmentalCorrelations(
 		label: string;
 		variable: string;
 	}> = [
-		{ key: 'pressureDeltaHpa', label: 'Pressure drop', variable: 'pressure_delta' },
-		{ key: 'pollenGrass', label: 'Grass pollen', variable: 'pollen_grass' },
-		{ key: 'pollenBirch', label: 'Birch pollen', variable: 'pollen_birch' },
-		{ key: 'pollenAlder', label: 'Alder pollen', variable: 'pollen_alder' },
-		{ key: 'pollenMugwort', label: 'Mugwort pollen', variable: 'pollen_mugwort' },
-		{ key: 'uvIndex', label: 'UV index', variable: 'uv_index' }
+		{ key: 'pressureDeltaHpa', label: 'Luftdruckabfall', variable: 'pressure_delta' },
+		{ key: 'uvIndex', label: 'UV-Index', variable: 'uv_index' }
 	];
 
 	const results: EnvironmentalCorrelation[] = [];
@@ -261,10 +257,10 @@ export function getEnvironmentalCorrelations(
 		const sorted = [...values].sort((a, b) => a.value - b.value);
 		const median = sorted[Math.floor(sorted.length / 2)].value;
 
-		// For pressure delta, "high" means a large drop (negative delta)
+		// For pressure delta, "high" means a strong drop below the median.
 		const highDates = new Set(
 			variable === 'pressure_delta'
-				? values.filter((v) => v.value < -median).map((v) => v.date)
+				? values.filter((v) => v.value < median).map((v) => v.date)
 				: values.filter((v) => v.value >= median).map((v) => v.date)
 		);
 

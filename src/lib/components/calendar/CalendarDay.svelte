@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Entry, EntryType, EnvironmentalData, EntryTypeLog } from '$lib/types';
-	import { formatTime, formatDuration } from '$lib/utils/date';
+	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
 
@@ -50,11 +50,6 @@
 		return entry.logs;
 	});
 
-	function formatDateLabel(dateStr: string): string {
-		const d = new Date(dateStr + 'T00:00:00');
-		return d.toLocaleDateString('default', { weekday: 'long', day: 'numeric', month: 'long' });
-	}
-
 	function handleEditClick(e: MouseEvent | KeyboardEvent, logId: string) {
 		e.stopPropagation();
 		onedit?.(logId);
@@ -64,7 +59,7 @@
 <div class="day-view">
 	<!-- Header -->
 	<div class="day-header">
-		<h2 class="day-title">{formatDateLabel(date)}</h2>
+		<h2 class="day-title">{formatFullDate(date)}</h2>
 	</div>
 
 	<!-- Environmental card (always expanded in day view) -->
@@ -77,10 +72,10 @@
 		{#if !entry?.logs || entry.logs.length === 0}
 			<div class="empty-overlay">
 				<span class="empty-icon" aria-hidden="true">📋</span>
-				<p class="empty-text">No entries for this day</p>
-				<button class="empty-add-btn" onclick={() => onadd(9)}>
-					Add entry
-				</button>
+			<p class="empty-text">Keine Eintraege fuer diesen Tag</p>
+			<button class="empty-add-btn" onclick={() => onadd(9)}>
+				Eintrag hinzufuegen
+			</button>
 			</div>
 		{/if}
 
@@ -121,7 +116,7 @@
 					>
 						<div class="event-header">
 							<span class="event-icon" aria-hidden="true">{et?.icon ?? '●'}</span>
-							<span class="event-name">{et?.name ?? 'Unknown'}</span>
+							<span class="event-name">{et?.name ?? 'Unbekannt'}</span>
 						</div>
 						<div class="event-meta">
 							<span class="event-time">{formatTime(log.startTime)}</span>

@@ -14,8 +14,8 @@
 	let isCurrentMonth = $derived(yearMonth === toYearMonth(new Date()));
 </script>
 
-<nav class="month-nav" aria-label="Month navigation">
-	<button class="nav-btn" onclick={onprev} aria-label="Previous month">
+<nav class="month-nav" aria-label="Monatsnavigation">
+	<button class="nav-btn" onclick={onprev} aria-label="Vorheriger Monat">
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 			<path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 		</svg>
@@ -23,12 +23,12 @@
 
 	<div class="center">
 		<span class="month-label">{label}</span>
-		{#if !isCurrentMonth}
-			<button class="today-btn" onclick={ontoday}>Today</button>
+			{#if !isCurrentMonth}
+				<button class="today-btn" onclick={ontoday}>Heute</button>
 		{/if}
 	</div>
 
-	<button class="nav-btn" onclick={onnext} aria-label="Next month">
+	<button class="nav-btn" onclick={onnext} aria-label="Naechster Monat">
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 			<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 		</svg>
