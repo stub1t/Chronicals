@@ -28,9 +28,34 @@
 		return `${Math.round(c)}°C`;
 	}
 
-	function capitalize(s: string | null): string {
+	function pressureChangeText(delta: number | null): string {
+		if (delta === null) return '–';
+		const prefix = delta > 0 ? '+' : '';
+		const direction =
+			delta > 0.5
+				? t('env_pressure_rising')
+				: delta < -0.5
+					? t('env_pressure_falling')
+					: t('env_pressure_stable');
+		return `${prefix}${delta.toFixed(1)} hPa · ${direction}`;
+	}
+
+	function conditionLabel(s: string | null): string {
 		if (!s) return '–';
-		return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+		const mapped: Record<string, string> = {
+			clear_sky: t('env_weather_clear_sky'),
+			partly_cloudy: t('env_weather_partly_cloudy'),
+			overcast: t('env_weather_overcast'),
+			foggy: t('env_weather_foggy'),
+			drizzle: t('env_weather_drizzle'),
+			rain: t('env_weather_rain'),
+			snow: t('env_weather_snow'),
+			rain_showers: t('env_weather_rain_showers'),
+			snow_showers: t('env_weather_snow_showers'),
+			thunderstorm: t('env_weather_thunderstorm'),
+			unknown: t('env_weather_unknown')
+		};
+		return mapped[s.replaceAll(' ', '_')] ?? t('env_weather_unknown');
 	}
 </script>
 
@@ -57,44 +82,43 @@
 		</p>
 
 	{:else}
-		<div class="data-scroll">
-			<div class="row weather-row">
-				<span class="stat" title="Temperatur">
-					<span class="stat-label-abbr" aria-hidden="true">Temp</span>
-					<span class="stat-value">{tempDisplay(data.temperatureC)}</span>
-				</span>
+		<div class="weather-summary">
+			{#if data.weatherCondition}
+				<div class="condition-wrap">
+					<div class="metric-label">{t('env_condition')}</div>
+					<div class="condition-pill">{conditionLabel(data.weatherCondition)}</div>
+				</div>
+			{/if}
+
+			<div class="stats-grid">
+				<div class="metric-card">
+					<div class="metric-label">{t('env_temperature')}</div>
+					<div class="metric-value">{tempDisplay(data.temperatureC)}</div>
+				</div>
 
 				{#if data.airPressureHpa !== null}
-					<span class="stat" title="Luftdruck">
-						<span class="stat-label-abbr" aria-hidden="true">hPa</span>
-						<span class="stat-value">
-							{Math.round(data.airPressureHpa)}
+					<div class="metric-card">
+						<div class="metric-label">{t('env_pressure')}</div>
+						<div class="metric-value">
+							{Math.round(data.airPressureHpa)} hPa
 							<span
 								class="pressure-arrow {pressureArrowClass(data.pressureDeltaHpa)}"
-								title={data.pressureDeltaHpa !== null
-									? `${data.pressureDeltaHpa > 0 ? '+' : ''}${data.pressureDeltaHpa?.toFixed(1)} hPa`
-									: ''}
+								title={pressureChangeText(data.pressureDeltaHpa)}
 							>
 								{pressureArrow(data.pressureDeltaHpa)}
 							</span>
-						</span>
-					</span>
+						</div>
+						<div class="metric-subvalue">{pressureChangeText(data.pressureDeltaHpa)}</div>
+					</div>
 				{/if}
 
 				{#if data.uvIndex !== null}
-					<span class="stat" title="UV-Index">
-						<span class="stat-label-abbr" aria-hidden="true">UV</span>
-						<span class="stat-value">{data.uvIndex}</span>
-					</span>
-				{/if}
-
-				{#if data.weatherCondition}
-					<span class="stat" title="Wetterlage">
-						<span class="stat-value">{capitalize(data.weatherCondition)}</span>
-					</span>
+					<div class="metric-card">
+						<div class="metric-label">{t('env_uv_index')}</div>
+						<div class="metric-value">{data.uvIndex.toFixed(1)}</div>
+					</div>
 				{/if}
 			</div>
-
 		</div>
 	{/if}
 </div>
@@ -157,45 +181,70 @@
 	}
 
 	/* Data layout */
-	.data-scroll {
+	.weather-summary {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
-		overflow-x: auto;
+		gap: 12px;
 	}
 
-	.row {
-		display: flex;
-		flex-wrap: nowrap;
-		gap: 10px;
-		align-items: center;
-		min-width: 0;
-	}
-
-	/* Stats */
-	.stat {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
-
-	.stat-icon {
-		font-size: 1rem;
-		line-height: 1;
-	}
-
-	.stat-value {
-		font-size: 0.85rem;
+	.condition-pill {
+		padding: 6px 10px;
+		border-radius: 999px;
+		background: var(--bg-subtle);
+		border: 1px solid var(--border);
+		font-size: 0.78rem;
+		font-weight: 600;
 		color: var(--text);
-		font-weight: 500;
+	}
+
+	.condition-wrap {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		align-self: flex-start;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: 10px;
+	}
+
+	.metric-card {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: var(--bg-subtle);
+		border: 1px solid var(--border);
+	}
+
+	.metric-label {
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.03em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+	}
+
+	.metric-value {
+		font-size: 1rem;
+		color: var(--text);
+		font-weight: 700;
+		line-height: 1.2;
+	}
+
+	.metric-subvalue {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		line-height: 1.35;
 	}
 
 	.pressure-arrow {
-		font-size: 0.75rem;
+		font-size: 0.8rem;
 		font-weight: 700;
-		margin-left: 1px;
+		margin-left: 4px;
 	}
 
 	.arrow-up {
