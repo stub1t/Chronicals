@@ -23,13 +23,15 @@
 >
 	{#if isBuiltIn(entryType?.id, 'builtin-headache')}
 		<svg viewBox="0 0 20 20" fill="none">
-			<circle cx="10" cy="10" r="6" stroke="var(--icon-stroke)" stroke-width="1.8" />
-			<path d="M8 5.5 6.8 8.2h2l-1.1 3.4 3.5-4.6H9.3L10.6 5" stroke="var(--icon-stroke)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+			<path d="M10 3.8c-2.8 0-5 2.2-5 4.9 0 1.2.4 2.3 1.2 3.2.7.9 1.2 1.8 1.3 2.9h5c.1-1.1.5-2 1.3-2.9.8-.9 1.2-2 1.2-3.2 0-2.7-2.2-4.9-5-4.9Z" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linejoin="round" />
+			<path d="M8 16h4" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linecap="round" />
+			<path d="m6.6 8.4 1.7-.2-.8 1.7 1.8-.2" stroke="var(--icon-stroke)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
 		</svg>
 	{:else if isBuiltIn(entryType?.id, 'builtin-stomachache')}
 		<svg viewBox="0 0 20 20" fill="none">
-			<path d="M7 4.5c0 1.9.8 2.8 2.2 3.6 1.8 1 2.8 2 2.8 4.1 0 2.1-1.4 3.8-3.5 3.8S5 14.3 5 12.2c0-1.7.7-3 2-4" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-			<path d="M11.8 5.2c.9.5 3.2 1.6 3.2 4.7" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linecap="round" />
+			<path d="M7.2 4.3c0 1.6.5 2.8 1.6 3.7 1.2.9 2.2 2 2.2 3.8 0 2-1.3 3.5-3.2 3.5-1.8 0-3.1-1.4-3.1-3.3 0-1.7.7-2.9 1.8-4 .8-.8 1.2-1.8 1.2-3.7h-.5Z" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+			<path d="M11.4 5.4c1.8.6 3 2 3 4.1" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linecap="round" />
+			<path d="m7.2 10.8 1 .9 1.2-1.4" stroke="var(--icon-stroke)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
 		</svg>
 	{:else if isBuiltIn(entryType?.id, 'builtin-allergy')}
 		<svg viewBox="0 0 20 20" fill="none">
@@ -47,8 +49,9 @@
 		</svg>
 	{:else if isBuiltIn(entryType?.id, 'builtin-medication-change')}
 		<svg viewBox="0 0 20 20" fill="none">
-			<path d="M7 6.2a2.8 2.8 0 0 1 4 0l1.8 1.8a2.8 2.8 0 0 1 0 4l-1 1a2.8 2.8 0 0 1-4 0L6 11.2a2.8 2.8 0 0 1 0-4l1-1Z" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linejoin="round" />
-			<path d="m8 7.2 4.8 4.8" stroke="var(--icon-stroke)" stroke-width="1.6" stroke-linecap="round" />
+			<path d="M6.4 7.2a2.5 2.5 0 0 1 3.6 0l2.8 2.8a2.5 2.5 0 0 1 0 3.6 2.5 2.5 0 0 1-3.6 0L6.4 10.8a2.5 2.5 0 0 1 0-3.6Z" stroke="var(--icon-stroke)" stroke-width="1.8" stroke-linejoin="round" />
+			<path d="m7.5 8.3 4.2 4.2" stroke="var(--icon-stroke)" stroke-width="1.6" stroke-linecap="round" />
+			<path d="M14.8 6.2h-4M12.3 3.7l-2.5 2.5 2.5 2.5" stroke="var(--icon-stroke)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
 		</svg>
 	{:else if isBuiltIn(entryType?.id, 'builtin-note')}
 		<svg viewBox="0 0 20 20" fill="none">
