@@ -44,15 +44,12 @@
 		geoLoading = true;
 		geoResults = [];
 		try {
-			const res = await fetch(
-				`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5`
-			);
+			const res = await fetch(`/api/profile/location-search?q=${encodeURIComponent(query)}`);
 			if (res.ok) {
 				const json = await res.json();
 				geoResults = json.results ?? [];
 			}
 		} catch (e) {
-			console.error('Geocoding failed', e);
 		} finally {
 			geoLoading = false;
 		}

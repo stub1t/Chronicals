@@ -21,6 +21,12 @@ function formatRow(row: typeof environmentalData.$inferSelect): EnvironmentalDat
 	};
 }
 
+function assertCoordinateRange(lat: number, lon: number): void {
+	if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+		throw new Error('Invalid coordinates');
+	}
+}
+
 export function getEnvDataForDate(date: string): EnvironmentalData | null {
 	const row = db.select().from(environmentalData).where(eq(environmentalData.date, date)).get();
 	return row ? formatRow(row) : null;
@@ -43,7 +49,8 @@ export async function fetchAndCacheEnvData(
 	lat: number,
 	lon: number
 ): Promise<EnvironmentalData | null> {
-	// Check if already cached and recent (within 6 hours)
+	assertCoordinateRange(lat, lon);
+
 	const existing = db.select().from(environmentalData).where(eq(environmentalData.date, date)).get();
 	if (existing) {
 		const fetchedAt = new Date(existing.fetchedAt).getTime();
@@ -54,16 +61,20 @@ export async function fetchAndCacheEnvData(
 	}
 
 	try {
-		// Fetch weather data
-		const weatherUrl =
-			`https://api.open-meteo.com/v1/forecast` +
-			`?latitude=${lat}&longitude=${lon}` +
-			`&daily=temperature_2m_max,temperature_2m_min,surface_pressure_mean,uv_index_max,precipitation_sum,weather_code` +
-			`&start_date=${date}&end_date=${date}&timezone=auto`;
+		const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
+		weatherUrl.searchParams.set('latitude', String(lat));
+		weatherUrl.searchParams.set('longitude', String(lon));
+		weatherUrl.searchParams.set(
+			'daily',
+			'temperature_2m_max,temperature_2m_min,surface_pressure_mean,uv_index_max,precipitation_sum,weather_code'
+		);
+		weatherUrl.searchParams.set('start_date', date);
+		weatherUrl.searchParams.set('end_date', date);
+		weatherUrl.searchParams.set('timezone', 'auto');
 
-		const weatherRes = await fetch(weatherUrl).then((r) => r.json());
-
-		const weather = weatherRes ?? null;
+		const weatherRes = await fetch(weatherUrl, { signal: AbortSignal.timeout(5000) });
+		if (!weatherRes.ok) throw new Error(`Weather upstream failed: ${weatherRes.status}`);
+		const weather = await weatherRes.json();
 
 		const tempMax = weather?.daily?.temperature_2m_max?.[0] ?? null;
 		const tempMin = weather?.daily?.temperature_2m_min?.[0] ?? null;
@@ -71,14 +82,9 @@ export async function fetchAndCacheEnvData(
 		const pressure = weather?.daily?.surface_pressure_mean?.[0] ?? null;
 		const uvIndex = weather?.daily?.uv_index_max?.[0] ?? null;
 		const weatherCode = weather?.daily?.weather_code?.[0] ?? null;
-
-		// Compute pressure delta from previous day
 		const prevPressure = getPreviousDayPressure(date);
-		const pressureDelta =
-			pressure !== null && prevPressure !== null ? pressure - prevPressure : null;
-
+		const pressureDelta = pressure !== null && prevPressure !== null ? pressure - prevPressure : null;
 		const weatherCondition = weatherCode !== null ? wmoCodeToCondition(weatherCode) : null;
-
 		const id = existing?.id ?? uuidv4();
 
 		if (existing) {
@@ -122,7 +128,6 @@ export async function fetchAndCacheEnvData(
 	}
 }
 
-// WMO Weather Code to human-readable condition
 function wmoCodeToCondition(code: number): string {
 	if (code === 0) return 'clear sky';
 	if (code <= 2) return 'partly cloudy';

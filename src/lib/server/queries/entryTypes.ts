@@ -48,8 +48,11 @@ export function createEntryType(data: {
 
 export function updateEntryType(
 	id: string,
-	data: { name?: string; icon?: string; color?: string; metricSchema?: object }
+	data: { name?: string; icon?: string | null; color?: string | null; metricSchema?: object }
 ): EntryType | null {
+	const existing = db.select().from(entryTypes).where(eq(entryTypes.id, id)).get();
+	if (!existing || existing.isBuiltIn) return null;
+
 	db.update(entryTypes)
 		.set({
 			...(data.name !== undefined && { name: data.name }),
@@ -63,5 +66,7 @@ export function updateEntryType(
 }
 
 export function deleteEntryType(id: string): void {
+	const existing = db.select().from(entryTypes).where(eq(entryTypes.id, id)).get();
+	if (!existing || existing.isBuiltIn) return;
 	db.delete(entryTypes).where(eq(entryTypes.id, id)).run();
 }

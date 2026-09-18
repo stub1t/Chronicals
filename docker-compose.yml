@@ -6,6 +6,13 @@ services:
       - "3000:3000"
     volumes:
       - chronicals_data:/data
+    tmpfs:
+      - /tmp
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       DATABASE_PATH: /data/chronicals.db
       NODE_ENV: production

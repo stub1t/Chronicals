@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { gte, lte, and, eq } from 'drizzle-orm';
 import { db } from '$lib/db/index.js';
 import { environmentalData, entries, entryTypeLogs } from '$lib/db/schema.js';
+import { assertDate, assertIdentifier } from '$lib/server/security.js';
 
 export function GET({ url }: { url: URL }) {
 	const startDate = url.searchParams.get('startDate');
@@ -12,23 +13,27 @@ export function GET({ url }: { url: URL }) {
 		return json({ error: 'startDate and endDate required' }, { status: 400 });
 	}
 
+	const safeStartDate = assertDate(startDate, 'startDate');
+	const safeEndDate = assertDate(endDate, 'endDate');
+	const safeEntryTypeId = entryTypeId ? assertIdentifier(entryTypeId, 'entryTypeId') : null;
+
 	const envRows = db
 		.select({ date: environmentalData.date, delta: environmentalData.pressureDeltaHpa })
 		.from(environmentalData)
-		.where(and(gte(environmentalData.date, startDate), lte(environmentalData.date, endDate)))
+		.where(and(gte(environmentalData.date, safeStartDate), lte(environmentalData.date, safeEndDate)))
 		.all();
 
 	const symptomDates = new Set<string>();
-	if (entryTypeId) {
+	if (safeEntryTypeId) {
 		const rows = db
 			.select({ date: entries.date })
 			.from(entryTypeLogs)
 			.innerJoin(entries, eq(entryTypeLogs.entryId, entries.id))
 			.where(
 				and(
-					eq(entryTypeLogs.entryTypeId, entryTypeId),
-					gte(entries.date, startDate),
-					lte(entries.date, endDate)
+					eq(entryTypeLogs.entryTypeId, safeEntryTypeId),
+					gte(entries.date, safeStartDate),
+					lte(entries.date, safeEndDate)
 				)
 			)
 			.all();

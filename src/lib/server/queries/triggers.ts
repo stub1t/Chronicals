@@ -38,6 +38,9 @@ export function createTrigger(data: { name: string; category?: TriggerCategory }
 }
 
 export function updateTrigger(id: string, data: { name?: string; category?: TriggerCategory }): Trigger | null {
+	const existing = db.select().from(triggers).where(eq(triggers.id, id)).get();
+	if (!existing || existing.isBuiltIn) return null;
+
 	db.update(triggers)
 		.set({
 			...(data.name !== undefined && { name: data.name }),
@@ -50,5 +53,7 @@ export function updateTrigger(id: string, data: { name?: string; category?: Trig
 }
 
 export function deleteTrigger(id: string): void {
+	const existing = db.select().from(triggers).where(eq(triggers.id, id)).get();
+	if (!existing || existing.isBuiltIn) return;
 	db.delete(triggers).where(eq(triggers.id, id)).run();
 }
