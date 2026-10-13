@@ -150,3 +150,11 @@ P=$(awk '/Store password/{print $3}' .signing/credentials.txt) && base64 < .sign
 ```
 
 The same values can be entered under Settings, Secrets and variables, Actions.
+
+## License
+
+Copyright (C) 2026 stub1t
+
+Chronicals is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [`LICENSE`](LICENSE).
+
+If you run a modified version as a web service, the AGPL requires you to offer your users its source code. The About section in Settings links to the source of this repository; point it at your fork if you change the code.

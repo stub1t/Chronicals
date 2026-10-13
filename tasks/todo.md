@@ -70,3 +70,12 @@ one API route table serves both the SvelteKit server and an in-process phone tra
   rendered and inspected, layout fixed twice), reminders 10/10 (recorder for the browser
   stub), app lock 11/11 (controllable biometric stub).
 - Not verifiable here: real notifications, biometric prompt, privacy screen on a phone.
+
+# Dependencies, edit screens, About, cleanup, license (2026-10-14)
+
+- [x] Dependencies updated within majors; npm audit 25 (12 high) to 12 (0 high, all dev tooling or unused); Dependabot
+- [x] svelte-check 0 warnings; em dashes out of the UI; README custom-type claim corrected
+- [x] Edit custom entry types; rename and recategorise custom triggers
+- [x] About section: version (APK version on Android), AGPL notice, source link
+- [x] LICENSE (AGPL-3.0-or-later)
+- [ ] History scan for secrets and personal data, then make the repo public after the user's OK
