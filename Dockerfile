@@ -25,6 +25,8 @@ RUN mkdir -p /data /tmp && chown -R node:node /app /data /tmp
 ENV DATABASE_PATH=/data/chronicals.db
 ENV NODE_ENV=production
 ENV PORT=3000
+# Allow backup uploads (POST /api/backup) up to the 50 MB limit
+ENV BODY_SIZE_LIMIT=50M
 
 USER node
 

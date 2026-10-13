@@ -12,9 +12,10 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 cleanupOutdatedCaches();
 
-// API routes: network-first with 5s timeout
+// API routes: network-first with 5s timeout. Backups are a copy of the whole
+// diary and must not end up in the browser cache.
 registerRoute(
-	({ url }) => url.pathname.startsWith('/api/'),
+	({ url }) => url.pathname.startsWith('/api/') && url.pathname !== '/api/backup',
 	new NetworkFirst({
 		networkTimeoutSeconds: 5,
 		cacheName: 'chronicals-api'

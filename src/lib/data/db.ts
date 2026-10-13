@@ -17,3 +17,17 @@ export let db: AppDatabase;
 export function useDatabase(instance: AppDatabase): void {
 	db = instance;
 }
+
+/** Whole-database backup, implemented per platform next to `useDatabase`. */
+export interface BackupStore {
+	/** The complete database as an SQLite file. */
+	exportBytes(): Uint8Array;
+	/** Replace the complete database with an SQLite file (validated with `assertRestorable`). */
+	restore(bytes: Uint8Array): void;
+}
+
+export let backup: BackupStore;
+
+export function useBackup(store: BackupStore): void {
+	backup = store;
+}

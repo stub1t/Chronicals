@@ -2,6 +2,7 @@
 	import { themeStore } from '$lib/stores/theme.js';
 	import { language, localeStore, type Language, t } from '$lib/stores/locale.js';
 	import { onMount } from 'svelte';
+	import { exportBackup, importBackup } from '$lib/backup.js';
 
 	type ThemeOption = 'system' | 'light' | 'dark';
 
@@ -21,6 +22,44 @@
 	function setLanguage(lang: Language) {
 		currentLanguage = lang;
 		localeStore.set(lang);
+	}
+
+	// ── Backup ────────────────────────────────────────────────────────────────
+	let fileInput: HTMLInputElement;
+	let dataBusy = $state(false);
+	let dataMessage = $state<string | null>(null);
+	let dataError = $state(false);
+
+	async function handleExport() {
+		dataBusy = true;
+		dataMessage = null;
+		try {
+			await exportBackup();
+		} catch (err) {
+			dataError = true;
+			dataMessage = t('settings_export_failed', { message: (err as Error).message });
+		} finally {
+			dataBusy = false;
+		}
+	}
+
+	async function handleImport() {
+		const file = fileInput.files?.[0];
+		fileInput.value = '';
+		if (!file || !confirm(t('settings_import_confirm', { name: file.name }))) return;
+
+		dataBusy = true;
+		dataMessage = null;
+		try {
+			const count = await importBackup(file);
+			dataError = false;
+			dataMessage = t('settings_import_done', { count });
+			setTimeout(() => location.reload(), 1500);
+		} catch (err) {
+			dataError = true;
+			dataMessage = t('settings_import_failed', { message: (err as Error).message });
+			dataBusy = false;
+		}
 	}
 </script>
 
@@ -125,6 +164,29 @@
 				{t('settings_language_en')}
 			</button>
 		</div>
+	</section>
+
+	<section class="theme-section" aria-label={t('settings_data')}>
+		<p class="theme-title">{t('settings_data')}</p>
+		<p class="data-note">{t('settings_data_note')}</p>
+		<div class="theme-pills">
+			<button class="theme-pill" onclick={handleExport} disabled={dataBusy}>{t('settings_export')}</button>
+			<button class="theme-pill" onclick={() => fileInput.click()} disabled={dataBusy}>{t('settings_import')}</button>
+		</div>
+		<!-- No accept filter in the app: Android's file picker has no type for .db and would hide the file. -->
+		<input
+			type="file"
+			hidden
+			accept={__NATIVE_APP__ ? undefined : '.db,.sqlite,.sqlite3'}
+			bind:this={fileInput}
+			onchange={handleImport}
+		/>
+		{#if dataBusy && !dataMessage}
+			<p class="data-note">{t('settings_working')}</p>
+		{/if}
+		{#if dataMessage}
+			<p class="data-message" class:error={dataError} role="status">{dataMessage}</p>
+		{/if}
 	</section>
 </div>
 
@@ -260,6 +322,27 @@
 	.theme-pill:hover {
 		border-color: var(--text-muted);
 		color: var(--text);
+	}
+
+	.theme-pill:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.data-note {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.data-message {
+		font-size: 0.85rem;
+		color: var(--text);
+		margin: 0;
+	}
+
+	.data-message.error {
+		color: #dc2626;
 	}
 
 	.theme-pill.active {

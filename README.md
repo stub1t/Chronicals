@@ -66,7 +66,7 @@ Download `chronicals-<version>.apk` from the [latest release](../../releases/lat
 
 Either way, a new version installs over the old one and keeps your entries.
 
-The diary is stored in the app's private storage. Android's device backup includes it if backup is turned on. There is no export yet, so uninstalling the app deletes the data.
+The diary is stored in the app's private storage. Android's device backup includes it if backup is turned on. Uninstalling the app deletes the data, so export a backup first (see [Backups](#backups)).
 
 The app only contacts Open-Meteo: for the place search in the profile settings, and for weather data once a location is saved.
 
@@ -85,6 +85,19 @@ The app is then available at <http://localhost:3000>. The SQLite database is sto
 | `ORIGIN` | `http://localhost:3000` | Public URL of the app. Set it when running behind a reverse proxy, otherwise changes are rejected by the CSRF check. |
 | `DATABASE_PATH` | `/data/chronicals.db` | Location of the SQLite file inside the container |
 | `PORT` | `3000` | Port the server listens on |
+| `ALLOWED_HOSTS` | empty | Extra host names the server answers to, comma-separated |
+| `BODY_SIZE_LIMIT` | `50M` in the Docker image | Largest accepted upload. Backups are uploaded in one request. |
+
+The server only answers requests addressed to the host name in `ORIGIN`, `localhost` or an IP address, and returns 421 for anything else. This blocks DNS rebinding, where a malicious website points its own domain at your server to read the diary through your browser. If a reverse proxy forwards a different host name, add that name to `ALLOWED_HOSTS`.
+
+## Backups
+
+The Data section in Settings has two buttons:
+
+- Export backup saves the whole database as one SQLite file, `chronicals-YYYY-MM-DD.db`. The web app downloads it. The Android app opens the share sheet, from where the file can be saved to Files or Google Drive or sent somewhere else.
+- Import backup replaces all data with the contents of such a file, after a confirmation.
+
+The same file works in the Android app and the web app, so a backup can also move the diary from the server to the phone or back. Older backups are upgraded to the current database version during import. Files from a newer version of Chronicals, damaged files and other SQLite databases are refused.
 
 ## Development
 

@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, count } from 'drizzle-orm';
 import { db } from '../db.js';
 import { entries, entryTypeLogs, entryTypes, entryTriggers, triggers } from '../../db/schema.js';
 import type { Entry, CalendarDayData } from '../../types/index.js';
@@ -73,6 +73,10 @@ export function getEntryByDate(date: string): Entry | null {
 	const entry = db.select().from(entries).where(eq(entries.date, date)).get();
 	if (!entry) return null;
 	return getEntry(entry.id);
+}
+
+export function countEntries(): number {
+	return db.select({ total: count() }).from(entries).get()?.total ?? 0;
 }
 
 export function getMonthEntries(yearMonth: string): Entry[] {

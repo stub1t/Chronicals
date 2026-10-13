@@ -105,6 +105,8 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
 - **`__NATIVE_APP__`** (vite `define`, true when `CHRONICALS_TARGET=mobile`) gates Android-only code so it is tree-shaken out of the web bundle. Import Capacitor/sql.js only behind it.
 - **Migrations** are applied on Android from the bundled `migrations/` folder on app start, exactly like the server. `npx drizzle-kit generate` covers both.
 - **Persistence on Android**: sql.js runs in memory; `localFetch` awaits `persist()` after every successful mutation (atomic tmp-file swap in the app's private files dir, included in Android auto-backup).
+- **Backups**: `GET/POST /api/backup` export or replace the whole database as an SQLite file. Each platform registers `useBackup({ exportBytes, restore })` next to `useDatabase` (`src/lib/server/db.ts`, `src/lib/mobile/database.ts`). Uploads go through `assertSqliteFile` and `assertRestorable` in `src/lib/data/backup.ts` (Chronicals tables, no triggers or views, integrity and foreign key checks, not from a newer migration), then are migrated and seeded before they replace the live database. A schema change that adds triggers or views must update `assertRestorable`. The service worker must never cache `/api/backup`.
+- **Host allowlist**: `hooks.server.ts` returns 421 unless the Host header is the `ORIGIN` host name, `localhost`, an IP address or listed in `ALLOWED_HOSTS` (DNS rebinding protection). It is skipped in dev and at build time.
 
 ## Android releases
 
@@ -127,6 +129,8 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
 DATABASE_PATH   Path to SQLite file (default: ./chronicals.db)
 ORIGIN          Public URL for CSRF protection (default: http://localhost:3000)
 PORT            Server port (default: 3000)
+ALLOWED_HOSTS   Extra host names the server answers to, comma-separated (default: none)
+BODY_SIZE_LIMIT Largest request body; the Docker image sets 50M for backup uploads
 CHRONICALS_TARGET=mobile   Build-time: produce the Android SPA instead of the Node server
 ```
 

@@ -29,3 +29,25 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - Workflow passes actionlint + shellcheck; first real run happens on tag push.
 - Pre-existing, unrelated: Docker healthcheck uses `localhost`, which resolves to ::1
   while the server binds 0.0.0.0 → container reports unhealthy (also on the previous commit).
+
+# Backup, DNS rebinding fix, medications (2026-10-13)
+
+- [x] Host allowlist in hooks.server.ts (421), ALLOWED_HOSTS, Docker healthcheck on 127.0.0.1
+- [x] Medications: stop/start side effects in data layer; edit, stop, restart, delete in UI
+- [x] Backup: GET/POST /api/backup, server + sql.js restore, settings UI, share sheet on Android, SW excludes /api/backup
+- [ ] Docs (README, AGENTS.md), verify, commit per item, container rebuild, push
+
+## Review (2026-10-13)
+
+- Host check: unknown Host gets 421 on /api and pages, with and without ORIGIN; localhost, IPs,
+  ORIGIN host and ALLOWED_HOSTS names served; SSR loads work; container reports healthy.
+  The first version broke the mobile build (fallback page rendered at build time); fixed by
+  skipping the check while `building`.
+- Medications: 11/11 browser checks (add, edit, stop to past list with end date, take again,
+  delete keeps history as "Deleted medication", reload).
+- Backup API: 19/19 checks (round trip, trigger, newer version, foreign, damaged, oversized,
+  wrong type and cross-origin uploads rejected, data intact, survives restart).
+- Backup UI: web 8/8 (download, import, bad file), mobile build 9/9 (fresh device imports a
+  server backup, persists, bad file); sql.js export imports on the server.
+- APK builds with @capacitor/share registered. Native share sheet and file picker are not
+  tested on a device.

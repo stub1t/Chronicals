@@ -23,7 +23,8 @@ import {
 	updateEntry,
 	deleteEntry,
 	addEntryTrigger,
-	removeEntryTrigger
+	removeEntryTrigger,
+	countEntries
 } from './queries/entries.js';
 import { createEntryTypeLog, updateEntryTypeLog, deleteEntryTypeLog } from './queries/entryTypeLogs.js';
 import { getAllEntryTypes, createEntryType, updateEntryType, deleteEntryType } from './queries/entryTypes.js';
@@ -39,6 +40,8 @@ import {
 } from './queries/profile.js';
 import { getAllTriggers, getTriggersByCategory, createTrigger, updateTrigger, deleteTrigger } from './queries/triggers.js';
 import { fetchAndCacheEnvData, getEnvDataForDate } from './weather.js';
+import { backup } from './db.js';
+import { BACKUP_CONTENT_TYPE, MAX_BACKUP_BYTES, assertSqliteFile, backupFilename } from './backup.js';
 import {
 	assertBloodType,
 	assertBoolean,
@@ -380,6 +383,32 @@ const routes: Route[] = [
 				notes: optionalText(body.notes, 1000) ?? undefined
 			});
 			return json(change, { status: 201 });
+		}
+	}),
+
+	// ─── Backup ───────────────────────────────────────────────────────────────
+
+	route('/api/backup', {
+		GET: () =>
+			new Response(backup.exportBytes() as Uint8Array<ArrayBuffer>, {
+				headers: {
+					'Content-Type': BACKUP_CONTENT_TYPE,
+					'Content-Disposition': `attachment; filename="${backupFilename()}"`
+				}
+			}),
+		// Replaces the whole database. The CSRF check in hooks.server.ts applies.
+		POST: async ({ request }) => {
+			const type = request.headers.get('content-type') ?? '';
+			if (!type.startsWith(BACKUP_CONTENT_TYPE) && !type.startsWith('application/octet-stream')) {
+				error(415, `${BACKUP_CONTENT_TYPE} required`);
+			}
+			if (Number(request.headers.get('content-length') ?? '0') > MAX_BACKUP_BYTES) {
+				error(413, 'Backup file is larger than 50 MB');
+			}
+			const bytes = new Uint8Array(await request.arrayBuffer());
+			assertSqliteFile(bytes);
+			backup.restore(bytes);
+			return json({ entries: countEntries() });
 		}
 	}),
 

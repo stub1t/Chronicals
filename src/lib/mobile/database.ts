@@ -6,13 +6,14 @@
  * written to the app's private files directory after every mutation; Android
  * auto-backup includes that directory.
  */
-import initSqlJs, { type Database } from 'sql.js';
+import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { drizzle, type SQLJsDatabase } from 'drizzle-orm/sql-js';
 import type { MigrationMeta } from 'drizzle-orm/migrator';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import * as schema from '../db/schema.js';
-import { useDatabase } from '../data/db.js';
+import { assertRestorable, openBackup, withoutWalFlag } from '../data/backup.js';
+import { useBackup, useDatabase } from '../data/db.js';
 import { seedBuiltIns } from '../data/seed.js';
 
 const DB_FILE = 'chronicals.db';
@@ -29,6 +30,10 @@ const migrationFiles = import.meta.glob<string>('/migrations/*.sql', {
 	import: 'default'
 });
 
+const newestMigration = Math.max(...journal.entries.map((entry) => entry.when));
+
+let SQL: SqlJsStatic;
+let migrations: MigrationMeta[];
 let sqlite: Database;
 let ready: Promise<void> | null = null;
 let saving: Promise<void> = Promise.resolve();
@@ -43,16 +48,46 @@ export function openDatabase(): Promise<void> {
 }
 
 async function open(): Promise<void> {
-	const SQL = await initSqlJs({ locateFile: () => sqlWasmUrl });
+	SQL = await initSqlJs({ locateFile: () => sqlWasmUrl });
+	migrations = await readMigrations();
 	sqlite = new SQL.Database((await readStoredBytes()) ?? undefined);
-	sqlite.run('PRAGMA foreign_keys = ON');
-
-	const db = drizzle(sqlite, { schema });
-	runMigrations(db, await readMigrations());
-	seedBuiltIns(db);
-	useDatabase(db);
+	useDatabase(prepare(sqlite));
+	useBackup({ exportBytes, restore });
 
 	await persist();
+}
+
+/** Bring a database up to the current schema and built-in data. */
+function prepare(target: Database): SQLJsDatabase<typeof schema> {
+	target.run('PRAGMA foreign_keys = ON');
+	const db = drizzle(target, { schema });
+	runMigrations(db, migrations);
+	seedBuiltIns(db);
+	return db;
+}
+
+function exportBytes(): Uint8Array {
+	const bytes = sqlite.export();
+	// export() closes and reopens the connection, which resets pragmas.
+	sqlite.run('PRAGMA foreign_keys = ON');
+	return bytes;
+}
+
+/** Swap in a backup. The caller (`localFetch`) persists it afterwards. */
+function restore(bytes: Uint8Array): void {
+	const candidate = openBackup(() => new SQL.Database(withoutWalFlag(bytes)));
+	let db: SQLJsDatabase<typeof schema>;
+	try {
+		candidate.run('PRAGMA trusted_schema = OFF');
+		assertRestorable(drizzle(candidate), newestMigration);
+		db = prepare(candidate);
+	} catch (err) {
+		candidate.close();
+		throw err;
+	}
+	sqlite.close();
+	sqlite = candidate;
+	useDatabase(db);
 }
 
 /** Write the current database to disk. Calls are serialised; each writes the latest state. */
@@ -62,9 +97,7 @@ export function persist(): Promise<void> {
 }
 
 async function writeToDisk(): Promise<void> {
-	const data = toBase64(sqlite.export());
-	// export() closes and reopens the connection, which resets pragmas.
-	sqlite.run('PRAGMA foreign_keys = ON');
+	const data = toBase64(exportBytes());
 
 	// Write aside, then swap, so a crash mid-write never leaves a truncated database.
 	await Filesystem.writeFile({ path: TMP_FILE, directory: Directory.Data, data });
@@ -114,7 +147,7 @@ async function sha256Hex(text: string): Promise<string> {
 	return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function toBase64(bytes: Uint8Array): string {
+export function toBase64(bytes: Uint8Array): string {
 	let binary = '';
 	for (let i = 0; i < bytes.length; i += 0x8000) {
 		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
