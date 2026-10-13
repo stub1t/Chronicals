@@ -6,7 +6,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Project
 
-**Chronicals** — Self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
+**chronicals** — Self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
 
 ## Tech Stack
 
