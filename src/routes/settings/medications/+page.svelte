@@ -23,6 +23,8 @@
 	let newMedStartDate = $state(toDateString(new Date()));
 	let addMedSaving = $state(false);
 	let addMedError = $state<string | null>(null);
+	let editingMedId = $state<string | null>(null);
+	let actionError = $state<string | null>(null);
 
 	// ── Log change modal ──────────────────────────────────────────────────────
 	let changeMedId = $state<string | null>(null);
@@ -49,10 +51,21 @@
 
 	// ── Add medication ────────────────────────────────────────────────────────
 	function openAddMed() {
+		editingMedId = null;
 		newMedName = '';
 		newMedDosage = '';
 		newMedUnit = '';
 		newMedStartDate = toDateString(new Date());
+		addMedError = null;
+		showAddMed = true;
+	}
+
+	function openEditMed(med: Medication) {
+		editingMedId = med.id;
+		newMedName = med.name;
+		newMedDosage = med.dosage ?? '';
+		newMedUnit = med.unit ?? '';
+		newMedStartDate = med.startDate;
 		addMedError = null;
 		showAddMed = true;
 	}
@@ -62,8 +75,8 @@
 		addMedSaving = true;
 		addMedError = null;
 		try {
-			const res = await api('/api/medications', {
-				method: 'POST',
+			const res = await api(editingMedId ? `/api/medications/${editingMedId}` : '/api/medications', {
+				method: editingMedId ? 'PUT' : 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					name: newMedName.trim(),
@@ -74,10 +87,12 @@
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				addMedError = err.message ?? t('medications_add_failed');
+				addMedError = err.message ?? t(editingMedId ? 'medications_update_failed' : 'medications_add_failed');
 			} else {
 				const med: Medication = await res.json();
-				medications = [...medications, med];
+				medications = editingMedId
+					? medications.map((m) => (m.id === med.id ? med : m))
+					: [...medications, med];
 				showAddMed = false;
 			}
 		} catch {
@@ -122,14 +137,54 @@
 				const err = await res.json().catch(() => ({}));
 				changeError = err.message ?? t('medications_log_failed');
 			} else {
-				const change: MedicationChange = await res.json();
-				changes = [change, ...changes];
 				changeMedId = null;
+				await reload();
 			}
 		} catch {
 			changeError = t('network_error');
 		} finally {
 			changeSaving = false;
+		}
+	}
+
+	// ── Stop, restart, delete ─────────────────────────────────────────────────
+	async function reload() {
+		const [medsRes, changesRes] = await Promise.all([
+			api('/api/medications'),
+			api('/api/medication-changes')
+		]);
+		if (medsRes.ok) medications = await medsRes.json();
+		if (changesRes.ok) changes = await changesRes.json();
+	}
+
+	async function setActive(med: Medication, active: boolean) {
+		actionError = null;
+		try {
+			const res = await api('/api/medication-changes', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					medicationId: med.id,
+					changeType: active ? 'started' : 'stopped',
+					changeDate: toDateString(new Date())
+				})
+			});
+			if (!res.ok) actionError = t('medications_update_failed');
+			await reload();
+		} catch {
+			actionError = t('network_error');
+		}
+	}
+
+	async function deleteMed(med: Medication) {
+		if (!confirm(t('medications_delete_confirm', { name: med.name }))) return;
+		actionError = null;
+		try {
+			const res = await api(`/api/medications/${med.id}`, { method: 'DELETE' });
+			if (!res.ok) actionError = t('medications_update_failed');
+			await reload();
+		} catch {
+			actionError = t('network_error');
 		}
 	}
 
@@ -159,6 +214,10 @@
 			<button class="add-btn" onclick={openAddMed}>+ {t('medications_add')}</button>
 		</div>
 
+		{#if actionError}
+			<p class="form-error">{actionError}</p>
+		{/if}
+
 		{#if activeMeds.length === 0}
 			<p class="empty-text">{t('medications_empty_active')}</p>
 		{:else}
@@ -172,12 +231,12 @@
 							{/if}
 							<span class="med-date">{t('medications_since', { date: formatDate(med.startDate) })}</span>
 						</div>
-						<button
-							class="change-btn"
-							onclick={() => openChangeModal(med.id)}
-						>
-							{t('medications_log_change')}
-						</button>
+						<div class="med-actions">
+							<button class="change-btn" onclick={() => openChangeModal(med.id)}>{t('medications_log_change')}</button>
+							<button class="change-btn" onclick={() => openEditMed(med)}>{t('medications_edit')}</button>
+							<button class="change-btn" onclick={() => setActive(med, false)}>{t('medications_stop')}</button>
+							<button class="change-btn danger" onclick={() => deleteMed(med)}>{t('medications_delete')}</button>
+						</div>
 					</li>
 				{/each}
 			</ul>
@@ -210,6 +269,10 @@
 									{#if med.endDate} → {formatDate(med.endDate)}{/if}
 								</span>
 							</div>
+							<div class="med-actions">
+								<button class="change-btn" onclick={() => setActive(med, true)}>{t('medications_restart')}</button>
+								<button class="change-btn danger" onclick={() => deleteMed(med)}>{t('medications_delete')}</button>
+							</div>
 						</li>
 					{/each}
 				</ul>
@@ -229,9 +292,7 @@
 						<div class="timeline-content">
 							<div class="timeline-header">
 								<span class="timeline-type">{changeTypeLabel(change.changeType)}</span>
-								{#if med}
-									<span class="timeline-med">{med.name}</span>
-								{/if}
+								<span class="timeline-med">{med ? med.name : t('medications_deleted')}</span>
 								<span class="timeline-date">{formatDate(change.changeDate)}</span>
 							</div>
 							{#if change.oldDosage || change.newDosage}
@@ -256,9 +317,9 @@
 {#if showAddMed}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showAddMed = false; }}>
-		<div class="modal" role="dialog" aria-modal="true" aria-label={t('medications_add_title')}>
+		<div class="modal" role="dialog" aria-modal="true" aria-label={t(editingMedId ? 'medications_edit_title' : 'medications_add_title')}>
 			<div class="modal-header">
-				<h3 class="modal-title">{t('medications_add_title')}</h3>
+				<h3 class="modal-title">{t(editingMedId ? 'medications_edit_title' : 'medications_add_title')}</h3>
 				<button class="modal-close" onclick={() => { showAddMed = false; }} aria-label={t('close')}>×</button>
 			</div>
 
@@ -289,7 +350,11 @@
 				<div class="modal-actions">
 					<button type="button" class="btn-ghost" onclick={() => { showAddMed = false; }}>{t('cancel')}</button>
 					<button type="submit" class="btn-primary" disabled={addMedSaving}>
-						{addMedSaving ? t('medications_adding') : t('medications_add_title')}
+						{#if editingMedId}
+							{addMedSaving ? t('medications_logging') : t('save')}
+						{:else}
+							{addMedSaving ? t('medications_adding') : t('medications_add_title')}
+						{/if}
 					</button>
 				</div>
 			</form>
@@ -440,6 +505,7 @@
 
 	.med-item {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 12px;
 		padding: 14px 16px;
@@ -486,6 +552,21 @@
 	.change-btn:hover {
 		border-color: var(--text-muted);
 		color: var(--text);
+	}
+
+	.med-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		width: 100%;
+	}
+
+	.change-btn.danger {
+		color: #dc2626;
+	}
+
+	.change-btn.danger:hover {
+		border-color: #dc2626;
 	}
 
 	.empty-text {

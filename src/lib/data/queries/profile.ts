@@ -76,18 +76,30 @@ export function createMedicationChange(data: {
 	notes?: string;
 }): MedicationChange {
 	const id = uuidv4();
-	db.insert(medicationChanges)
-		.values({
-			id,
-			medicationId: data.medicationId ?? null,
-			changeType: data.changeType,
-			oldDosage: data.oldDosage ?? null,
-			newDosage: data.newDosage ?? null,
-			changeDate: data.changeDate,
-			reason: data.reason ?? null,
-			notes: data.notes ?? null
-		})
-		.run();
+	db.transaction((tx) => {
+		tx.insert(medicationChanges)
+			.values({
+				id,
+				medicationId: data.medicationId ?? null,
+				changeType: data.changeType,
+				oldDosage: data.oldDosage ?? null,
+				newDosage: data.newDosage ?? null,
+				changeDate: data.changeDate,
+				reason: data.reason ?? null,
+				notes: data.notes ?? null
+			})
+			.run();
+
+		// Stopping or (re)starting a medication is recorded as a change and also
+		// moves the medication between the active and past lists.
+		if (data.medicationId && data.changeType !== 'dosage_change') {
+			const stopped = data.changeType === 'stopped';
+			tx.update(medications)
+				.set({ isActive: !stopped, endDate: stopped ? data.changeDate : null })
+				.where(eq(medications.id, data.medicationId))
+				.run();
+		}
+	});
 	const row = db.select().from(medicationChanges).where(eq(medicationChanges.id, id)).get()!;
 	return { ...row, changeType: row.changeType as MedicationChangeType };
 }
