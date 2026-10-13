@@ -1,6 +1,12 @@
 <script lang="ts">
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import SearchX from '@lucide/svelte/icons/search-x';
 	import { api } from '$lib/api.js';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
+	import Chip from '$lib/ui/Chip.svelte';
+	import EmptyState from '$lib/ui/EmptyState.svelte';
+	import Segmented from '$lib/ui/Segmented.svelte';
 	import { matchEntry } from '$lib/search.js';
 	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
 	import type { Entry, EntryType } from '$lib/types/index.js';
@@ -9,11 +15,6 @@
 	let { data }: { data: { entryTypes: EntryType[] } } = $props();
 
 	type Period = '3m' | '12m' | 'all';
-	const PERIODS: Array<{ value: Period; label: () => string }> = [
-		{ value: '3m', label: () => t('search_period_3m') },
-		{ value: '12m', label: () => t('search_period_12m') },
-		{ value: 'all', label: () => t('search_period_all') }
-	];
 
 	let query = $state('');
 	let entryTypeId = $state('');
@@ -64,158 +65,153 @@
 </script>
 
 <div class="page">
-	<header class="page-header">
-		<a href="/calendar" class="back-link">← {t('search_back')}</a>
-		<h1 class="page-title">{t('search_title')}</h1>
+	<header class="header">
+		<a href="/calendar" class="icon-button" aria-label={t('calendar_back')}><ArrowLeft size={22} class="flip-rtl" /></a>
+		<h1 class="title">{t('search_title')}</h1>
 	</header>
 
-	<div class="controls">
-		<input
-			class="input"
-			type="search"
-			bind:value={query}
-			placeholder={t('search_placeholder')}
-			aria-label={t('search_title')}
-		/>
-		<div class="filter-row">
-			<select class="input select" bind:value={entryTypeId} aria-label={t('search_all_types')}>
-				<option value="">{t('search_all_types')}</option>
-				{#each data.entryTypes as type (type.id)}
-					<option value={type.id}>{localizeBuiltInText(type.name)}</option>
-				{/each}
-			</select>
-			<div class="periods" role="group">
-				{#each PERIODS as option (option.value)}
-					<button
-						class="period"
-						class:active={period === option.value}
-						aria-pressed={period === option.value}
-						onclick={() => (period = option.value)}>{option.label()}</button
-					>
-				{/each}
-			</div>
-		</div>
+	<label class="field">
+		<SearchIcon size={20} />
+		<!-- svelte-ignore a11y_autofocus -->
+		<input type="search" bind:value={query} placeholder={t('search_placeholder')} aria-label={t('search_title')} autofocus />
+	</label>
+
+	<div class="types" role="group" aria-label={t('search_all_types')}>
+		<Chip selected={entryTypeId === ''} onclick={() => (entryTypeId = '')}>{t('search_all_types')}</Chip>
+		{#each data.entryTypes as type (type.id)}
+			<Chip selected={entryTypeId === type.id} color={type.color} onclick={() => (entryTypeId = entryTypeId === type.id ? '' : type.id)}>
+				<EntryTypeIcon entryType={type} size={18} />
+				{localizeBuiltInText(type.name)}
+			</Chip>
+		{/each}
 	</div>
 
-	{#if active && !loading}
-		<p class="count">
-			{results.length === 0 ? t('search_no_results') : t('search_results', { count: results.length })}
-		</p>
-		<ul class="results">
-			{#each results as entry (entry.id)}
-				<li>
-					<a class="result" href="/calendar/day/{entry.date}">
-						<span class="result-date">{formatDay(entry.date)}</span>
-						{#if entry.logs?.length}
-							<span class="chips">
-								{#each entry.logs as log (log.id)}
-									<span class="chip" style="--accent: {log.entryType?.color ?? 'var(--text-muted)'}">
-										<EntryTypeIcon entryType={log.entryType} size={14} />
-										{localizeBuiltInText(log.entryType?.name)}
-									</span>
-								{/each}
-							</span>
-						{/if}
-						{#if entry.triggers?.length}
-							<span class="triggers">{entry.triggers.map((tr) => localizeBuiltInText(tr.triggerName)).join(', ')}</span>
-						{/if}
-						{#if entry.note}
-							<span class="note">{snippet(entry.note)}</span>
-						{/if}
-					</a>
-				</li>
-			{/each}
-		</ul>
+	<Segmented
+		label={t('search_period')}
+		bind:value={period}
+		options={[
+			{ value: '3m', label: t('search_period_3m') },
+			{ value: '12m', label: t('search_period_12m') },
+			{ value: 'all', label: t('search_period_all') }
+		]}
+	/>
+
+	{#if !active}
+		<EmptyState icon={SearchIcon} compact title={t('search_title')} text={t('search_hint')} />
+	{:else if !loading}
+		{#if results.length === 0}
+			<EmptyState icon={SearchX} compact color="var(--warning)" title={t('search_no_results')} />
+		{:else}
+			<p class="count">{t('search_results', { count: results.length })}</p>
+			<ul class="results">
+				{#each results as entry (entry.id)}
+					<li>
+						<a class="result" href="/calendar/day/{entry.date}">
+							<span class="date">{formatDay(entry.date)}</span>
+							{#if entry.logs?.length}
+								<span class="logs">
+									{#each entry.logs as log (log.id)}
+										<span class="log" style="--type: {log.entryType?.color ?? 'var(--accent)'}">
+											<EntryTypeIcon entryType={log.entryType} size={18} />
+											{localizeBuiltInText(log.entryType?.name)}
+										</span>
+									{/each}
+								</span>
+							{/if}
+							{#if entry.triggers?.length}
+								<span class="muted">{entry.triggers.map((tr) => localizeBuiltInText(tr.triggerName)).join(' · ')}</span>
+							{/if}
+							{#if entry.note}
+								<span class="muted note">{snippet(entry.note)}</span>
+							{/if}
+						</a>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	{/if}
 </div>
 
 <style>
 	.page {
-		max-width: 560px;
+		max-width: 640px;
 		margin: 0 auto;
-		padding: 24px 16px 80px;
+		padding: var(--space-5) var(--space-4) var(--space-8);
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
+		gap: var(--space-4);
 	}
 
-	.page-header {
+	.header {
 		display: flex;
-		flex-direction: column;
-		gap: 4px;
+		align-items: center;
+		gap: var(--space-2);
 	}
 
-	.back-link {
-		font-size: 0.82rem;
-		color: var(--text-muted);
-		text-decoration: none;
-		align-self: flex-start;
-	}
-
-	.page-title {
-		font-size: 1.6rem;
-		font-weight: 800;
-		color: var(--text);
+	.title {
 		margin: 0;
+		font-size: var(--text-2xl);
+		font-weight: 800;
 	}
 
-	.controls {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.filter-row {
-		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	.input {
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		padding: 10px 14px;
-		font-family: inherit;
-		font-size: 0.9rem;
+	.icon-button {
+		width: 44px;
+		height: 44px;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
 		color: var(--text);
-		width: 100%;
-		box-sizing: border-box;
 	}
 
-	.select {
-		flex: 1;
-		min-width: 160px;
-		width: auto;
+	.icon-button:hover {
+		background: var(--bg-subtle);
 	}
 
-	.periods {
+	.field {
 		display: flex;
-		gap: 4px;
-	}
-
-	.period {
-		padding: 8px 12px;
-		border: 1px solid var(--border);
-		border-radius: 18px;
+		align-items: center;
+		gap: var(--space-2);
+		padding: 0 var(--space-4);
+		min-height: 52px;
+		border-radius: var(--radius-pill);
 		background: var(--bg-card);
-		font-family: inherit;
-		font-size: 0.8rem;
+		box-shadow: var(--shadow-sm);
 		color: var(--text-muted);
-		cursor: pointer;
+		border: 2px solid transparent;
 	}
 
-	.period.active {
-		background: var(--text);
-		border-color: var(--text);
-		color: var(--bg);
-		font-weight: 700;
+	.field:focus-within {
+		border-color: var(--accent);
+	}
+
+	.field input {
+		flex: 1;
+		min-width: 0;
+		border: none;
+		background: none;
+		outline: none;
+		color: var(--text);
+		font-size: var(--text-md);
+	}
+
+	.types {
+		display: flex;
+		gap: var(--space-2);
+		overflow-x: auto;
+		padding-bottom: 4px;
+		scrollbar-width: none;
+	}
+
+	.types :global(.chip) {
+		flex-shrink: 0;
+		white-space: nowrap;
 	}
 
 	.count {
-		font-size: 0.82rem;
-		color: var(--text-muted);
 		margin: 0;
+		font-size: var(--text-sm);
+		font-weight: 700;
+		color: var(--text-muted);
 	}
 
 	.results {
@@ -224,47 +220,48 @@
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: var(--space-2);
 	}
 
 	.result {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
-		padding: 12px 14px;
+		gap: var(--space-2);
+		padding: var(--space-3) var(--space-4);
+		border-radius: var(--radius-md);
 		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		text-decoration: none;
+		box-shadow: var(--shadow-sm);
 		color: var(--text);
+		text-decoration: none;
 	}
 
-	.result-date {
-		font-size: 0.85rem;
-		font-weight: 700;
+	.date {
+		font-weight: 800;
 	}
 
-	.chips {
+	.logs {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
 	}
 
-	.chip {
+	.log {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
-		font-size: 0.78rem;
-		font-weight: 600;
-		padding: 2px 8px;
-		border-radius: 10px;
-		border: 1px solid var(--accent);
-		color: var(--text);
+		gap: 6px;
+		padding: 3px 10px 3px 4px;
+		border-radius: var(--radius-pill);
+		background: color-mix(in srgb, var(--type) 12%, var(--bg-card));
+		font-size: var(--text-sm);
+		font-weight: 700;
 	}
 
-	.triggers,
-	.note {
-		font-size: 0.8rem;
+	.muted {
+		font-size: var(--text-sm);
 		color: var(--text-muted);
+	}
+
+	.note {
+		white-space: pre-line;
 	}
 </style>

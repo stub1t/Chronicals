@@ -1,11 +1,20 @@
 import { getJson } from '$lib/api.js';
-import type { EntryType, Trigger } from '$lib/types/index.js';
+import { toDateString, toYearMonth } from '$lib/utils/date';
+import type { Entry } from '$lib/types/index.js';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ fetch }) => {
-	const [entryTypes, allTriggers] = await Promise.all([
-		getJson<EntryType[]>(fetch, '/api/entry-types'),
-		getJson<Trigger[]>(fetch, '/api/triggers')
-	]);
-	return { entryTypes, allTriggers };
+// The shown month and selected day live in the URL (?month=2026-10&day=2026-10-14),
+// so coming back from a day page returns to the same place.
+export const load: PageLoad = async ({ fetch, url }) => {
+	const today = toDateString(new Date());
+	const param = url.searchParams.get('month');
+	const yearMonth = param && /^\d{4}-\d{2}$/.test(param) ? param : toYearMonth(new Date());
+	const day = url.searchParams.get('day');
+	const entries = await getJson<Entry[]>(fetch, `/api/entries?from=${yearMonth}-01&to=${yearMonth}-31`);
+	return {
+		today,
+		yearMonth,
+		selected: day && day.startsWith(yearMonth) ? day : today.startsWith(yearMonth) ? today : null,
+		entries
+	};
 };

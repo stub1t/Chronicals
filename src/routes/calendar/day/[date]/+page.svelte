@@ -1,123 +1,136 @@
 <script lang="ts">
-	import { api } from '$lib/api.js';
-	import { goto } from '$app/navigation';
-	import { toDateString } from '$lib/utils/date';
-	import CalendarDay from '$lib/components/calendar/CalendarDay.svelte';
-	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import DayView from '$lib/diary/DayView.svelte';
+	import { DiaryDay } from '$lib/diary/day.svelte.js';
 	import { dateLocale, t } from '$lib/i18n';
-	import type { EntryType, Trigger } from '$lib/types/index.js';
+	import { toDateString } from '$lib/utils/date';
+	import type { Entry, EntryType, Trigger, UserProfile } from '$lib/types';
 
-	import type { Entry } from '$lib/types/index.js';
+	interface Props {
+		data: {
+			date: string;
+			today: string;
+			entryTypes: EntryType[];
+			triggers: Trigger[];
+			profile: UserProfile;
+			entry: Entry | null;
+			typeRanking: string[];
+			triggerRanking: string[];
+		};
+	}
 
-	let { data } = $props();
+	let { data }: Props = $props();
 
-	let showDrawer = $state(false);
-	let drawerHour = $state(9);
+	// A new DiaryDay per date; the page component is reused when moving between days.
+	const day = $derived(new DiaryDay(data.date, data.entry));
 	// svelte-ignore state_referenced_locally
-	let liveEntry = $state<Entry | null>(data.entry as Entry | null);
+	let triggers = $state(data.triggers);
 
-	async function refreshEntry() {
-		const res = await api(`/api/entries?month=${data.date.slice(0, 7)}`);
-		if (res.ok) {
-			const entries: Entry[] = await res.json();
-			liveEntry = entries.find((e) => e.date === data.date) ?? null;
-		}
+	function shifted(days: number): string {
+		const d = new Date(`${data.date}T12:00:00`);
+		d.setDate(d.getDate() + days);
+		return toDateString(d);
 	}
 
-	function prevDay() {
-		const d = new Date(`${data.date}T00:00:00`);
-		d.setDate(d.getDate() - 1);
-		goto(`/calendar/day/${toDateString(d)}`);
-	}
-
-	function nextDay() {
-		const d = new Date(`${data.date}T00:00:00`);
-		d.setDate(d.getDate() + 1);
-		goto(`/calendar/day/${toDateString(d)}`);
-	}
-
-	function formatLocalizedDayHeader(date: string) {
-		return new Date(date + 'T12:00:00').toLocaleDateString(dateLocale(), {
-			weekday: 'long',
-			month: 'long',
-			day: 'numeric'
-		});
-	}
+	const noon = $derived(new Date(`${data.date}T12:00:00`));
+	const weekday = $derived(noon.toLocaleDateString(dateLocale(), { weekday: 'long' }));
+	const title = $derived(noon.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long', year: 'numeric' }));
 </script>
 
 <div class="page">
-	<header class="page-header">
-		<a href="/calendar" class="back-btn">‹</a>
-		<div class="day-nav">
-			<button onclick={prevDay} class="nav-btn">‹</button>
-			<h1 class="day-title">{formatLocalizedDayHeader(data.date)}</h1>
-			<button onclick={nextDay} class="nav-btn">›</button>
+	<header class="header">
+		<a class="back" href="/calendar?month={data.date.slice(0, 7)}&day={data.date}">
+			<ArrowLeft size={18} class="flip-rtl" />
+			{t('nav_calendar')}
+		</a>
+		<div class="period">
+			<a class="icon-button" href="/calendar/day/{shifted(-1)}" aria-label={t('prev_day')} data-sveltekit-replacestate>
+				<ChevronLeft size={22} class="flip-rtl" />
+			</a>
+			<h1 class="title">
+				<span class="weekday">{weekday}</span>
+				{title}
+			</h1>
+			<a class="icon-button" href="/calendar/day/{shifted(1)}" aria-label={t('next_day')} data-sveltekit-replacestate>
+				<ChevronRight size={22} class="flip-rtl" />
+			</a>
 		</div>
-		<a href="/calendar/week" class="view-switch">{t('week_view')}</a>
 	</header>
 
-	<CalendarDay
-		date={data.date}
-		entry={liveEntry}
-		entryTypes={data.entryTypes as EntryType[]}
-		envData={data.envData}
-		onadd={(hour) => { drawerHour = hour; showDrawer = true; }}
-	/>
-
-	{#if showDrawer}
-		<EntryDrawer
-			date={data.date}
-			entryTypes={data.entryTypes as EntryType[]}
-			allTriggers={data.allTriggers as Trigger[]}
-			onclose={async () => { showDrawer = false; await refreshEntry(); }}
+	{#key data.date}
+		<DayView
+			{day}
+			entryTypes={data.entryTypes}
+			bind:triggers
+			typeRanking={data.typeRanking}
+			triggerRanking={data.triggerRanking}
+			hasLocation={data.profile.locationLat != null && data.profile.locationLon != null}
+			isToday={data.date === data.today}
 		/>
-	{/if}
+	{/key}
 </div>
 
 <style>
 	.page {
+		max-width: 640px;
+		margin: 0 auto;
+		padding: var(--space-5) var(--space-4) var(--space-8);
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		gap: var(--space-5);
 	}
 
-	.page-header {
+	.header {
 		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1rem;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-card);
+		flex-direction: column;
+		gap: var(--space-3);
 	}
 
-	.back-btn,
-	.view-switch {
+	.back {
+		align-self: flex-start;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+		min-height: 44px;
 		color: var(--text-muted);
+		font-weight: 700;
 		text-decoration: none;
-		font-size: 0.875rem;
-		padding: 0.25rem 0.5rem;
 	}
 
-	.day-nav {
-		flex: 1;
+	.period {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		gap: 0.75rem;
+		gap: var(--space-2);
 	}
 
-	.day-title {
+	.title {
+		flex: 1;
 		margin: 0;
-		font-size: 0.95rem;
-		font-weight: 600;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		font-size: var(--text-xl);
+		font-weight: 800;
+		text-align: center;
 	}
 
-	.nav-btn {
-		background: none;
-		border: none;
-		font-size: 1.25rem;
+	.weekday {
+		font-size: var(--text-sm);
+		font-weight: 700;
 		color: var(--text-muted);
-		cursor: pointer;
-		padding: 0.25rem;
+	}
+
+	.icon-button {
+		width: 44px;
+		height: 44px;
+		flex-shrink: 0;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		background: var(--bg-card);
+		box-shadow: var(--shadow-sm);
+		color: var(--text);
 	}
 </style>

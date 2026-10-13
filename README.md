@@ -76,7 +76,7 @@ cd Chronicals
 docker compose up -d
 ```
 
-The app is then available at <http://localhost:3000>. The SQLite database is stored in the Docker volume `chronicals_data`. Browsers can install the web app as a PWA. Note edits, trigger changes and deletions made while offline are queued and sent when the connection is back.
+The app is then available at <http://localhost:3000>. The SQLite database is stored in the Docker volume `chronicals_data`. Browsers can install the web app as a PWA.
 
 | Variable | Default | Description |
 |---|---|---|

@@ -1,307 +1,202 @@
 <script lang="ts">
-	import { api } from '$lib/api.js';
-	import { browser } from '$app/environment';
-	import type { Entry, EntryType, Trigger } from '$lib/types';
-	import { formatDayMonth, toDateString, toYearMonth } from '$lib/utils/date';
-	import { dateLocale, t } from '$lib/i18n';
-	import CalendarWeek from '$lib/components/calendar/CalendarWeek.svelte';
-	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
+	import { goto } from '$app/navigation';
+	import CalendarHeader from '$lib/calendar/CalendarHeader.svelte';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
+	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
+	import { toDateString } from '$lib/utils/date';
+	import type { Entry } from '$lib/types';
 
 	interface Props {
-		data: {
-			entryTypes: EntryType[];
-			allTriggers: Trigger[];
-		};
+		data: { today: string; days: string[]; entries: Entry[] };
 	}
 
 	let { data }: Props = $props();
 
-	// Compute the Monday of a given date
-	function getMondayOf(dateStr: string): string {
-		const d = new Date(dateStr + 'T00:00:00');
-		const day = d.getDay(); // 0 = Sun
-		const offset = day === 0 ? -6 : 1 - day; // shift to Monday
-		d.setDate(d.getDate() + offset);
-		return toDateString(d);
+	const FACE_COLORS = ['#ec8a9a', '#f2ac72', '#e9c66b', '#94d29c', '#62c393'];
+	const byDate = $derived(new Map(data.entries.map((e) => [e.date, e])));
+
+	function shift(days: number) {
+		const d = new Date(`${data.days[0]}T12:00:00`);
+		d.setDate(d.getDate() + days);
+		goto(`/calendar/week?week=${toDateString(d)}`, { replaceState: true, noScroll: true, keepFocus: true });
 	}
 
-	function formatWeekLabel(weekStart: string): string {
-		const start = new Date(weekStart + 'T00:00:00');
-		const end = new Date(weekStart + 'T00:00:00');
-		end.setDate(start.getDate() + 6);
-		const startLabel = formatDayMonth(weekStart);
-		const endLabel = end.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
-		return `${startLabel} – ${endLabel}`;
-	}
-
-	// Default weekStart from URL param or current week
-	let initialWeekStart = (() => {
-		if (browser) {
-			const param = new URL(window.location.href).searchParams.get('week');
-			if (param && /^\d{4}-\d{2}-\d{2}$/.test(param)) return getMondayOf(param);
-		}
-		return getMondayOf(toDateString(new Date()));
-	})();
-
-	let weekStart = $state(initialWeekStart);
-	let entries = $state<Entry[]>([]);
-	let loadingEntries = $state(false);
-	let selectedDate = $state<string | null>(null);
-	let selectedHour = $state(9);
-
-	$effect(() => {
-		if (!browser) return;
-		fetchWeekEntries(weekStart);
-	});
-
-	async function fetchWeekEntries(ws: string) {
-		loadingEntries = true;
-		try {
-			const start = new Date(ws + 'T00:00:00');
-			const end = new Date(ws + 'T00:00:00');
-			end.setDate(start.getDate() + 6);
-
-			const startMonth = toYearMonth(start);
-			const endMonth = toYearMonth(end);
-
-			const fetches: Promise<Entry[]>[] = [];
-
-			const res1 = api(`/api/entries?month=${startMonth}`).then((r) => (r.ok ? r.json() : []));
-			fetches.push(res1);
-
-			if (startMonth !== endMonth) {
-				const res2 = api(`/api/entries?month=${endMonth}`).then((r) => (r.ok ? r.json() : []));
-				fetches.push(res2);
-			}
-
-			const results = await Promise.all(fetches);
-			const all: Entry[] = results.flat();
-
-			// Filter to entries within the week range
-			const startStr = ws;
-			const endStr = toDateString(end);
-			entries = all.filter((e) => e.date >= startStr && e.date <= endStr);
-		} catch (err) {
-			console.error('Failed to fetch week entries', err);
-		} finally {
-			loadingEntries = false;
-		}
-	}
-
-	function prevWeek() {
-		const d = new Date(weekStart + 'T00:00:00');
-		d.setDate(d.getDate() - 7);
-		weekStart = toDateString(d);
-	}
-
-	function nextWeek() {
-		const d = new Date(weekStart + 'T00:00:00');
-		d.setDate(d.getDate() + 7);
-		weekStart = toDateString(d);
-	}
-
-	function goToCurrentWeek() {
-		weekStart = getMondayOf(toDateString(new Date()));
-	}
-
-	function isCurrentWeek(): boolean {
-		return weekStart === getMondayOf(toDateString(new Date()));
-	}
-
-	function handleDayClick(date: string, hour: number) {
-		selectedDate = date;
-		selectedHour = hour;
-	}
-
-	function handleDrawerClose() {
-		selectedDate = null;
-		fetchWeekEntries(weekStart);
-	}
+	const fmt = (date: string, options: Intl.DateTimeFormatOptions) =>
+		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), options);
+	const time = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+	const title = $derived(
+		`${fmt(data.days[0], { day: 'numeric', month: 'short' })} – ${fmt(data.days[6], { day: 'numeric', month: 'short', year: 'numeric' })}`
+	);
 </script>
 
 <div class="page">
-	<!-- Header -->
-	<header class="week-page-header">
-			<div class="nav-row">
-				<button class="nav-btn" onclick={prevWeek} aria-label={t('prev_week')}>
-				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-			</button>
-
-			<div class="nav-center">
-				<span class="week-label">{formatWeekLabel(weekStart)}</span>
-				{#if !isCurrentWeek()}
-						<button class="today-btn" onclick={goToCurrentWeek}>{t('this_week')}</button>
-				{/if}
-			</div>
-
-				<button class="nav-btn" onclick={nextWeek} aria-label={t('next_week')}>
-				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-			</button>
-		</div>
-
-		<div class="view-tabs">
-				<a href="/calendar" class="view-tab">{t('month_view')}</a>
-				<span class="view-tab active">{t('week_view')}</span>
-		</div>
-	</header>
-
-	<!-- Loading bar -->
-	{#if loadingEntries}
-		<div class="loading-bar" aria-hidden="true"></div>
-	{/if}
-
-	<!-- Week grid -->
-	<main class="week-main">
-		<CalendarWeek
-			{weekStart}
-			{entries}
-			entryTypes={data.entryTypes}
-			allTriggers={data.allTriggers}
-			ondayclick={handleDayClick}
-			onprevweek={prevWeek}
-			onnextweek={nextWeek}
-		/>
-	</main>
-</div>
-
-<!-- Entry drawer -->
-{#if selectedDate}
-	<EntryDrawer
-		date={selectedDate}
-		entryTypes={data.entryTypes}
-		allTriggers={data.allTriggers}
-		onclose={handleDrawerClose}
+	<CalendarHeader
+		{title}
+		view="week"
+		onprev={() => shift(-7)}
+		onnext={() => shift(7)}
+		ontoday={() => goto('/calendar/week', { replaceState: true })}
+		showToday={!data.days.includes(data.today)}
+		prevLabel={t('prev_week')}
+		nextLabel={t('next_week')}
 	/>
-{/if}
+
+	<ol class="days">
+		{#each data.days as date (date)}
+			{@const entry = byDate.get(date)}
+			{@const logs = [...(entry?.logs ?? [])].sort((a, b) => a.startTime.localeCompare(b.startTime))}
+			<li>
+				<a class="day" class:today={date === data.today} class:future={date > data.today} class:empty={!entry} href="/calendar/day/{date}">
+					<span class="date">
+						<span class="weekday">{fmt(date, { weekday: 'short' })}</span>
+						<span class="number">{fmt(date, { day: 'numeric' })}</span>
+						{#if entry?.wellbeing}
+							<span class="face" style="background: {FACE_COLORS[entry.wellbeing - 1]}"></span>
+						{/if}
+					</span>
+					<span class="content">
+						{#if logs.length}
+							{#each logs as log (log.id)}
+								<span class="log" style="--type: {log.entryType?.color ?? 'var(--accent)'}">
+									<EntryTypeIcon entryType={log.entryType} size={22} />
+									<span class="name">{localizeBuiltInText(log.entryType?.name ?? '')}</span>
+									<span class="time">{time(log.startTime)}</span>
+									{#if log.intensityCache}<span class="level">{log.intensityCache}</span>{/if}
+								</span>
+							{/each}
+						{:else if entry}
+							<span class="muted">{t('calendar_day_no_symptoms')}</span>
+						{/if}
+						{#if entry?.triggers?.length}
+							<span class="triggers">{entry.triggers.map((tr) => localizeBuiltInText(tr.triggerName)).join(' · ')}</span>
+						{/if}
+					</span>
+				</a>
+			</li>
+		{/each}
+	</ol>
+</div>
 
 <style>
 	.page {
+		max-width: 640px;
+		margin: 0 auto;
+		padding: var(--space-5) var(--space-4) var(--space-8);
 		display: flex;
 		flex-direction: column;
-		height: 100dvh;
-		background: var(--bg);
-		overflow: hidden;
+		gap: var(--space-5);
 	}
 
-	.week-page-header {
-		flex-shrink: 0;
-		background: var(--bg);
-		border-bottom: 1px solid var(--border);
-		padding: 8px 12px 6px;
-	}
-
-	.nav-row {
+	.days {
+		list-style: none;
+		margin: 0;
+		padding: 0;
 		display: flex;
-		align-items: center;
-		gap: 8px;
+		flex-direction: column;
+		gap: var(--space-2);
 	}
 
-	.nav-center {
-		flex: 1;
+	.day {
+		display: flex;
+		gap: var(--space-4);
+		padding: var(--space-3) var(--space-4);
+		border-radius: var(--radius-md);
+		background: var(--bg-card);
+		box-shadow: var(--shadow-sm);
+		color: var(--text);
+		text-decoration: none;
+		border: 2px solid transparent;
+	}
+
+	.day.today {
+		border-color: var(--accent);
+	}
+
+	.day.empty {
+		background: transparent;
+		box-shadow: none;
+		padding-block: var(--space-2);
+	}
+
+	.day.empty.today {
+		background: var(--bg-card);
+	}
+
+	.day.future {
+		opacity: 0.55;
+	}
+
+	.date {
+		width: 44px;
+		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 2px;
 	}
 
-	.week-label {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: var(--text);
+	.weekday {
+		font-size: var(--text-xs);
+		font-weight: 800;
+		color: var(--text-muted);
+		text-transform: uppercase;
+	}
+
+	.number {
+		font-size: var(--text-xl);
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.face {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+	}
+
+	.content {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		justify-content: center;
+	}
+
+	.log {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: 4px 10px 4px 6px;
+		border-radius: var(--radius-pill);
+		background: color-mix(in srgb, var(--type) 12%, var(--bg-card));
+		align-self: flex-start;
+		max-width: 100%;
+	}
+
+	.name {
+		font-weight: 700;
+		font-size: var(--text-sm);
+		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.nav-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 34px;
-		height: 34px;
-		border-radius: 8px;
-		background: transparent;
-		border: none;
-		color: var(--text);
-		cursor: pointer;
-		transition: background 0.15s;
-		flex-shrink: 0;
-	}
-
-	.nav-btn:hover {
-		background: var(--bg-subtle);
-	}
-
-	.today-btn {
-		font-size: 0.7rem;
-		font-weight: 500;
+	.time {
+		font-size: var(--text-xs);
 		color: var(--text-muted);
-		background: transparent;
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		padding: 1px 8px;
-		cursor: pointer;
-		font-family: inherit;
-		line-height: 1.6;
-		transition: background 0.15s, color 0.15s;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.today-btn:hover {
-		background: var(--bg-subtle);
-		color: var(--text);
+	.level {
+		font-size: var(--text-xs);
+		font-weight: 800;
+		color: var(--type);
 	}
 
-	.view-tabs {
-		display: flex;
-		gap: 4px;
-		align-self: flex-start;
-		margin-top: 4px;
-	}
-
-	.view-tab {
-		font-size: 0.78rem;
-		font-weight: 500;
-		padding: 4px 12px;
-		border-radius: 12px;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: var(--text-muted);
-		text-decoration: none;
-		cursor: pointer;
-		transition: background 0.12s, color 0.12s;
-	}
-
-	.view-tab.active {
-		background: var(--text);
-		color: var(--bg);
-		border-color: var(--text);
-	}
-
-	.view-tab:not(.active):hover {
-		background: var(--bg-subtle);
-		color: var(--text);
-	}
-
-	/* Loading bar */
-	.loading-bar {
-		height: 2px;
-		background: linear-gradient(90deg, transparent, var(--text-muted), transparent);
-		background-size: 200% 100%;
-		animation: slide 1.2s linear infinite;
-		flex-shrink: 0;
-	}
-
-	@keyframes slide {
-		0% { background-position: 200% center; }
-		100% { background-position: -200% center; }
-	}
-
-	/* Main grid area */
-	.week-main {
-		flex: 1;
-		overflow: hidden;
-		min-height: 0;
+	.muted,
+	.triggers {
+		font-size: var(--text-sm);
+		color: var(--text-subtle);
 	}
 </style>

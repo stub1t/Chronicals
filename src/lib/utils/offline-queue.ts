@@ -1,6 +1,7 @@
 /**
- * IndexedDB-backed mutation queue for offline support.
- * Mutations that fail when offline are queued and replayed on reconnect.
+ * IndexedDB-backed mutation queue from older versions, which queued changes
+ * made while offline. Nothing is queued any more; the queue is only drained,
+ * so changes left from an older version still reach the server.
  */
 
 import { api } from '$lib/api.js';
@@ -35,16 +36,6 @@ function openDB(): Promise<IDBDatabase> {
 		});
 	}
 	return _dbPromise;
-}
-
-export async function enqueue(mutation: Omit<QueuedMutation, 'id' | 'timestamp' | 'retries'>): Promise<void> {
-	const db = await openDB();
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(STORE, 'readwrite');
-		tx.objectStore(STORE).put({ ...mutation, id: crypto.randomUUID(), timestamp: Date.now(), retries: 0 });
-		tx.oncomplete = () => resolve();
-		tx.onerror = () => reject(tx.error);
-	});
 }
 
 export async function getPending(): Promise<QueuedMutation[]> {
@@ -123,28 +114,4 @@ export async function pendingCount(): Promise<number> {
 		req.onsuccess = () => resolve(req.result);
 		req.onerror = () => reject(req.error);
 	});
-}
-
-/**
- * Wrap a fetch call with offline queue support.
- * If the fetch fails due to network error, the mutation is queued.
- * Returns the response if online, or null if queued.
- */
-export async function fetchOrQueue(
-	url: string,
-	options: { method: 'POST' | 'PUT' | 'PATCH' | 'DELETE'; body?: unknown }
-): Promise<Response | null> {
-	try {
-		const res = await api(url, {
-			method: options.method,
-			headers: options.body ? { 'Content-Type': 'application/json' } : {},
-			body: options.body ? JSON.stringify(options.body) : undefined,
-			signal: AbortSignal.timeout(5000)
-		});
-		return res;
-	} catch {
-		// Network error or timeout: queue the mutation
-		await enqueue({ url, method: options.method, body: options.body });
-		return null;
-	}
 }

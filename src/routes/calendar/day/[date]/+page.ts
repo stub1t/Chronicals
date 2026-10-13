@@ -1,14 +1,9 @@
-import { getJson } from '$lib/api.js';
-import type { EntryType, Trigger, Entry, EnvironmentalData } from '$lib/types/index.js';
+import { error } from '@sveltejs/kit';
+import { loadDayData } from '$lib/diary/day-data.js';
+import { toDateString } from '$lib/utils/date';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params, fetch }) => {
-	const date = encodeURIComponent(params.date);
-	const [entry, entryTypes, allTriggers, envData] = await Promise.all([
-		getJson<Entry | null>(fetch, `/api/entries?date=${date}`),
-		getJson<EntryType[]>(fetch, '/api/entry-types'),
-		getJson<Trigger[]>(fetch, '/api/triggers'),
-		getJson<EnvironmentalData | null>(fetch, `/api/environmental?date=${date}&cached=1`)
-	]);
-	return { date: params.date, entry, entryTypes, allTriggers, envData };
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(params.date) || Number.isNaN(Date.parse(params.date))) error(404);
+	return { date: params.date, today: toDateString(new Date()), ...(await loadDayData(fetch, params.date)) };
 };
