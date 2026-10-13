@@ -93,7 +93,7 @@ export async function flush(): Promise<{ succeeded: number; failed: number }> {
 				await remove(mutation.id);
 				succeeded++;
 			} else if (res.status >= 400 && res.status < 500) {
-				// Client error — don't retry, remove it
+				// Client error: don't retry, remove it
 				await remove(mutation.id);
 				failed++;
 			} else {
@@ -101,7 +101,7 @@ export async function flush(): Promise<{ succeeded: number; failed: number }> {
 				failed++;
 			}
 		} catch {
-			// Network error — increment retry count, keep in queue
+			// Network error: increment retry count, keep in queue
 			if (mutation.retries >= 10) {
 				await remove(mutation.id); // Give up after 10 retries
 				failed++;
@@ -143,7 +143,7 @@ export async function fetchOrQueue(
 		});
 		return res;
 	} catch {
-		// Network error or timeout — queue the mutation
+		// Network error or timeout: queue the mutation
 		await enqueue({ url, method: options.method, body: options.body });
 		return null;
 	}

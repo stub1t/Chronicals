@@ -379,7 +379,7 @@ const BUILT_IN_TRIGGERS = [
 ];
 
 export function seedBuiltIns(db: AppDatabase) {
-	// Seed entry types — insert if missing, always refresh built-in data
+	// Seed entry types: insert if missing, always refresh built-in data
 	for (const type of BUILT_IN_ENTRY_TYPES) {
 		const existing = db
 			.select({ id: schema.entryTypes.id })

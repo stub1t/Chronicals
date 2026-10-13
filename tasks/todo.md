@@ -24,7 +24,7 @@ one API route table serves both the SvelteKit server and an in-process phone tra
   reload → both persisted; 0 `/api` network requests; 0 console errors.
 - APK: `assembleRelease` with JDK 21 / SDK 36 → 3.9 MB, `apksigner verify` OK,
   `io.github.stub1t.chronicals` versionName 0.1.0 / versionCode 100.
-- Not verified here: running on a device/emulator (no KVM in sandbox) — Capacitor
+- Not verified here: running on a device/emulator (no KVM in sandbox). Capacitor
   Filesystem/SystemBars native behavior needs a real-device check.
 - Workflow passes actionlint + shellcheck; first real run happens on tag push.
 - Pre-existing, unrelated: Docker healthcheck uses `localhost`, which resolves to ::1

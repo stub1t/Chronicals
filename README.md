@@ -1,146 +1,110 @@
 <p align="center">
-  <img src="docs/assets/banner.png" alt="Chronicals — a private health diary that shows you what triggers your symptoms" width="100%">
+  <img src="docs/assets/banner.png" alt="Chronicals banner with the app icon and two screenshots" width="100%">
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Android-7.0%2B-3b82f6?logo=android&logoColor=white" alt="Android 7.0+">
-  <img src="https://img.shields.io/badge/self--hosted-Docker-22c55e?logo=docker&logoColor=white" alt="Self-hosted with Docker">
-  <img src="https://img.shields.io/badge/SvelteKit-Svelte%205-ff3e00?logo=svelte&logoColor=white" alt="SvelteKit">
-  <img src="https://img.shields.io/badge/data-SQLite%2C%20on%20your%20device-a855f7?logo=sqlite&logoColor=white" alt="SQLite">
-</p>
+# Chronicals
 
-**Chronicals** is a calendar-based health diary. Log headaches, stomach aches, allergies, hypos, periods and medication changes, along with the things that may have caused them: sleep, stress, food, weather. Chronicals then shows you which of those actually line up with your symptoms.
+Chronicals is a symptom diary built around a calendar. You record symptoms such as headaches or stomach aches and tag each day with possible triggers, for example poor sleep, stress or caffeine. Over time the app compares the two and shows which triggers appear more often on days with symptoms.
 
-It runs in two ways, both from this repository:
-
-- 📱 **Android app**: everything stays on your phone. No account and no server.
-- 🖥️ **Self-hosted web app**: one Docker container with a SQLite file, installable as a PWA.
-
-## Screenshots
+It runs as an Android app that keeps all data on the phone, or as a web app that you host yourself with Docker.
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/calendar-light.png" alt="Month calendar with coloured dots per symptom"></td>
-    <td><img src="docs/screenshots/drawer-light.png" alt="Day drawer with logged symptoms and weather"></td>
-    <td><img src="docs/screenshots/analysis-light.png" alt="Analysis overview for headaches"></td>
-    <td><img src="docs/screenshots/analysis-3-light.png" alt="Air pressure chart and medication changes"></td>
+    <td><img src="docs/screenshots/calendar-light.png" alt="Month view with coloured dots for logged symptoms"></td>
+    <td><img src="docs/screenshots/drawer-light.png" alt="Day details with weather and three logged entries"></td>
+    <td><img src="docs/screenshots/analysis-light.png" alt="Analysis overview for headaches over three months"></td>
+    <td><img src="docs/screenshots/analysis-3-light.png" alt="Air pressure chart and medication changes in the analysis"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/calendar-dark.png" alt="Month calendar in dark mode"></td>
-    <td><img src="docs/screenshots/week-dark.png" alt="Week timeline in dark mode"></td>
-    <td><img src="docs/screenshots/log-editor-dark.png" alt="Logging a headache with intensity, location and symptoms"></td>
-    <td><img src="docs/screenshots/medications-dark.png" alt="Medications with change history"></td>
+    <td><img src="docs/screenshots/calendar-dark.png" alt="Month view in dark mode"></td>
+    <td><img src="docs/screenshots/week-dark.png" alt="Week view in dark mode"></td>
+    <td><img src="docs/screenshots/log-editor-dark.png" alt="Form for a headache entry with intensity, location and symptoms"></td>
+    <td><img src="docs/screenshots/medications-dark.png" alt="Medication list with dosage history"></td>
   </tr>
 </table>
 
 ## Features
 
-| | |
-|---|---|
-| 🗓️ **Calendar first** | Month, week and day views. Each symptom type has its own colour, and its intensity sets the shade. |
-| 🩺 **Built-in entry types** | Headache, stomach ache, allergy / hay fever, hypo, period, medication change and notes, each with its own form (intensity, location, symptoms…). |
-| 🧩 **Your own entry types** | Define new types with sliders, selects, checklists and text fields. |
-| ⚡ **Triggers** | Tag days with food, environment and activity triggers, or add your own. |
-| 🌦️ **Automatic weather** | Temperature, air pressure, pressure change and UV index for your location, from [Open-Meteo](https://open-meteo.com). |
-| 📈 **Analysis** | Phi-coefficient correlations between symptoms and triggers or weather, an air-pressure chart, and medication changes marked over the same period. |
-| 💊 **Medications** | Active medications with a dosage-change history. |
-| 🌗 **Light & dark, 🇬🇧 / 🇩🇪** | Follows your system theme. English and German. |
+- Month, week and day views. Each entry type has its own colour, and the intensity (1 to 5) sets how strong the colour is.
+- Seven built-in entry types: headache, stomachache, allergy or hay fever, hypo, medication change, period and general note. Each has its own form. A headache entry, for example, asks for intensity, location and accompanying symptoms.
+- Custom entry types with your own fields (slider, dropdown, checklist or text).
+- Triggers in four groups: food, environment, activity and custom. A day can have any number of them.
+- Daily weather from [Open-Meteo](https://open-meteo.com): temperature, mean air pressure, the change in pressure since the previous day, UV index and conditions. This needs a location in the profile settings.
+- A medication list with a history of dosage changes.
+- English and German, light and dark theme.
 
-## Get it
+## How the analysis works
 
-### 📱 Android
+You pick an entry type and a period of 1, 3 or 12 months. For every trigger, Chronicals sorts the days that have any entry into four groups: symptom and trigger, only the symptom, only the trigger, or neither. From those counts it calculates the [phi coefficient](https://en.wikipedia.org/wiki/Phi_coefficient). A value above 0.2 is shown as a possible association and above 0.4 as a strong one. The table also lists the average intensity on days with and without the trigger.
 
-1. Download the latest `chronicals-x.y.z.apk` from **[Releases](../../releases/latest)**.
-2. Open it on your phone. Android asks you to allow installs from your browser or file manager the first time.
-3. Updates install over the existing app and keep your data.
+Air pressure change and UV index go through the same calculation after the days are split at the median. For pressure, the days with a bigger drop than the median count as the "high" group.
 
-Your diary is stored inside the app's private storage. Nothing is sent anywhere except weather requests to Open-Meteo, and only once you set a location. Android's automatic backup includes the app's data if backup is turned on for your Google account.
+The results only describe your own records and are not medical advice. With few logged days the numbers can change a lot from one week to the next.
 
-### 🖥️ Self-hosted (Docker)
+## Installation
+
+### Android
+
+1. Download `chronicals-<version>.apk` from the [latest release](../../releases/latest).
+2. Open the file on the phone. Android asks once for permission to install apps from your browser or file manager.
+
+Android 7.0 or newer is required. A new version installs over the old one and keeps your entries.
+
+The diary is stored in the app's private storage. Android's device backup includes it if backup is turned on. There is no export yet, so uninstalling the app deletes the data.
+
+The app only contacts Open-Meteo: for the place search in the profile settings, and for weather data once a location is saved.
+
+### Self-hosted web app
 
 ```bash
-git clone https://github.com/stub1t/Chronicals.git chronicals
-cd chronicals
+git clone https://github.com/stub1t/Chronicals.git
+cd Chronicals
 docker compose up -d
 ```
 
-Open <http://localhost:3000>. The SQLite database lives in the `chronicals_data` volume.
+The app is then available at <http://localhost:3000>. The SQLite database is stored in the Docker volume `chronicals_data`. Browsers can install the web app as a PWA. Note edits, trigger changes and deletions made while offline are queued and sent when the connection is back.
 
-| Variable | Default | |
+| Variable | Default | Description |
 |---|---|---|
-| `ORIGIN` | `http://localhost:3000` | The public URL you reach the app at (needed for CSRF protection behind a reverse proxy) |
-| `DATABASE_PATH` | `/data/chronicals.db` | SQLite file location inside the container |
+| `ORIGIN` | `http://localhost:3000` | Public URL of the app. Set it when running behind a reverse proxy, otherwise changes are rejected by the CSRF check. |
+| `DATABASE_PATH` | `/data/chronicals.db` | Location of the SQLite file inside the container |
 | `PORT` | `3000` | Port the server listens on |
 
 ## Development
 
 ```bash
 npm install
-npm run dev              # http://localhost:5173
-npm run check            # svelte-check
-npm run build            # Node server build → build/
+npm run dev     # development server on http://localhost:5173
+npm run check   # type check
+npm run build   # production build of the web app
 ```
 
-<details>
-<summary><b>Building the Android app locally</b></summary>
-
-Requires JDK 21 and the Android SDK (platform 36).
+Building the Android app needs JDK 21 and the Android SDK with platform 36:
 
 ```bash
-npm run android:sync                     # static build → build-mobile/ → android/
-cd android && ./gradlew assembleDebug    # app/build/outputs/apk/debug/app-debug.apk
-npm run android:open                     # or open the project in Android Studio
+npm run android:sync                    # builds the web assets and copies them into android/
+cd android && ./gradlew assembleDebug   # APK in android/app/build/outputs/apk/debug/
 ```
 
-</details>
+Both versions share the same code. The database queries live in `src/lib/data` and every `/api` route is defined once in `src/lib/data/api.ts`. The web server runs them against SQLite through `better-sqlite3`. The Android app is a static build that answers the same routes inside the app with `sql.js`, a WebAssembly build of SQLite, and saves the database file after each change. [`AGENTS.md`](AGENTS.md) describes the conventions in more detail.
 
-<details>
-<summary><b>How one codebase serves both</b></summary>
+## Releases
 
-All data access lives in `src/lib/data` as synchronous Drizzle queries, and every `/api/*` route is defined once in `src/lib/data/api.ts`.
-
-- **Web:** the SvelteKit server mounts that route table and runs the queries on `better-sqlite3`.
-- **Android:** the app is a static SPA. The same route table answers in-process, the queries run on `sql.js` (SQLite compiled to WebAssembly), and the database is saved to app storage after every change.
-
-Migrations in `migrations/` are applied on both. See [`AGENTS.md`](AGENTS.md) for the conventions to follow when changing things.
-
-</details>
-
-## Releasing
-
-Releases are numbered by date (UTC): **`v2026.10.13`**, then `v2026.10.13.2` for a second release on the same day. Start one with a single command:
+Release versions are dates in UTC, for example `v2026.10.13`. A second release on the same day becomes `v2026.10.13.2`. To publish a release from `main`:
 
 ```bash
-npm run release        # = gh workflow run android-release.yml --ref main
-gh run watch           # optional: follow the build (~4 min)
+npm run release   # starts the "Android release" workflow
+gh run watch      # optional: follow the build, which takes about four minutes
 ```
 
-Or go to **Actions → Android release → Run workflow**. The workflow ([`.github/workflows/android-release.yml`](.github/workflows/android-release.yml)) builds `main`, signs the APK, creates the tag and publishes the release with notes generated from the merged changes. versionCode is `YYYYMMDD × 100 + n`, so every release installs as an update over the previous one.
+The workflow can also be started from the Actions tab. It builds and signs the APK, creates the tag and publishes the release with notes generated from the commits. To build the APK of an existing release again, run `gh workflow run android-release.yml -f rebuild_tag=v2026.10.13`.
 
-To rebuild the APK of an existing release, run the workflow with **rebuild_tag** set, e.g. `gh workflow run android-release.yml -f rebuild_tag=v2026.10.13`.
+### Signing key
 
-<details>
-<summary><b>One-time setup: signing secrets</b></summary>
-
-The workflow signs with a release keystore that is **never committed**. Keep `.signing/` (or wherever your keystore lives) backed up: an APK signed with a different key can't update an installed app.
-
-Add four repository secrets, either with the GitHub CLI from the repository root:
+The APK is signed with a release key that is not part of the repository. Keep a backup of it, because Android only installs an update if it is signed with the same key as the installed app. The workflow reads the key from four repository secrets. With the keystore in `.signing/`, they can be set with this command:
 
 ```bash
-base64 < .signing/chronicals-release.jks | tr -d '\n' | gh secret set ANDROID_KEYSTORE_BASE64
-awk '/Store password/{print $3}' .signing/credentials.txt | gh secret set ANDROID_KEYSTORE_PASSWORD
-awk '/Store password/{print $3}' .signing/credentials.txt | gh secret set ANDROID_KEY_PASSWORD
-gh secret set ANDROID_KEY_ALIAS --body chronicals
-gh secret list   # should show all four
+P=$(awk '/Store password/{print $3}' .signing/credentials.txt) && base64 < .signing/chronicals-release.jks | tr -d '\n' | gh secret set ANDROID_KEYSTORE_BASE64 && gh secret set ANDROID_KEYSTORE_PASSWORD --body "$P" && gh secret set ANDROID_KEY_PASSWORD --body "$P" && gh secret set ANDROID_KEY_ALIAS --body chronicals
 ```
 
-…or in the browser under **Settings → Secrets and variables → Actions → New repository secret**, using these values:
-
-| Secret | Value |
-|---|---|
-| `ANDROID_KEYSTORE_BASE64` | Output of `base64 < .signing/chronicals-release.jks \| tr -d '\n'` |
-| `ANDROID_KEYSTORE_PASSWORD` | *Store password* from `.signing/credentials.txt` |
-| `ANDROID_KEY_PASSWORD` | Same as the store password |
-| `ANDROID_KEY_ALIAS` | `chronicals` |
-
-</details>
+The same values can be entered under Settings, Secrets and variables, Actions.

@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { defineConfig } from 'vite';
 
-// See svelte.config.js — the Android app is a static SPA with its own database.
+// See svelte.config.js: the Android app is a static SPA with its own database.
 const isMobile = process.env.CHRONICALS_TARGET === 'mobile';
 
 export default defineConfig({

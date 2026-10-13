@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 
 type Theme = 'system' | 'light' | 'dark';
 
-// Plain object — runes ($state) cannot be used in .ts files, only .svelte files.
+// Plain object: runes ($state) cannot be used in .ts files, only .svelte files.
 // Theme state lives entirely in the browser (localStorage + classList), so no
 // reactive store is needed; components read the DOM class directly.
 let _current: Theme = 'system';

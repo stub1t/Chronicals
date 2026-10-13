@@ -6,14 +6,14 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Project
 
-**Chronicals** — Self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
+**Chronicals**: self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
 
 Ships two ways from one codebase: the self-hosted web app (Docker) and a standalone Android app (Capacitor) that keeps all data on the phone, with no server.
 
 ## Tech Stack
 
 - **Framework**: SvelteKit (TypeScript, Svelte 5 runes)
-- **Database**: SQLite via Drizzle ORM — `better-sqlite3` on the server, `sql.js` (WASM) in the Android app
+- **Database**: SQLite via Drizzle ORM: `better-sqlite3` on the server, `sql.js` (WASM) in the Android app
 - **Styling**: TailwindCSS v4 (`@tailwindcss/vite` plugin)
 - **Deployment**: Docker + docker-compose (web); Capacitor 8 Android APK via GitHub Releases
 
@@ -53,7 +53,7 @@ src/
 │   ├── mobile/
 │   │   ├── database.ts      ← sql.js connection, bundled migrations, seed, persistence via @capacitor/filesystem
 │   │   └── local-api.ts     ← localFetch(): answers /api/* in-process on Android
-│   ├── data/                ← Platform-neutral (runs on server AND in the Android WebView — no Node APIs)
+│   ├── data/                ← Platform-neutral (runs on the server and in the Android WebView, no Node APIs)
 │   │   ├── db.ts            ← `db` live binding + useDatabase(); AppDatabase = any sync Drizzle SQLite DB
 │   │   ├── api.ts           ← The single /api/* route table + handleApiRequest()
 │   │   ├── security.ts      ← Request validation helpers (+ CSRF check used by hooks.server.ts)
@@ -98,7 +98,7 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
 
 ## Web + Android from one codebase
 
-- **One API surface**: every `/api/*` route lives in `src/lib/data/api.ts`. Add or change endpoints there, never as new `+server.ts` files — the Android app would not see them.
+- **One API surface**: every `/api/*` route lives in `src/lib/data/api.ts`. Add or change endpoints there, never as new `+server.ts` files, because the Android app would not see them.
 - **Always call the API via `api()` / `getJson()` from `$lib/api.ts`**, never bare `fetch('/api/…')`. On Android there is no server; `api()` routes to the on-device database.
 - **Loads are universal (`+page.ts`)** and read through `getJson(fetch, '/api/…')`. Don't add `+page.server.ts` / form actions: the Android build is a static SPA (`ssr = false` via `__NATIVE_APP__`).
 - **`src/lib/data` must stay platform-neutral**: synchronous Drizzle queries on the shared `db`, no `node:*`/`better-sqlite3` imports.
