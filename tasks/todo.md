@@ -79,3 +79,15 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] About section: version (APK version on Android), AGPL notice, source link
 - [x] LICENSE (AGPL-3.0-or-later)
 - [x] History scan (gitleaks + manual: no secrets, only stub1t@github.com), repo made public after the user's OK; Obtainium works without a token
+
+# Redesign: soft UI, Today/Calendar/Insights/Me, 15 languages, new insights (2026-10-14)
+
+- [x] 1. Foundation: tokens, Nunito, base components, icons, haptics
+- [ ] 2. i18n infrastructure (en/de), language picker, RTL
+- [ ] 3. Data: wellbeing column + API, weather range API, no SSR, route skeleton + redirects
+- [ ] 4. Today screen + log sheet
+- [ ] 5. Calendar (month/week/day sheet), search
+- [ ] 6. Me section
+- [ ] 7. Insights engine + screen + printable report + CSV; remove old analysis + jsPDF
+- [ ] 8. 13 more languages + completeness tests
+- [ ] 9. Polish, a11y, dark/RTL passes, screenshots, README, AGENTS.md
