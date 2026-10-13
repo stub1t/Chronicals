@@ -6,16 +6,28 @@
 	import { themeStore } from '$lib/stores/theme.js';
 	import { language, localeStore, t } from '$lib/stores/locale.js';
 	import { flush, pendingCount } from '$lib/utils/offline-queue.js';
+	import { isAppLockEnabled } from '$lib/app-lock.js';
 
 	let { children } = $props();
 	let syncPending = $state(0);
 	let isOnline = $state(true);
+	// Start locked (no flash of content) when the Android app lock is on.
+	let appLocked = $state(__NATIVE_APP__ && browser && isAppLockEnabled());
+	let unlock: () => Promise<boolean> = async () => true;
 
 	onMount(() => {
 		themeStore.init();
 		localeStore.init();
 
 		if (__NATIVE_APP__) {
+			import('$lib/mobile/app-lock.js').then((m) => {
+				unlock = m.unlock;
+				m.startAppLock();
+				m.locked.subscribe((value) => {
+					appLocked = value;
+					if (value) m.unlock();
+				});
+			});
 			import('$lib/mobile/reminders.js').then((m) => {
 				m.listenForReminderTaps();
 				m.syncReminders().catch(console.error);
@@ -58,33 +70,45 @@
 		</div>
 	{/if}
 
+	<!-- Re-render on language change, including the lock screen. -->
 	{#key $language}
-		<main class="content">
-			{@render children()}
-		</main>
+		{#if appLocked}
+			<div class="lock-screen">
+				<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="4" y="10" width="16" height="11" rx="2.5" />
+					<path d="M8 10V7a4 4 0 0 1 8 0v3" />
+				</svg>
+				<p class="lock-title">{t('app_lock_title')}</p>
+				<button class="lock-button" onclick={() => unlock()}>{t('app_lock_unlock')}</button>
+			</div>
+		{:else}
+			<main class="content">
+				{@render children()}
+			</main>
 
-		<nav class="bottom-nav" aria-label={t('nav_settings')}>
-			<a href="/calendar" class="nav-item" class:active={isActive('/calendar')} aria-label={t('nav_calendar')}>
-				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<rect x="3" y="4" width="18" height="18" rx="3"/>
-					<path d="M16 2v4M8 2v4M3 10h18"/>
-				</svg>
-				<span class="nav-label">{t('nav_calendar')}</span>
-			</a>
-			<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label={t('nav_analysis')}>
-				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M3 18l4-8 4 5 3-3 4 6"/>
-				</svg>
-				<span class="nav-label">{t('nav_analysis')}</span>
-			</a>
-			<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label={t('nav_settings')}>
-				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<circle cx="12" cy="12" r="3"/>
-					<path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-				</svg>
-				<span class="nav-label">{t('nav_settings')}</span>
-			</a>
-		</nav>
+			<nav class="bottom-nav" aria-label={t('nav_settings')}>
+				<a href="/calendar" class="nav-item" class:active={isActive('/calendar')} aria-label={t('nav_calendar')}>
+					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<rect x="3" y="4" width="18" height="18" rx="3"/>
+						<path d="M16 2v4M8 2v4M3 10h18"/>
+					</svg>
+					<span class="nav-label">{t('nav_calendar')}</span>
+				</a>
+				<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label={t('nav_analysis')}>
+					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M3 18l4-8 4 5 3-3 4 6"/>
+					</svg>
+					<span class="nav-label">{t('nav_analysis')}</span>
+				</a>
+				<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label={t('nav_settings')}>
+					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="3"/>
+						<path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+					</svg>
+					<span class="nav-label">{t('nav_settings')}</span>
+				</a>
+			</nav>
+		{/if}
 	{/key}
 </div>
 
@@ -96,6 +120,40 @@
 		/* viewport-fit=cover: keep content clear of the status bar (Android app, iOS standalone) */
 		padding-top: env(safe-area-inset-top, 0);
 		background: var(--bg);
+	}
+
+	.lock-screen {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		color: var(--text);
+	}
+
+	.lock-icon {
+		width: 48px;
+		height: 48px;
+		color: var(--text-muted);
+	}
+
+	.lock-title {
+		font-size: 1.1rem;
+		font-weight: 700;
+		margin: 0;
+	}
+
+	.lock-button {
+		padding: 12px 28px;
+		border: none;
+		border-radius: 22px;
+		background: var(--text);
+		color: var(--bg);
+		font-family: inherit;
+		font-size: 0.95rem;
+		font-weight: 700;
+		cursor: pointer;
 	}
 
 	.offline-banner {

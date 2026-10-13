@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { exportBackup, importBackup } from '$lib/backup.js';
 	import { loadReminderSettings, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
+	import { isAppLockEnabled } from '$lib/app-lock.js';
 
 	type ThemeOption = 'system' | 'light' | 'dark';
 
@@ -13,7 +14,10 @@
 	onMount(() => {
 		currentTheme = themeStore.current;
 		currentLanguage = localeStore.current;
-		if (__NATIVE_APP__) reminders = loadReminderSettings();
+		if (__NATIVE_APP__) {
+			reminders = loadReminderSettings();
+			appLock = isAppLockEnabled();
+		}
 	});
 
 	function setTheme(t: ThemeOption) {
@@ -38,6 +42,27 @@
 			reminderDenied = next.daily && !(await requestReminderPermission());
 			await syncReminders();
 		}
+	}
+
+	// ── App lock (Android app) ────────────────────────────────────────────────
+	let appLock = $state(false);
+	let appLockMessage = $state<string | null>(null);
+
+	async function toggleAppLock(event: Event & { currentTarget: HTMLInputElement }) {
+		const checkbox = event.currentTarget;
+		appLockMessage = null;
+		if (__NATIVE_APP__) {
+			const { enableAppLock, disableAppLock } = await import('$lib/mobile/app-lock.js');
+			if (checkbox.checked) {
+				const result = await enableAppLock();
+				if (result === 'unavailable') appLockMessage = t('settings_app_lock_unavailable');
+			} else {
+				await disableAppLock();
+			}
+		}
+		// Reflect what actually happened (a cancelled prompt leaves it unchanged).
+		appLock = isAppLockEnabled();
+		checkbox.checked = appLock;
 	}
 
 	// ── Backup ────────────────────────────────────────────────────────────────
@@ -206,6 +231,22 @@
 			<p class="data-note">{t('settings_reminder_daily_note')}</p>
 			{#if reminderDenied}
 				<p class="data-message error" role="alert">{t('settings_reminder_denied')}</p>
+			{/if}
+		</section>
+	{/if}
+
+	{#if __NATIVE_APP__}
+		<section class="theme-section" aria-label={t('settings_app_lock')}>
+			<p class="theme-title">{t('settings_app_lock')}</p>
+			<div class="reminder-row">
+				<label class="switch-label">
+					<input type="checkbox" checked={appLock} onchange={toggleAppLock} />
+					{t('settings_app_lock_toggle')}
+				</label>
+			</div>
+			<p class="data-note">{t('settings_app_lock_note')}</p>
+			{#if appLockMessage}
+				<p class="data-message error" role="alert">{appLockMessage}</p>
 			{/if}
 		</section>
 	{/if}
