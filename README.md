@@ -108,12 +108,16 @@ Migrations in `migrations/` are applied on both. See [`AGENTS.md`](AGENTS.md) fo
 
 ## Releasing
 
-Pushing a version tag builds a signed APK and publishes it as a GitHub Release ([`.github/workflows/android-release.yml`](.github/workflows/android-release.yml)):
+Releases are numbered by date (UTC): **`v2026.10.13`**, then `v2026.10.13.2` for a second release on the same day. Start one with a single command:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+npm run release        # = gh workflow run android-release.yml --ref main
+gh run watch           # optional: follow the build (~4 min)
 ```
+
+Or go to **Actions → Android release → Run workflow**. The workflow ([`.github/workflows/android-release.yml`](.github/workflows/android-release.yml)) builds `main`, signs the APK, creates the tag and publishes the release with notes generated from the merged changes. versionCode is `YYYYMMDD × 100 + n`, so every release installs as an update over the previous one.
+
+To rebuild the APK of an existing release, run the workflow with **rebuild_tag** set, e.g. `gh workflow run android-release.yml -f rebuild_tag=v2026.10.13`.
 
 <details>
 <summary><b>One-time setup: signing secrets</b></summary>
@@ -138,7 +142,5 @@ gh secret list   # should show all four
 | `ANDROID_KEYSTORE_PASSWORD` | *Store password* from `.signing/credentials.txt` |
 | `ANDROID_KEY_PASSWORD` | Same as the store password |
 | `ANDROID_KEY_ALIAS` | `chronicals` |
-
-To rebuild an existing tag, go to **Actions → Android release → Run workflow**.
 
 </details>

@@ -34,6 +34,7 @@ docker compose up --build  # Rebuild and start
 npm run build:mobile       # Static SPA for the Android app → build-mobile/
 npm run android:sync       # build:mobile + copy into android/ (run before any Gradle build)
 npm run android:open       # Open android/ in Android Studio
+npm run release            # Start a date-versioned Android release from main (needs gh)
 cd android && ./gradlew assembleDebug   # Debug APK (needs JDK 21 + Android SDK 36)
 ```
 
@@ -84,7 +85,7 @@ docker-compose.yml           ← Port 3000, named volume for SQLite
 capacitor.config.ts          ← Android app id io.github.stub1t.chronicals, webDir build-mobile
 android/                     ← Capacitor Android project (committed; web assets are copied in by cap sync)
 assets/                      ← Icon sources for `npx @capacitor/assets generate --android`
-.github/workflows/android-release.yml ← Tag v*.*.* → signed APK on GitHub Releases
+.github/workflows/android-release.yml ← Manual run on main → date-versioned signed APK on GitHub Releases
 ```
 
 ## Key Design Decisions
@@ -107,9 +108,11 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
 
 ## Android releases
 
-1. Bump `version` in `package.json` (informational), commit, push.
-2. `git tag vX.Y.Z && git push origin vX.Y.Z` — the workflow builds, signs and publishes `chronicals-X.Y.Z.apk`.
-   versionCode = `X*10000 + Y*100 + Z` (Y, Z ≤ 99). Re-run for an existing tag via *Actions → Android release → Run workflow*.
+1. Releases are date-versioned (UTC) and cut from `main`: `npm run release` (or Actions → Android release → Run workflow).
+   The workflow picks `vYYYY.MM.DD` (`.2`, `.3`, … for further releases that day), builds, signs, creates the tag and publishes `chronicals-YYYY.MM.DD.apk`.
+   Don't push release tags by hand. `package.json` `version` is not used for releases.
+2. versionCode = `YYYYMMDD * 100 + n` (n ≤ 99), always above the old semver release v0.1.0 (100).
+   Rebuild an existing release's APK: `gh workflow run android-release.yml -f rebuild_tag=vYYYY.MM.DD`.
 3. Signing secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
    The keystore lives only outside git (`.signing/`, gitignored). Losing it means existing installs can't be updated.
 4. Local signed build: export `CHRONICALS_KEYSTORE_FILE`, `CHRONICALS_KEYSTORE_PASSWORD`, `CHRONICALS_KEY_ALIAS`, `CHRONICALS_KEY_PASSWORD` (and optionally `CHRONICALS_VERSION_NAME`/`_CODE`) before `./gradlew assembleRelease`.
