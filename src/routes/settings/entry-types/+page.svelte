@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import type { EntryType } from '$lib/types/index.js';
@@ -15,7 +16,7 @@
 	async function addType() {
 		if (!newName.trim()) return;
 		saving = true;
-		const res = await fetch('/api/entry-types', {
+		const res = await api('/api/entry-types', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -53,7 +54,7 @@
 
 	async function deleteType(id: string) {
 		if (!confirm(t('entry_types_delete_confirm'))) return;
-		await fetch(`/api/entry-types/${id}`, { method: 'DELETE' });
+		await api(`/api/entry-types/${id}`, { method: 'DELETE' });
 		entryTypes = entryTypes.filter((t) => t.id !== id);
 	}
 

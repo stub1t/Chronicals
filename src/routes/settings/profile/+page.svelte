@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import { t } from '$lib/stores/locale.js';
 	import type { UserProfile } from '$lib/types';
 
@@ -44,7 +45,7 @@
 		geoLoading = true;
 		geoResults = [];
 		try {
-			const res = await fetch(`/api/profile/location-search?q=${encodeURIComponent(query)}`);
+			const res = await api(`/api/profile/location-search?q=${encodeURIComponent(query)}`);
 			if (res.ok) {
 				const json = await res.json();
 				geoResults = json.results ?? [];
@@ -74,7 +75,7 @@
 		saveSuccess = false;
 		saveError = null;
 		try {
-			const res = await fetch('/api/profile', {
+			const res = await api('/api/profile', {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

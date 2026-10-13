@@ -1,6 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 import { dev } from '$app/environment';
-import { enforceTrustedMutation } from '$lib/server/security.js';
+import '$lib/server/db.js';
+import { enforceTrustedMutation } from '$lib/data/security.js';
 
 function buildCsp(): string {
 	const connectSources = dev

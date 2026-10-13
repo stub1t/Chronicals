@@ -11,3 +11,7 @@ Dockerfile
 docker-compose.yml
 .dockerignore
 chronicals.db
+build
+build-mobile
+android
+.signing

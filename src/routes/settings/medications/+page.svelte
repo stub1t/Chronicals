@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import { dateLocale, t } from '$lib/stores/locale.js';
 	import type { Medication, MedicationChange, MedicationChangeType } from '$lib/types';
 
@@ -60,7 +61,7 @@
 		addMedSaving = true;
 		addMedError = null;
 		try {
-			const res = await fetch('/api/medications', {
+			const res = await api('/api/medications', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -104,7 +105,7 @@
 		changeSaving = true;
 		changeError = null;
 		try {
-			const res = await fetch('/api/medication-changes', {
+			const res = await api('/api/medication-changes', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

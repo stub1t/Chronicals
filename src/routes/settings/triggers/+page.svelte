@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import type { Trigger, TriggerCategory } from '$lib/types/index.js';
 
@@ -29,7 +30,7 @@
 	async function addTrigger() {
 		if (!newName.trim()) return;
 		saving = true;
-		const res = await fetch('/api/triggers', {
+		const res = await api('/api/triggers', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ name: newName.trim(), category: newCategory })
@@ -42,7 +43,7 @@
 	}
 
 	async function deleteTrigger(id: string) {
-		await fetch(`/api/triggers/${id}`, { method: 'DELETE' });
+		await api(`/api/triggers/${id}`, { method: 'DELETE' });
 		triggers = triggers.filter((t) => t.id !== id);
 	}
 </script>

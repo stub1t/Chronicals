@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import { browser } from '$app/environment';
 	import type { CalendarDayData, EntryType, Trigger } from '$lib/types';
 	import { toYearMonth, toDateString, prevMonth, nextMonth } from '$lib/utils/date';
@@ -38,7 +39,7 @@
 	async function fetchDotData(ym: string) {
 		loading = true;
 		try {
-			const res = await fetch(`/api/entries?month=${ym}&dots=1`);
+			const res = await api(`/api/entries?month=${ym}&dots=1`);
 			if (res.ok) {
 				dotData = await res.json();
 			}

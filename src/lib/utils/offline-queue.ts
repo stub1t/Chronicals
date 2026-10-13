@@ -3,6 +3,8 @@
  * Mutations that fail when offline are queued and replayed on reconnect.
  */
 
+import { api } from '$lib/api.js';
+
 const DB_NAME = 'chronicals-offline';
 const DB_VERSION = 1;
 const STORE = 'mutations';
@@ -82,7 +84,7 @@ export async function flush(): Promise<{ succeeded: number; failed: number }> {
 
 	for (const mutation of pending) {
 		try {
-			const res = await fetch(mutation.url, {
+			const res = await api(mutation.url, {
 				method: mutation.method,
 				headers: mutation.body ? { 'Content-Type': 'application/json' } : {},
 				body: mutation.body ? JSON.stringify(mutation.body) : undefined
@@ -133,7 +135,7 @@ export async function fetchOrQueue(
 	options: { method: 'POST' | 'PUT' | 'PATCH' | 'DELETE'; body?: unknown }
 ): Promise<Response | null> {
 	try {
-		const res = await fetch(url, {
+		const res = await api(url, {
 			method: options.method,
 			headers: options.body ? { 'Content-Type': 'application/json' } : {},
 			body: options.body ? JSON.stringify(options.body) : undefined,

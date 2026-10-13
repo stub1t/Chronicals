@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger } from '$lib/types';
 	import { formatDayMonth, toDateString, toYearMonth } from '$lib/utils/date';
@@ -65,11 +66,11 @@
 
 			const fetches: Promise<Entry[]>[] = [];
 
-			const res1 = fetch(`/api/entries?month=${startMonth}`).then((r) => (r.ok ? r.json() : []));
+			const res1 = api(`/api/entries?month=${startMonth}`).then((r) => (r.ok ? r.json() : []));
 			fetches.push(res1);
 
 			if (startMonth !== endMonth) {
-				const res2 = fetch(`/api/entries?month=${endMonth}`).then((r) => (r.ok ? r.json() : []));
+				const res2 = api(`/api/entries?month=${endMonth}`).then((r) => (r.ok ? r.json() : []));
 				fetches.push(res2);
 			}
 

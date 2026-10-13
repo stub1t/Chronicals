@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import type {
 		EntryType,
 		MonthlyStats,
@@ -108,9 +109,9 @@
 					: `startDate=${startDate}&endDate=${endDate}`;
 
 			const [statsRes, corrRes, pressureRes] = await Promise.all([
-				fetch(`/api/analysis/stats?entryTypeId=${selectedTypeId}&${statsParam}`),
-				fetch(`/api/analysis/correlations?entryTypeId=${selectedTypeId}&startDate=${startDate}&endDate=${endDate}`),
-				fetch(`/api/analysis/pressure?startDate=${startDate}&endDate=${endDate}&entryTypeId=${selectedTypeId}`)
+				api(`/api/analysis/stats?entryTypeId=${selectedTypeId}&${statsParam}`),
+				api(`/api/analysis/correlations?entryTypeId=${selectedTypeId}&startDate=${startDate}&endDate=${endDate}`),
+				api(`/api/analysis/pressure?startDate=${startDate}&endDate=${endDate}&entryTypeId=${selectedTypeId}`)
 			]);
 			if (statsRes.ok) stats = await statsRes.json();
 			if (corrRes.ok) correlations = await corrRes.json();

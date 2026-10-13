@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger, EnvironmentalData, EntryTypeLog } from '$lib/types';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
@@ -56,7 +57,7 @@
 		loading = true;
 		try {
 			const month = date.slice(0, 7);
-			const res = await fetch(`/api/entries?month=${month}`);
+			const res = await api(`/api/entries?month=${month}`);
 			if (res.ok) {
 				const entries: Entry[] = await res.json();
 				const found = entries.find((e) => e.date === date) ?? null;
@@ -73,7 +74,7 @@
 	async function loadEnvData() {
 		envLoading = true;
 		try {
-			const res = await fetch(`/api/environmental?date=${date}`);
+			const res = await api(`/api/environmental?date=${date}`);
 			if (res.ok) {
 				envData = await res.json();
 			} else {
@@ -88,7 +89,7 @@
 
 	async function ensureEntry(): Promise<Entry> {
 		if (entry) return entry;
-		const res = await fetch('/api/entries', {
+		const res = await api('/api/entries', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ date })
@@ -105,7 +106,7 @@
 		try {
 			const e = await ensureEntry();
 			const now = new Date().toISOString();
-			const res = await fetch('/api/entry-type-logs', {
+			const res = await api('/api/entry-type-logs', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -153,7 +154,7 @@
 		const trimmed = name.trim();
 		if (!trimmed) return;
 		try {
-			const res = await fetch('/api/triggers', {
+			const res = await api('/api/triggers', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ name: trimmed, category })
@@ -240,7 +241,7 @@
 			endTime: editEndTime ? new Date(editEndTime).toISOString() : null
 		};
 		try {
-			const res = await fetch(`/api/entry-type-logs/${editingLog.id}`, {
+			const res = await api(`/api/entry-type-logs/${editingLog.id}`, {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(body)

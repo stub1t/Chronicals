@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api.js';
 	import { goto } from '$app/navigation';
 	import CalendarDay from '$lib/components/calendar/CalendarDay.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
@@ -15,7 +16,7 @@
 	let liveEntry = $state<Entry | null>(data.entry as Entry | null);
 
 	async function refreshEntry() {
-		const res = await fetch(`/api/entries?month=${data.date.slice(0, 7)}`);
+		const res = await api(`/api/entries?month=${data.date.slice(0, 7)}`);
 		if (res.ok) {
 			const entries: Entry[] = await res.json();
 			liveEntry = entries.find((e) => e.date === data.date) ?? null;
