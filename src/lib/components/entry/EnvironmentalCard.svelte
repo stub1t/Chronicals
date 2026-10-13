@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { EnvironmentalData } from '$lib/types';
-	import { t } from '$lib/stores/locale.js';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		data: EnvironmentalData | null;

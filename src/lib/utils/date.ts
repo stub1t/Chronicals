@@ -1,4 +1,4 @@
-import { dateLocale, localeStore } from '$lib/stores/locale.js';
+import { dateLocale, localeStore } from '$lib/i18n';
 
 function currentLocale(): string {
 	return dateLocale(localeStore.current);

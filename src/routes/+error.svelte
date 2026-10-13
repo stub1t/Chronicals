@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/stores/locale.js';
+	import { t } from '$lib/i18n';
 </script>
 
 <div class="error-page">

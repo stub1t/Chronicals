@@ -3,7 +3,7 @@ import { autoTable, type UserOptions } from 'jspdf-autotable';
 import { formatDuration, type Report } from './summary.js';
 
 export interface PdfText {
-	/** The app's `t()`; the report keys live in `$lib/stores/locale.ts`. */
+	/** The app's `t()`; the report keys live in `$lib/i18n`. */
 	t: (key: never, vars?: Record<string, string | number>) => string;
 	/** Long local date, e.g. "15 Sep 2026". */
 	date: (isoDate: string) => string;

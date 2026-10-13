@@ -4,7 +4,7 @@
 	import { toDateString } from '$lib/utils/date';
 	import CalendarDay from '$lib/components/calendar/CalendarDay.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
-	import { dateLocale, t } from '$lib/stores/locale.js';
+	import { dateLocale, t } from '$lib/i18n';
 	import type { EntryType, Trigger } from '$lib/types/index.js';
 
 	import type { Entry } from '$lib/types/index.js';

@@ -7,7 +7,7 @@
 		EnvironmentalCorrelation
 	} from '$lib/types';
 	import { toYearMonth, formatMonthLabel, getDaysInMonth, intensityColor } from '$lib/utils/date';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 	import PressureDeltaChart from '$lib/components/analysis/PressureDeltaChart.svelte';
 
 	interface CorrelationData {

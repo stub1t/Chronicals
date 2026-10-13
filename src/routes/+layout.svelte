@@ -4,7 +4,7 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { themeStore } from '$lib/stores/theme.js';
-	import { language, localeStore, t } from '$lib/stores/locale.js';
+	import { language, t } from '$lib/i18n';
 	import { flush, pendingCount } from '$lib/utils/offline-queue.js';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
 
@@ -17,7 +17,6 @@
 
 	onMount(() => {
 		themeStore.init();
-		localeStore.init();
 
 		if (__NATIVE_APP__) {
 			import('$lib/mobile/app-lock.js').then((m) => {

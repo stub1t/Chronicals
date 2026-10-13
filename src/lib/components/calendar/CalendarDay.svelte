@@ -2,7 +2,7 @@
 	import type { Entry, EntryType, EnvironmentalData, EntryTypeLog } from '$lib/types';
 	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 

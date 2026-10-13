@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { api } from '$lib/api.js';
-	import { t } from '$lib/stores/locale.js';
+	import { t } from '$lib/i18n';
 	import type { UserProfile } from '$lib/types';
 
 	interface GeoResult {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api.js';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 	import type { EntryType } from '$lib/types/index.js';
 
 	let { data } = $props();

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { t } from '$lib/stores/locale.js';
+	import { t } from '$lib/i18n';
 
 	interface DataPoint {
 		date: string;

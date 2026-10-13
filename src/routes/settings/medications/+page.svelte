@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api.js';
 	import { toDateString } from '$lib/utils/date';
-	import { dateLocale, t } from '$lib/stores/locale.js';
+	import { dateLocale, t } from '$lib/i18n';
 	import type { Medication, MedicationChange, MedicationChangeType } from '$lib/types';
 
 	interface Props {

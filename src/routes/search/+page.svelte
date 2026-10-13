@@ -2,7 +2,7 @@
 	import { api } from '$lib/api.js';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import { matchEntry } from '$lib/search.js';
-	import { dateLocale, localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
 	import type { Entry, EntryType } from '$lib/types/index.js';
 	import { toDateString } from '$lib/utils/date';
 

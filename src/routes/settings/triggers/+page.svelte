@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { api } from '$lib/api.js';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 	import type { Trigger, TriggerCategory } from '$lib/types/index.js';
 
 	let { data } = $props();

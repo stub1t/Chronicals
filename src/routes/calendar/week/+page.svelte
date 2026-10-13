@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger } from '$lib/types';
 	import { formatDayMonth, toDateString, toYearMonth } from '$lib/utils/date';
-	import { dateLocale, t } from '$lib/stores/locale.js';
+	import { dateLocale, t } from '$lib/i18n';
 	import CalendarWeek from '$lib/components/calendar/CalendarWeek.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
 

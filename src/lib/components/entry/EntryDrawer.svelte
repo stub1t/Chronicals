@@ -2,7 +2,7 @@
 	import { api } from '$lib/api.js';
 	import { browser } from '$app/environment';
 	import type { Entry, EntryType, Trigger, EnvironmentalData, EntryTypeLog } from '$lib/types';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 	import { formatTime, formatDuration, formatFullDate } from '$lib/utils/date';
 	import EnvironmentalCard from '$lib/components/entry/EnvironmentalCard.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';

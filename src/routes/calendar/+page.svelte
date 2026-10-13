@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import type { CalendarDayData, EntryType, Trigger } from '$lib/types';
 	import { toYearMonth, toDateString, prevMonth, nextMonth } from '$lib/utils/date';
-	import { t } from '$lib/stores/locale.js';
+	import { t } from '$lib/i18n';
 	import MonthNav from '$lib/components/calendar/MonthNav.svelte';
 	import CalendarMonth from '$lib/components/calendar/CalendarMonth.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { MetricSchema, MetricField } from '$lib/types';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 
 	interface Props {
 		schema: MetricSchema;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { CalendarDayData } from '$lib/types';
-	import { t } from '$lib/stores/locale.js';
+	import { t } from '$lib/i18n';
 	import DayDot from './DayDot.svelte';
 
 	interface Props {

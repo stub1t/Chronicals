@@ -3,7 +3,7 @@
 	import { saveFile } from '$lib/files.js';
 	import { reportToCsv } from '$lib/report/csv.js';
 	import { buildReport, formatDuration, type Report, type ReportInput } from '$lib/report/summary.js';
-	import { dateLocale, language, localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { dateLocale, language, localizeBuiltInText, t } from '$lib/i18n';
 	import type { Entry, EntryType, Medication, MedicationChange, UserProfile } from '$lib/types/index.js';
 	import { toDateString } from '$lib/utils/date';
 

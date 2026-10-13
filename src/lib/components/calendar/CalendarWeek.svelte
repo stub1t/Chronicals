@@ -2,7 +2,7 @@
 	import type { Entry, EntryType, Trigger, EntryTypeLog } from '$lib/types';
 	import { formatTime, getWeekdayLabels, toDateString } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 
 	interface Props {

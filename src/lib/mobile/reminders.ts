@@ -6,7 +6,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { goto } from '$app/navigation';
 import { loadReminderSettings, planReminders } from '$lib/reminders.js';
-import { t } from '$lib/stores/locale.js';
+import { t } from '$lib/i18n';
 import type { Medication } from '$lib/types/index.js';
 import { toDateString } from '$lib/utils/date';
 import { localFetch } from './local-api.js';

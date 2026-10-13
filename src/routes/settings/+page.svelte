@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { themeStore } from '$lib/stores/theme.js';
-	import { language, localeStore, type Language, t } from '$lib/stores/locale.js';
+	import { LANGUAGES, localeStore, setLanguage, type LanguageCode, t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { exportBackup, importBackup } from '$lib/backup.js';
 	import { loadReminderSettings, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
@@ -9,7 +9,7 @@
 	type ThemeOption = 'system' | 'light' | 'dark';
 
 	let currentTheme = $state<ThemeOption>('system');
-	let currentLanguage = $state<Language>('de');
+	let currentLanguage = $state<LanguageCode>('en');
 
 	onMount(() => {
 		currentTheme = themeStore.current;
@@ -30,9 +30,9 @@
 		themeStore.set(t);
 	}
 
-	function setLanguage(lang: Language) {
-		currentLanguage = lang;
-		localeStore.set(lang);
+	async function chooseLanguage(code: LanguageCode) {
+		currentLanguage = code;
+		await setLanguage(code);
 	}
 
 	// ── Reminders (Android app) ───────────────────────────────────────────────
@@ -194,24 +194,16 @@
 
 	<section class="theme-section" aria-label={t('settings_language')}>
 		<p class="theme-title">{t('settings_language')}</p>
-		<div class="theme-pills" role="group" aria-label={t('settings_choose_language')}>
-			<button
-				class="theme-pill"
-				class:active={currentLanguage === 'de'}
-				onclick={() => setLanguage('de')}
-				aria-pressed={currentLanguage === 'de'}
-			>
-				{t('settings_language_de')}
-			</button>
-			<button
-				class="theme-pill"
-				class:active={currentLanguage === 'en'}
-				onclick={() => setLanguage('en')}
-				aria-pressed={currentLanguage === 'en'}
-			>
-				{t('settings_language_en')}
-			</button>
-		</div>
+		<select
+			class="language-select"
+			aria-label={t('settings_choose_language')}
+			value={currentLanguage}
+			onchange={(e) => chooseLanguage(e.currentTarget.value as LanguageCode)}
+		>
+			{#each LANGUAGES as lang (lang.code)}
+				<option value={lang.code} lang={lang.code} dir={lang.dir}>{lang.name}</option>
+			{/each}
+		</select>
 	</section>
 
 	{#if __NATIVE_APP__}
@@ -423,6 +415,16 @@
 	.theme-pill:hover {
 		border-color: var(--text-muted);
 		color: var(--text);
+	}
+
+	.language-select {
+		min-height: 46px;
+		padding: 0 var(--space-4);
+		border: 1.5px solid var(--border);
+		border-radius: var(--radius-md);
+		background: var(--bg-card);
+		color: var(--text);
+		font-size: var(--text-md);
 	}
 
 	.theme-pill:disabled {

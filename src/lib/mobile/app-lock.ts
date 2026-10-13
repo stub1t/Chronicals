@@ -10,7 +10,7 @@ import { PrivacyScreen } from '@capacitor/privacy-screen';
 import { BiometryType, NativeBiometric } from '@capgo/capacitor-native-biometric';
 import { writable } from 'svelte/store';
 import { isAppLockEnabled, setAppLockEnabled } from '$lib/app-lock.js';
-import { t } from '$lib/stores/locale.js';
+import { t } from '$lib/i18n';
 
 const RELOCK_AFTER_MS = 60_000;
 

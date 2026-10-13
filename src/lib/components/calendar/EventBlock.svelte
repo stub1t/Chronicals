@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { intensityColor, formatTime, formatDuration } from '$lib/utils/date.js';
-	import { localizeBuiltInText } from '$lib/stores/locale.js';
+	import { localizeBuiltInText } from '$lib/i18n';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import type { EntryTypeLog } from '$lib/types/index.js';
 

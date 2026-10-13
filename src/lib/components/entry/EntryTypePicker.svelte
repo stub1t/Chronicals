@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { EntryType, EntryCategory } from '$lib/types';
-	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
+	import { localizeBuiltInText, t } from '$lib/i18n';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 
 	interface Props {
