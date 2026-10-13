@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { isIP } from 'node:net';
-import { dev } from '$app/environment';
+import { building, dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import '$lib/server/db.js';
 import { enforceTrustedMutation } from '$lib/data/security.js';
@@ -47,8 +47,9 @@ function buildCsp(): string {
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// SvelteKit's internal fetch during SSR sends no Host header; its URL comes
-	// from the outer request, which was already checked.
-	if (!dev && !isAllowedHost(event.request.headers.get('host') ?? event.url.host)) {
+	// from the outer request, which was already checked. Build-time rendering
+	// (the Android app's fallback page) uses an internal host name.
+	if (!dev && !building && !isAllowedHost(event.request.headers.get('host') ?? event.url.host)) {
 		return new Response('Unknown host. Add it to ALLOWED_HOSTS.', { status: 421 });
 	}
 
