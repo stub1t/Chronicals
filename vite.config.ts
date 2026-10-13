@@ -20,8 +20,8 @@ export default defineConfig({
 				filename: 'service-worker.ts',
 				registerType: 'autoUpdate',
 				manifest: {
-					name: 'chronicals',
-					short_name: 'chronicals',
+					name: 'Chronicals',
+					short_name: 'Chronicals',
 					description: 'Personal health diary & calendar',
 					theme_color: '#0f0f0e',
 					background_color: '#0f0f0e',

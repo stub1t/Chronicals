@@ -6,7 +6,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Project
 
-**chronicals** — Self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
+**Chronicals** — Self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
 
 Ships two ways from one codebase: the self-hosted web app (Docker) and a standalone Android app (Capacitor) that keeps all data on the phone, with no server.
 

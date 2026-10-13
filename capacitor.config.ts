@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
 	appId: 'io.github.stub1t.chronicals',
-	appName: 'chronicals',
+	appName: 'Chronicals',
 	webDir: 'build-mobile',
 	backgroundColor: '#0f0f0e',
 	plugins: {

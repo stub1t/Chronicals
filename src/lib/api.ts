@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 
 /**
- * Call the chronicals API. On the web this is a plain `fetch` to the server;
+ * Call the Chronicals API. On the web this is a plain `fetch` to the server;
  * in the Android app (`__NATIVE_APP__`) the request is answered in-process by
  * the on-device database, so there is no network hop and no server.
  *

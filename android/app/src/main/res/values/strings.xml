@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">chronicals</string>
-    <string name="title_activity_main">chronicals</string>
+    <string name="app_name">Chronicals</string>
+    <string name="title_activity_main">Chronicals</string>
     <string name="package_name">io.github.stub1t.chronicals</string>
     <string name="custom_url_scheme">io.github.stub1t.chronicals</string>
 </resources>

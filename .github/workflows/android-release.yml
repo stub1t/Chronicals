@@ -134,5 +134,5 @@ jobs:
           else
             # Creates the tag on the commit that was just built.
             gh release create "$TAG" "$apk" --target "$GITHUB_SHA" \
-              --title "chronicals $CHRONICALS_VERSION_NAME" --generate-notes
+              --title "Chronicals $CHRONICALS_VERSION_NAME" --generate-notes
           fi

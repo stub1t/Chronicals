@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.png" alt="chronicals — a private health diary that shows you what triggers your symptoms" width="100%">
+  <img src="docs/assets/banner.png" alt="Chronicals — a private health diary that shows you what triggers your symptoms" width="100%">
 </p>
 
 <p align="center">
@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/data-SQLite%2C%20on%20your%20device-a855f7?logo=sqlite&logoColor=white" alt="SQLite">
 </p>
 
-**chronicals** is a calendar-based health diary. Log headaches, stomach aches, allergies, hypos, periods and medication changes, along with the things that may have caused them: sleep, stress, food, weather. chronicals then shows you which of those actually line up with your symptoms.
+**Chronicals** is a calendar-based health diary. Log headaches, stomach aches, allergies, hypos, periods and medication changes, along with the things that may have caused them: sleep, stress, food, weather. Chronicals then shows you which of those actually line up with your symptoms.
 
 It runs in two ways, both from this repository:
 
