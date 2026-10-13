@@ -31,6 +31,9 @@ It runs as an Android app that keeps all data on the phone, or as a web app that
 - Triggers in four groups: food, environment, activity and custom. A day can have any number of them.
 - Daily weather from [Open-Meteo](https://open-meteo.com): temperature, mean air pressure, the change in pressure since the previous day, UV index and conditions. This needs a location in the profile settings.
 - A medication list with a history of dosage changes.
+- Search over notes, symptoms, form values and triggers, in English and German.
+- A doctor report for any period: a PDF with a summary, possible triggers, medications and every entry, and a CSV with one row per entry.
+- In the Android app, optional reminders (a daily one and per medication) and an optional app lock.
 - English and German, light and dark theme.
 
 ## How the analysis works
@@ -90,6 +93,13 @@ The app is then available at <http://localhost:3000>. The SQLite database is sto
 
 The server only answers requests addressed to the host name in `ORIGIN`, `localhost` or an IP address, and returns 421 for anything else. This blocks DNS rebinding, where a malicious website points its own domain at your server to read the diary through your browser. If a reverse proxy forwards a different host name, add that name to `ALLOWED_HOSTS`.
 
+## Reminders and app lock
+
+Both are only in the Android app and are off until you turn them on in Settings.
+
+- The daily reminder asks you to log your day at a time you choose. Each medication can have up to six reminder times; they stop when the medication is stopped. Android may deliver a reminder a few minutes late, because the app does not use exact alarms.
+- The app lock asks for your fingerprint, face or the phone's screen lock when the app opens and after more than a minute in the background. While it is on, the app is hidden in the recent apps view and screenshots are blocked. It keeps someone holding your unlocked phone out of the diary. It does not encrypt the data.
+
 ## Backups
 
 The Data section in Settings has two buttons:
@@ -105,8 +115,11 @@ The same file works in the Android app and the web app, so a backup can also mov
 npm install
 npm run dev     # development server on http://localhost:5173
 npm run check   # type check
+npm test        # unit tests (vitest)
 npm run build   # production build of the web app
 ```
+
+The tests run with the time zone set to Pacific/Auckland, so date bugs from converting local dates to UTC show up. GitHub Actions runs the type check, the tests, both builds and a debug Android build on every push.
 
 Building the Android app needs JDK 21 and the Android SDK with platform 36:
 

@@ -31,6 +31,7 @@ npx svelte-kit sync        # Regenerate $types after adding routes
 docker compose up -d       # Start self-hosted (port 3000, SQLite in volume)
 docker compose up --build  # Rebuild and start
 
+npm test                   # vitest unit tests (TZ=Pacific/Auckland)
 npm run build:mobile       # Static SPA for the Android app → build-mobile/
 npm run android:sync       # build:mobile + copy into android/ (run before any Gradle build)
 npm run android:open       # Open android/ in Android Studio
@@ -106,7 +107,17 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
 - **Migrations** are applied on Android from the bundled `migrations/` folder on app start, exactly like the server. `npx drizzle-kit generate` covers both.
 - **Persistence on Android**: sql.js runs in memory; `localFetch` awaits `persist()` after every successful mutation (atomic tmp-file swap in the app's private files dir, included in Android auto-backup).
 - **Backups**: `GET/POST /api/backup` export or replace the whole database as an SQLite file. Each platform registers `useBackup({ exportBytes, restore })` next to `useDatabase` (`src/lib/server/db.ts`, `src/lib/mobile/database.ts`). Uploads go through `assertSqliteFile` and `assertRestorable` in `src/lib/data/backup.ts` (Chronicals tables, no triggers or views, integrity and foreign key checks, not from a newer migration), then are migrated and seeded before they replace the live database. A schema change that adds triggers or views must update `assertRestorable`. The service worker must never cache `/api/backup`.
+- **Android-only features** (reminders, app lock) live in `src/lib/mobile/*` and are only imported behind `__NATIVE_APP__`, so their plugins stay out of the web bundle. Their settings are device-only (localStorage via `src/lib/reminders.ts` and `src/lib/app-lock.ts`). `localFetch` calls `syncReminders()` after any successful change to `/api/medications`, `/api/medication-changes` or `/api/backup`. Reminders use `isExactNotification: false`; do not reintroduce exact alarms (the manifest removes `SCHEDULE_EXACT_ALARM`).
+- **Report**: `src/lib/report/summary.ts` builds the report (pure), `csv.ts` and `pdf.ts` render it. jsPDF's built-in font is Latin-1 only, so PDF text goes through `latin1()`. Files are saved with `saveFile()` in `src/lib/files.ts` (download on web, share sheet on Android).
+- **Search** filters on the device (`src/lib/search.ts`) over entries from `GET /api/entries?from=&to=`, matching stored and translated names.
 - **Host allowlist**: `hooks.server.ts` returns 421 unless the Host header is the `ORIGIN` host name, `localhost`, an IP address or listed in `ALLOWED_HOSTS` (DNS rebinding protection). It is skipped in dev and at build time.
+
+## Tests and CI
+
+- `npm test` runs vitest over `src/**/*.test.ts` with `TZ=Pacific/Auckland`.
+- Data-layer tests call `useTestDatabase()` from `src/lib/server/testing.ts`: a fresh in-memory, migrated and seeded database registered with `useDatabase()`. Then call query functions or `handleApiRequest()` directly.
+- Keep logic that can be tested pure and separate from plugins and Svelte (see `src/lib/reminders.ts` vs `src/lib/mobile/reminders.ts`).
+- `.github/workflows/ci.yml` runs check, tests, both builds and `assembleDebug` on every push.
 
 ## Android releases
 

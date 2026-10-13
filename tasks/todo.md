@@ -35,7 +35,7 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] Host allowlist in hooks.server.ts (421), ALLOWED_HOSTS, Docker healthcheck on 127.0.0.1
 - [x] Medications: stop/start side effects in data layer; edit, stop, restart, delete in UI
 - [x] Backup: GET/POST /api/backup, server + sql.js restore, settings UI, share sheet on Android, SW excludes /api/backup
-- [ ] Docs (README, AGENTS.md), verify, commit per item, container rebuild, push
+- [x] Docs (README, AGENTS.md), verify, commit per item, container rebuild, push
 
 ## Review (2026-10-13)
 
@@ -51,3 +51,22 @@ one API route table serves both the SvelteKit server and an in-process phone tra
   server backup, persists, bad file); sql.js export imports on the server.
 - APK builds with @capacitor/share registered. Native share sheet and file picker are not
   tested on a device.
+
+# CI and tests, search, report, reminders, app lock (2026-10-14)
+
+- [x] locale.ts type errors fixed; vitest suite (backup, API, analysis, dates, search, report, reminders): 42 tests
+- [x] CI workflow: check, tests, web + mobile builds, Android debug build
+- [x] Search: from/to range API, on-device matching incl. translations, /search page
+- [x] Doctor report: summary builder, PDF (jsPDF), CSV (BOM, ; or ,, formula guard), /analysis/report
+- [x] Reminders (Android): daily + per medication, inexact, re-planned on changes
+- [x] App lock (Android): biometric or screen lock, relock after 1 min, privacy screen
+- [ ] Release (user's call)
+
+## Review
+
+- Found by tests: withoutWalFlag mutated Buffers (Buffer#slice is a view); latin1() split emoji
+  surrogate pairs; the lock screen stayed German (not inside the language key block).
+- Browser checks: search 17/17 web and 17/17 mobile, report 10/10 web and 6/6 mobile (PDF
+  rendered and inspected, layout fixed twice), reminders 10/10 (recorder for the browser
+  stub), app lock 11/11 (controllable biometric stub).
+- Not verifiable here: real notifications, biometric prompt, privacy screen on a phone.
