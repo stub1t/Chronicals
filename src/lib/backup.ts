@@ -1,4 +1,5 @@
 import { api } from '$lib/api.js';
+import { saveFile } from '$lib/files.js';
 
 /** Download (web) or share (Android) the whole database as an SQLite file. */
 export async function exportBackup(): Promise<void> {
@@ -8,20 +9,7 @@ export async function exportBackup(): Promise<void> {
 	const filename =
 		/filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? 'chronicals.db';
 
-	if (__NATIVE_APP__) {
-		// The WebView can't download files; hand it to the Android share sheet,
-		// from where it can be saved to Files or Drive or sent elsewhere.
-		const { shareFile } = await import('$lib/mobile/share.js');
-		await shareFile(blob, filename);
-		return;
-	}
-
-	const url = URL.createObjectURL(blob);
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = filename;
-	link.click();
-	setTimeout(() => URL.revokeObjectURL(url), 1000);
+	await saveFile(blob, filename);
 }
 
 /** Replace all data with a backup file. Returns the number of diary days restored. */

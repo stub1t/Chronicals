@@ -154,7 +154,10 @@
 <div class="page">
 	<!-- ── Header ─────────────────────────────────────────────────────────── -->
 	<header class="page-header">
-		<h1 class="page-title">{t('analysis_title')}</h1>
+		<div class="title-row">
+			<h1 class="page-title">{t('analysis_title')}</h1>
+			<a href="/analysis/report" class="report-link">{t('report_open')}</a>
+		</div>
 		<p class="page-subtitle">{t('analysis_subtitle')}</p>
 	</header>
 
@@ -387,6 +390,24 @@
 	/* Header */
 	.page-header {
 		margin-bottom: 4px;
+	}
+
+	.title-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.report-link {
+		font-size: 0.8rem;
+		font-weight: 600;
+		padding: 6px 12px;
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		color: var(--text);
+		text-decoration: none;
+		white-space: nowrap;
 	}
 
 	.page-title {

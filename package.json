@@ -33,6 +33,8 @@
 		"@types/uuid": "^10.0.0",
 		"autoprefixer": "^10.4.27",
 		"drizzle-kit": "^0.31.10",
+		"jspdf": "^4.2.1",
+		"jspdf-autotable": "^5.0.8",
 		"postcss": "^8.5.8",
 		"sql.js": "^1.14.2",
 		"svelte": "^5.54.0",
