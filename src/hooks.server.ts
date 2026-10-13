@@ -1,7 +1,30 @@
 import type { Handle } from '@sveltejs/kit';
+import { isIP } from 'node:net';
 import { dev } from '$app/environment';
+import { env } from '$env/dynamic/private';
 import '$lib/server/db.js';
 import { enforceTrustedMutation } from '$lib/data/security.js';
+
+// DNS rebinding protection: a page on attacker.example can point its own name at
+// this server and then read /api as same-origin. Only answer to host names we
+// know. IP literals are always fine, because rebinding needs a domain name the
+// attacker controls.
+const allowedHostnames = new Set(
+	[env.ORIGIN ? new URL(env.ORIGIN).hostname : '', 'localhost', ...(env.ALLOWED_HOSTS ?? '').split(',')]
+		.map((name) => name.trim().toLowerCase())
+		.filter(Boolean)
+);
+
+function isAllowedHost(host: string | null): boolean {
+	if (!host) return false;
+	let hostname: string;
+	try {
+		hostname = new URL(`http://${host}`).hostname.toLowerCase();
+	} catch {
+		return false;
+	}
+	return isIP(hostname.replace(/^\[|\]$/g, '')) !== 0 || allowedHostnames.has(hostname);
+}
 
 function buildCsp(): string {
 	const connectSources = dev
@@ -23,6 +46,12 @@ function buildCsp(): string {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// SvelteKit's internal fetch during SSR sends no Host header; its URL comes
+	// from the outer request, which was already checked.
+	if (!dev && !isAllowedHost(event.request.headers.get('host') ?? event.url.host)) {
+		return new Response('Unknown host. Add it to ALLOWED_HOSTS.', { status: 421 });
+	}
+
 	if (event.url.pathname.startsWith('/api/')) {
 		enforceTrustedMutation(event);
 	}
