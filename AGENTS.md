@@ -115,6 +115,10 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
    Rebuild an existing release's APK: `gh workflow run android-release.yml -f rebuild_tag=vYYYY.MM.DD`.
 3. Signing secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
    The keystore lives only outside git (`.signing/`, gitignored). Losing it means existing installs can't be updated.
+4. Obtainium: `docs/obtainium.json` is the app config behind the "Get it on Obtainium" link in the README
+   (it pins the signing certificate hash). If the repo URL, app id or signing key changes, update the JSON and
+   regenerate the link: `https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/` + `encodeURIComponent(JSON.stringify(config))`.
+   Obtainium reads the version from the release tag (`vYYYY.MM.DD` without the `v`), so versionName must stay equal to the tag.
 4. Local signed build: export `CHRONICALS_KEYSTORE_FILE`, `CHRONICALS_KEYSTORE_PASSWORD`, `CHRONICALS_KEY_ALIAS`, `CHRONICALS_KEY_PASSWORD` (and optionally `CHRONICALS_VERSION_NAME`/`_CODE`) before `./gradlew assembleRelease`.
 
 ## Environment Variables
