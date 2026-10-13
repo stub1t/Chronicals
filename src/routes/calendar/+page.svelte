@@ -76,8 +76,8 @@
 <div class="page">
 	<header class="page-header">
 		<div class="view-tabs">
-				<span class="view-tab active" aria-current="page">Monat</span>
-				<a href="/calendar/week" class="view-tab">Woche</a>
+				<span class="view-tab active" aria-current="page">{t('month_view')}</span>
+				<a href="/calendar/week" class="view-tab">{t('week_view')}</a>
 		</div>
 		<MonthNav
 			{yearMonth}

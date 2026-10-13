@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api.js';
 	import { goto } from '$app/navigation';
+	import { toDateString } from '$lib/utils/date';
 	import CalendarDay from '$lib/components/calendar/CalendarDay.svelte';
 	import EntryDrawer from '$lib/components/entry/EntryDrawer.svelte';
 	import { dateLocale, t } from '$lib/stores/locale.js';
@@ -24,15 +25,15 @@
 	}
 
 	function prevDay() {
-		const d = new Date(data.date);
+		const d = new Date(`${data.date}T00:00:00`);
 		d.setDate(d.getDate() - 1);
-		goto(`/calendar/day/${d.toISOString().split('T')[0]}`);
+		goto(`/calendar/day/${toDateString(d)}`);
 	}
 
 	function nextDay() {
-		const d = new Date(data.date);
+		const d = new Date(`${data.date}T00:00:00`);
 		d.setDate(d.getDate() + 1);
-		goto(`/calendar/day/${d.toISOString().split('T')[0]}`);
+		goto(`/calendar/day/${toDateString(d)}`);
 	}
 
 	function formatLocalizedDayHeader(date: string) {

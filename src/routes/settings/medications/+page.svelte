@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from '$lib/api.js';
+	import { toDateString } from '$lib/utils/date';
 	import { dateLocale, t } from '$lib/stores/locale.js';
 	import type { Medication, MedicationChange, MedicationChangeType } from '$lib/types';
 
@@ -19,7 +20,7 @@
 	let newMedName = $state('');
 	let newMedDosage = $state('');
 	let newMedUnit = $state('');
-	let newMedStartDate = $state(new Date().toISOString().split('T')[0]);
+	let newMedStartDate = $state(toDateString(new Date()));
 	let addMedSaving = $state(false);
 	let addMedError = $state<string | null>(null);
 
@@ -51,7 +52,7 @@
 		newMedName = '';
 		newMedDosage = '';
 		newMedUnit = '';
-		newMedStartDate = new Date().toISOString().split('T')[0];
+		newMedStartDate = toDateString(new Date());
 		addMedError = null;
 		showAddMed = true;
 	}
@@ -113,7 +114,7 @@
 					changeType,
 					oldDosage: changeOldDosage || null,
 					newDosage: changeNewDosage || null,
-					changeDate: new Date().toISOString().split('T')[0],
+					changeDate: toDateString(new Date()),
 					reason: changeReason || null
 				})
 			});

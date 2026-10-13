@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Entry, EntryType, Trigger, EntryTypeLog } from '$lib/types';
-	import { formatTime } from '$lib/utils/date';
+	import { formatTime, getWeekdayLabels, toDateString } from '$lib/utils/date';
 	import { intensityColor } from '$lib/utils/date';
 	import { localizeBuiltInText, t } from '$lib/stores/locale.js';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
@@ -18,7 +18,7 @@
 	let { weekStart, entries, entryTypes, allTriggers, ondayclick, onprevweek, onnextweek }: Props = $props();
 
 	const HOURS = Array.from({ length: 24 }, (_, i) => i);
-	const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+	const DAY_LABELS = getWeekdayLabels();
 	const HOUR_HEIGHT = 56; // px per hour row
 
 	// Touch swipe
@@ -32,12 +32,12 @@
 		for (let i = 0; i < 7; i++) {
 			const d = new Date(base);
 			d.setDate(base.getDate() + i);
-			result.push(d.toISOString().split('T')[0]);
+			result.push(toDateString(d));
 		}
 		return result;
 	});
 
-	const todayStr = new Date().toISOString().split('T')[0];
+	const todayStr = toDateString(new Date());
 
 	// Build a map: date -> Entry
 	let entryByDate = $derived.by<Map<string, Entry>>(() => {

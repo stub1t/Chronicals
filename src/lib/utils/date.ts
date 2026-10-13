@@ -8,8 +8,9 @@ export function toYearMonth(date: Date): string {
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/** 'YYYY-MM-DD' of the date in local time (toISOString would shift it to UTC). */
 export function toDateString(date: Date): string {
-	return date.toISOString().split('T')[0];
+	return `${toYearMonth(date)}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export function formatMonthLabel(yearMonth: string): string {

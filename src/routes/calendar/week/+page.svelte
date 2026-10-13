@@ -22,7 +22,7 @@
 		const day = d.getDay(); // 0 = Sun
 		const offset = day === 0 ? -6 : 1 - day; // shift to Monday
 		d.setDate(d.getDate() + offset);
-		return d.toISOString().split('T')[0];
+		return toDateString(d);
 	}
 
 	function formatWeekLabel(weekStart: string): string {
@@ -79,7 +79,7 @@
 
 			// Filter to entries within the week range
 			const startStr = ws;
-			const endStr = end.toISOString().split('T')[0];
+			const endStr = toDateString(end);
 			entries = all.filter((e) => e.date >= startStr && e.date <= endStr);
 		} catch (err) {
 			console.error('Failed to fetch week entries', err);
@@ -91,13 +91,13 @@
 	function prevWeek() {
 		const d = new Date(weekStart + 'T00:00:00');
 		d.setDate(d.getDate() - 7);
-		weekStart = d.toISOString().split('T')[0];
+		weekStart = toDateString(d);
 	}
 
 	function nextWeek() {
 		const d = new Date(weekStart + 'T00:00:00');
 		d.setDate(d.getDate() + 7);
-		weekStart = d.toISOString().split('T')[0];
+		weekStart = toDateString(d);
 	}
 
 	function goToCurrentWeek() {

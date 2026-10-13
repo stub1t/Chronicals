@@ -55,30 +55,30 @@
 		<main class="content">
 			{@render children()}
 		</main>
-	{/key}
 
-	<nav class="bottom-nav" aria-label={t('nav_settings')}>
-		<a href="/calendar" class="nav-item" class:active={isActive('/calendar')} aria-label={t('nav_calendar')}>
-			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<rect x="3" y="4" width="18" height="18" rx="3"/>
-				<path d="M16 2v4M8 2v4M3 10h18"/>
-			</svg>
-			<span class="nav-label">{t('nav_calendar')}</span>
-		</a>
-		<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label={t('nav_analysis')}>
-			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<path d="M3 18l4-8 4 5 3-3 4 6"/>
-			</svg>
-			<span class="nav-label">{t('nav_analysis')}</span>
-		</a>
-		<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label={t('nav_settings')}>
-			<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<circle cx="12" cy="12" r="3"/>
-				<path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-			</svg>
-			<span class="nav-label">{t('nav_settings')}</span>
-		</a>
-	</nav>
+		<nav class="bottom-nav" aria-label={t('nav_settings')}>
+			<a href="/calendar" class="nav-item" class:active={isActive('/calendar')} aria-label={t('nav_calendar')}>
+				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="3" y="4" width="18" height="18" rx="3"/>
+					<path d="M16 2v4M8 2v4M3 10h18"/>
+				</svg>
+				<span class="nav-label">{t('nav_calendar')}</span>
+			</a>
+			<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label={t('nav_analysis')}>
+				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M3 18l4-8 4 5 3-3 4 6"/>
+				</svg>
+				<span class="nav-label">{t('nav_analysis')}</span>
+			</a>
+			<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label={t('nav_settings')}>
+				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<circle cx="12" cy="12" r="3"/>
+					<path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+				</svg>
+				<span class="nav-label">{t('nav_settings')}</span>
+			</a>
+		</nav>
+	{/key}
 </div>
 
 <style>
