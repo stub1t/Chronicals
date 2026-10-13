@@ -7,6 +7,12 @@
 	import { language, t } from '$lib/i18n';
 	import { flush, pendingCount } from '$lib/utils/offline-queue.js';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
+	import Toaster from '$lib/ui/Toaster.svelte';
+	import House from '@lucide/svelte/icons/house';
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
+	import ChartColumn from '@lucide/svelte/icons/chart-no-axes-column';
+	import CircleUser from '@lucide/svelte/icons/circle-user-round';
+	import Lock from '@lucide/svelte/icons/lock';
 
 	let { children } = $props();
 	let syncPending = $state(0);
@@ -53,9 +59,18 @@
 		flush().then(() => pendingCount().then((n) => (syncPending = n)));
 	});
 
-	function isActive(href: string): boolean {
-		return page.url.pathname.startsWith(href);
-	}
+	const path = () => page.url.pathname;
+	const tabs = [
+		{ href: '/', icon: House, label: () => t('nav_today'), active: () => path() === '/' },
+		{
+			href: '/calendar',
+			icon: CalendarDays,
+			label: () => t('nav_calendar'),
+			active: () => path().startsWith('/calendar') || path().startsWith('/search')
+		},
+		{ href: '/insights', icon: ChartColumn, label: () => t('nav_insights'), active: () => path().startsWith('/insights') },
+		{ href: '/me', icon: CircleUser, label: () => t('nav_me'), active: () => path().startsWith('/me') }
+	];
 </script>
 
 <div class="app-shell">
@@ -73,10 +88,7 @@
 	{#key $language}
 		{#if appLocked}
 			<div class="lock-screen">
-				<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<rect x="4" y="10" width="16" height="11" rx="2.5" />
-					<path d="M8 10V7a4 4 0 0 1 8 0v3" />
-				</svg>
+				<span class="lock-icon"><Lock size={34} /></span>
 				<p class="lock-title">{t('app_lock_title')}</p>
 				<button class="lock-button" onclick={() => unlock()}>{t('app_lock_unlock')}</button>
 			</div>
@@ -85,31 +97,19 @@
 				{@render children()}
 			</main>
 
-			<nav class="bottom-nav" aria-label={t('nav_settings')}>
-				<a href="/calendar" class="nav-item" class:active={isActive('/calendar')} aria-label={t('nav_calendar')}>
-					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<rect x="3" y="4" width="18" height="18" rx="3"/>
-						<path d="M16 2v4M8 2v4M3 10h18"/>
-					</svg>
-					<span class="nav-label">{t('nav_calendar')}</span>
-				</a>
-				<a href="/insights" class="nav-item" class:active={isActive('/insights')} aria-label={t('nav_analysis')}>
-					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M3 18l4-8 4 5 3-3 4 6"/>
-					</svg>
-					<span class="nav-label">{t('nav_analysis')}</span>
-				</a>
-				<a href="/me" class="nav-item" class:active={isActive('/me')} aria-label={t('nav_settings')}>
-					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<circle cx="12" cy="12" r="3"/>
-						<path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-					</svg>
-					<span class="nav-label">{t('nav_settings')}</span>
-				</a>
+			<nav class="bottom-nav" aria-label={t('nav_main')}>
+				{#each tabs as tab (tab.href)}
+					<a href={tab.href} class="nav-item" class:active={tab.active()} aria-current={tab.active() ? 'page' : undefined}>
+						<span class="nav-pill"><tab.icon size={22} strokeWidth={tab.active() ? 2.4 : 2} /></span>
+						<span class="nav-label">{tab.label()}</span>
+					</a>
+				{/each}
 			</nav>
 		{/if}
 	{/key}
 </div>
+
+<Toaster />
 
 <style>
 	.app-shell {
@@ -132,27 +132,32 @@
 	}
 
 	.lock-icon {
-		width: 48px;
-		height: 48px;
-		color: var(--text-muted);
+		display: grid;
+		place-items: center;
+		width: 88px;
+		height: 88px;
+		border-radius: 50%;
+		background: var(--accent-soft);
+		color: var(--accent);
 	}
 
 	.lock-title {
-		font-size: 1.1rem;
-		font-weight: 700;
+		font-size: var(--text-xl);
+		font-weight: 800;
 		margin: 0;
 	}
 
 	.lock-button {
-		padding: 12px 28px;
+		min-height: 52px;
+		padding: 0 var(--space-8);
 		border: none;
-		border-radius: 22px;
-		background: var(--text);
-		color: var(--bg);
-		font-family: inherit;
-		font-size: 0.95rem;
-		font-weight: 700;
+		border-radius: var(--radius-pill);
+		background: var(--accent);
+		color: var(--on-accent);
+		font-size: var(--text-md);
+		font-weight: 800;
 		cursor: pointer;
+		box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
 	}
 
 	.offline-banner {
@@ -180,9 +185,10 @@
 
 	.bottom-nav {
 		display: flex;
-		background: var(--bg-card);
+		padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+		background: color-mix(in srgb, var(--bg-card) 92%, transparent);
 		border-top: 1px solid var(--border);
-		padding-bottom: env(safe-area-inset-bottom, 0);
+		box-shadow: 0 -4px 20px rgb(70 45 20 / 0.04);
 	}
 
 	.nav-item {
@@ -190,25 +196,39 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		padding: 0.5rem 0;
-		gap: 3px;
+		gap: 2px;
+		padding: 2px 0;
 		text-decoration: none;
 		color: var(--text-subtle);
-		transition: color 0.15s;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.nav-pill {
+		display: grid;
+		place-items: center;
+		width: 58px;
+		height: 32px;
+		border-radius: var(--radius-pill);
+		transition:
+			background-color 0.25s,
+			transform 0.35s var(--ease-spring);
+	}
+
+	.nav-item:active .nav-pill {
+		transform: scale(0.88);
 	}
 
 	.nav-item.active {
 		color: var(--text);
 	}
 
-	.nav-icon {
-		width: 22px;
-		height: 22px;
+	.nav-item.active .nav-pill {
+		background: var(--accent-soft);
+		color: var(--accent);
 	}
 
 	.nav-label {
-		font-size: 0.65rem;
-		font-weight: 500;
+		font-size: var(--text-xs);
+		font-weight: 700;
 	}
 </style>

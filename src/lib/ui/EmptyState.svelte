@@ -7,13 +7,15 @@
 		text?: string;
 		/** Colour of the soft blobs behind the icon. */
 		color?: string;
+		/** Smaller artwork for use inside a list or card. */
+		compact?: boolean;
 		action?: Snippet;
 	}
 
-	let { icon: Icon, title, text, color = 'var(--accent)', action }: Props = $props();
+	let { icon: Icon, title, text, color = 'var(--accent)', compact = false, action }: Props = $props();
 </script>
 
-<div class="empty" style="--blob: {color}">
+<div class="empty" class:compact style="--blob: {color}">
 	<div class="art" aria-hidden="true">
 		<span class="blob one"></span>
 		<span class="blob two"></span>
@@ -64,6 +66,21 @@
 		display: grid;
 		place-items: center;
 		color: var(--blob);
+	}
+
+	.compact {
+		padding: var(--space-3);
+	}
+
+	.compact .art {
+		width: 64px;
+		height: 56px;
+		margin-bottom: 0;
+	}
+
+	.compact .icon :global(svg) {
+		width: 24px;
+		height: 24px;
 	}
 
 	.title {
