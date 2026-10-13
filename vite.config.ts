@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
@@ -7,9 +8,21 @@ import { defineConfig } from 'vitest/config';
 const isMobile = process.env.CHRONICALS_TARGET === 'mobile';
 const isTest = !!process.env.VITEST;
 
+/** Release version from CI, otherwise "dev" plus the git commit when available. */
+function appVersion(): string {
+	if (process.env.CHRONICALS_VERSION_NAME) return process.env.CHRONICALS_VERSION_NAME;
+	try {
+		const commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] });
+		return `dev-${commit.toString().trim()}`;
+	} catch {
+		return 'dev';
+	}
+}
+
 export default defineConfig({
 	define: {
-		__NATIVE_APP__: JSON.stringify(isMobile)
+		__NATIVE_APP__: JSON.stringify(isMobile),
+		__APP_VERSION__: JSON.stringify(appVersion())
 	},
 	plugins: [
 		tailwindcss(),

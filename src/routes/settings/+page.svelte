@@ -17,6 +17,11 @@
 		if (__NATIVE_APP__) {
 			reminders = loadReminderSettings();
 			appLock = isAppLockEnabled();
+			// The installed APK's version, which is what Obtainium and Android show too.
+			import('@capacitor/app')
+				.then(({ App }) => App.getInfo())
+				.then((info) => (version = info.version))
+				.catch(() => {}); // e.g. in a desktop browser: keep the build-time version
 		}
 	});
 
@@ -43,6 +48,8 @@
 			await syncReminders();
 		}
 	}
+
+	let version = $state(__APP_VERSION__);
 
 	// ── App lock (Android app) ────────────────────────────────────────────────
 	let appLock = $state(false);
@@ -273,6 +280,15 @@
 			<p class="data-message" class:error={dataError} role="status">{dataMessage}</p>
 		{/if}
 	</section>
+
+	<section class="theme-section" aria-label={t('settings_about')}>
+		<p class="theme-title">{t('settings_about')}</p>
+		<div class="about">
+			<p><strong>Chronicals</strong> {version}</p>
+			<p>{t('settings_license')}</p>
+			<a href="https://github.com/stub1t/Chronicals" target="_blank" rel="noopener noreferrer">{t('settings_source')}</a>
+		</div>
+	</section>
 </div>
 
 <style>
@@ -451,6 +467,26 @@
 
 	.time-input:disabled {
 		opacity: 0.5;
+	}
+
+	.about {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+
+	.about p {
+		margin: 0;
+	}
+
+	.about strong {
+		color: var(--text);
+	}
+
+	.about a {
+		color: var(--text);
 	}
 
 	.data-note {

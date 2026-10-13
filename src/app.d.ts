@@ -3,6 +3,8 @@
 declare global {
 	/** True only in the Android (Capacitor) build; see vite.config.ts. */
 	const __NATIVE_APP__: boolean;
+	/** Version shown in Settings; see vite.config.ts. */
+	const __APP_VERSION__: string;
 
 	namespace App {
 		// interface Error {}
