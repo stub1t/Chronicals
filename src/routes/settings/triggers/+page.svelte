@@ -42,6 +42,30 @@
 		saving = false;
 	}
 
+	let editingId = $state<string | null>(null);
+	let editName = $state('');
+	let editCategory = $state<TriggerCategory>('custom');
+
+	function startEdit(trigger: Trigger) {
+		editingId = trigger.id;
+		editName = trigger.name;
+		editCategory = trigger.category;
+	}
+
+	async function saveEdit() {
+		if (!editingId || !editName.trim()) return;
+		const res = await api(`/api/triggers/${editingId}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: editName.trim(), category: editCategory })
+		});
+		if (res.ok) {
+			const updated: Trigger = await res.json();
+			triggers = triggers.map((tr) => (tr.id === updated.id ? updated : tr));
+			editingId = null;
+		}
+	}
+
 	async function deleteTrigger(id: string) {
 		await api(`/api/triggers/${id}`, { method: 'DELETE' });
 		triggers = triggers.filter((t) => t.id !== id);
@@ -60,12 +84,26 @@
 			<h2 class="cat-title">{categoryLabels[cat]}</h2>
 			<div class="chip-grid">
 				{#each group as trigger}
-					<div class="chip">
-						{localizeBuiltInText(trigger.name)}
-						{#if !trigger.isBuiltIn}
-							<button onclick={() => deleteTrigger(trigger.id)} class="chip-delete">✕</button>
-						{/if}
-					</div>
+					{#if editingId === trigger.id}
+						<form class="edit-form" onsubmit={(e) => { e.preventDefault(); saveEdit(); }}>
+							<input bind:value={editName} class="input" aria-label={t('triggers_new_placeholder')} />
+							<select bind:value={editCategory} class="select" aria-label={t('triggers_category')}>
+								{#each categories as option}
+									<option value={option}>{categoryLabels[option]}</option>
+								{/each}
+							</select>
+							<button type="submit" class="add-btn" disabled={!editName.trim()}>{t('save')}</button>
+							<button type="button" class="cancel-btn" onclick={() => (editingId = null)}>{t('cancel')}</button>
+						</form>
+					{:else}
+						<div class="chip">
+							{localizeBuiltInText(trigger.name)}
+							{#if !trigger.isBuiltIn}
+								<button onclick={() => startEdit(trigger)} class="chip-edit" aria-label={t('triggers_edit', { name: trigger.name })}>✎</button>
+								<button onclick={() => deleteTrigger(trigger.id)} class="chip-delete" aria-label={t('triggers_delete', { name: trigger.name })}>✕</button>
+							{/if}
+						</div>
+					{/if}
 				{/each}
 			</div>
 		</section>
@@ -97,4 +135,7 @@
 	.select { padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text); font-size: 0.875rem; }
 	.add-btn { padding: 0.5rem 1rem; background: var(--text); color: var(--bg); border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; }
 	.add-btn:disabled { opacity: 0.5; }
+	.chip-edit { background: none; border: none; color: var(--text-subtle); cursor: pointer; padding: 0; font-size: 0.75rem; line-height: 1; }
+	.edit-form { display: flex; flex-wrap: wrap; gap: 0.4rem; width: 100%; }
+	.cancel-btn { padding: 0.5rem 0.75rem; background: none; border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text-muted); cursor: pointer; font-size: 0.875rem; }
 </style>

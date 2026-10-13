@@ -12,6 +12,45 @@
 	let newIcon = $state('🔴');
 	let newColor = $state('#ef4444');
 	let saving = $state(false);
+	let editingId = $state<string | null>(null);
+
+	function openAdd() {
+		editingId = null;
+		newName = '';
+		newIcon = '🔴';
+		newColor = '#ef4444';
+		showForm = true;
+	}
+
+	function openEdit(type: EntryType) {
+		editingId = type.id;
+		newName = type.name;
+		newIcon = type.icon ?? '';
+		newColor = type.color ?? '#94a3b8';
+		showForm = true;
+	}
+
+	async function saveType() {
+		if (editingId) await updateType(editingId);
+		else await addType();
+	}
+
+	async function updateType(id: string) {
+		if (!newName.trim()) return;
+		saving = true;
+		const res = await api(`/api/entry-types/${id}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: newName.trim(), icon: newIcon, color: newColor })
+		});
+		if (res.ok) {
+			const updated: EntryType = await res.json();
+			entryTypes = entryTypes.map((type) => (type.id === id ? updated : type));
+			showForm = false;
+			editingId = null;
+		}
+		saving = false;
+	}
 
 	async function addType() {
 		if (!newName.trim()) return;
@@ -80,7 +119,8 @@
 					<span class="type-cat">{categoryLabel(type.category)}</span>
 				</div>
 				{#if !type.isBuiltIn}
-					<button class="delete-btn" onclick={() => deleteType(type.id)}>✕</button>
+					<button class="edit-btn" onclick={() => openEdit(type)}>{t('entry_types_edit')}</button>
+					<button class="delete-btn" aria-label={t('entry_types_delete')} onclick={() => deleteType(type.id)}>✕</button>
 				{:else}
 					<span class="built-in-badge">{t('entry_types_builtin')}</span>
 				{/if}
@@ -102,14 +142,14 @@
 				</div>
 			</div>
 			<div class="form-actions">
-				<button onclick={() => { showForm = false; }} class="btn-secondary">{t('cancel')}</button>
-				<button onclick={addType} disabled={saving || !newName.trim()} class="btn-primary">
-					{saving ? t('entry_types_saving') : t('entry_types_add')}
+				<button onclick={() => { showForm = false; editingId = null; }} class="btn-secondary">{t('cancel')}</button>
+				<button onclick={saveType} disabled={saving || !newName.trim()} class="btn-primary">
+					{saving ? t('entry_types_saving') : editingId ? t('save') : t('entry_types_add')}
 				</button>
 			</div>
 		</div>
 	{:else}
-		<button onclick={() => { showForm = true; }} class="add-btn">+ {t('entry_types_add_custom')}</button>
+		<button onclick={openAdd} class="add-btn">+ {t('entry_types_add_custom')}</button>
 	{/if}
 </div>
 
@@ -123,6 +163,7 @@
 	.type-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 	.type-name { font-weight: 500; font-size: 0.9rem; }
 	.type-cat { font-size: 0.75rem; color: var(--text-subtle); text-transform: capitalize; }
+	.edit-btn { background: none; border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); cursor: pointer; padding: 2px 10px; font-size: 0.75rem; }
 	.delete-btn { background: none; border: none; color: var(--text-subtle); cursor: pointer; padding: 0.25rem; }
 	.built-in-badge { font-size: 0.7rem; color: var(--text-subtle); background: var(--bg-subtle); padding: 2px 6px; border-radius: 999px; }
 	.form-card { margin-top: 1rem; background: var(--bg-card); border-radius: 0.75rem; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
