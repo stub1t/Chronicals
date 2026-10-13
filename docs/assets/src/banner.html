@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Source for docs/assets/banner.png: screenshot this page in headless Chromium at 1280×640, deviceScaleFactor 2. -->
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 1280px; height: 640px; overflow: hidden; font-family: Inter, sans-serif; color: #f5f5f4;
+    background:
+      radial-gradient(700px 420px at 78% 40%, rgba(59,130,246,.30), transparent 70%),
+      radial-gradient(500px 360px at 8% 100%, rgba(168,85,247,.18), transparent 70%),
+      #0f0f0e; }
+  .dots { position: absolute; inset: 0; opacity: .35;
+    background-image: radial-gradient(rgba(255,255,255,.12) 1.2px, transparent 1.4px); background-size: 28px 28px;
+    mask-image: linear-gradient(90deg, #000 0%, transparent 60%); }
+  .copy { position: absolute; left: 80px; top: 0; bottom: 0; width: 600px; display: flex; flex-direction: column; justify-content: center; }
+  .brand { display: flex; align-items: center; gap: 26px; }
+  .brand img { width: 112px; height: 112px; filter: drop-shadow(0 18px 30px rgba(0,0,0,.5)); }
+  h1 { font-size: 92px; font-weight: 800; letter-spacing: -0.045em; line-height: 1; }
+  p { margin-top: 30px; font-size: 27px; line-height: 1.4; color: #c8c5c0; letter-spacing: -0.01em; }
+  p b { color: #fff; font-weight: 600; }
+  .pills { margin-top: 34px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .pill { display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; font-size: 17px; font-weight: 500;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: #e7e5e4; }
+  .pill i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .phone { position: absolute; width: 262px; border-radius: 40px; padding: 9px; background: #1c1c1a;
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,.14), 0 40px 80px rgba(0,0,0,.6); }
+  .phone img { display: block; width: 100%; border-radius: 32px; }
+  .back { left: 975px; top: 96px; transform: rotate(6deg); }
+  .front { left: 745px; top: 128px; transform: rotate(-5deg); z-index: 1; }
+</style>
+</head>
+<body>
+  <div class="dots"></div>
+  <div class="copy">
+    <div class="brand"><img src="../icon.svg" alt=""><h1>chronicals</h1></div>
+    <p>A private health diary that shows you <b>what triggers your symptoms</b>.</p>
+    <div class="pills">
+      <span class="pill"><i style="background:#3b82f6"></i>Android app</span>
+      <span class="pill"><i style="background:#22c55e"></i>Self-hosted web</span>
+      <span class="pill"><i style="background:#a855f7"></i>Your data stays yours</span>
+    </div>
+  </div>
+  <div class="phone back"><img src="../../screenshots/analysis-light.png" alt=""></div>
+  <div class="phone front"><img src="../../screenshots/calendar-dark.png" alt=""></div>
+</body>
+</html>
