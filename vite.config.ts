@@ -1,10 +1,11 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 // See svelte.config.js: the Android app is a static SPA with its own database.
 const isMobile = process.env.CHRONICALS_TARGET === 'mobile';
+const isTest = !!process.env.VITEST;
 
 export default defineConfig({
 	define: {
@@ -14,6 +15,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		!isMobile &&
+			!isTest &&
 			SvelteKitPWA({
 				strategies: 'injectManifest',
 				srcDir: 'src',
@@ -41,5 +43,9 @@ export default defineConfig({
 					enabled: false
 				}
 			})
-	]
+	],
+	test: {
+		include: ['src/**/*.test.ts'],
+		environment: 'node'
+	}
 });

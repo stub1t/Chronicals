@@ -24,7 +24,8 @@ export function assertSqliteFile(bytes: Uint8Array): void {
  * SQLite refuses to open such an image in memory.
  */
 export function withoutWalFlag(bytes: Uint8Array): Uint8Array {
-	const copy = bytes.slice();
+	// new Uint8Array() copies; a Node Buffer's slice() would return a view.
+	const copy = new Uint8Array(bytes);
 	if (copy[18] === 2 && copy[19] === 2) {
 		copy[18] = 1;
 		copy[19] = 1;

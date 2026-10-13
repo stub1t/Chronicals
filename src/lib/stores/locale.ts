@@ -595,10 +595,10 @@ function set(lang: Language) {
 
 export function t(key: keyof typeof translations.de, vars?: Record<string, string | number>): string {
 	const lang = get(language);
-	const template = translations[lang][key] ?? translations.de[key];
+	const template: string = translations[lang][key] ?? translations.de[key];
 	if (!vars) return template;
 	return Object.entries(vars).reduce(
-		(text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+		(text: string, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
 		template
 	);
 }
@@ -610,7 +610,8 @@ export function dateLocale(lang = get(language)): string {
 export function localizeBuiltInText(text: string | null | undefined): string {
 	if (!text) return text ?? '';
 	const lang = get(language);
-	return builtInText[lang][text as keyof typeof builtInText.de] ?? text;
+	const table: Record<string, string> = builtInText[lang];
+	return table[text] ?? text;
 }
 
 export const localeStore = {
