@@ -1,0 +1,1 @@
+ALTER TABLE `medications` ADD `reminder_times` text;

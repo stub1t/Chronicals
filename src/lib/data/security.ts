@@ -193,6 +193,18 @@ export function optionalColor(value: unknown): string | null | undefined {
 	return value;
 }
 
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Up to 6 distinct 'HH:MM' times, sorted. `null` clears them. */
+export function optionalReminderTimes(value: unknown): string[] | undefined {
+	if (value === undefined) return undefined;
+	if (value === null) return [];
+	if (!Array.isArray(value) || value.length > 6 || !value.every((v) => typeof v === 'string' && TIME_RE.test(v))) {
+		throw error(400, 'reminderTimes must be up to 6 times like 08:00');
+	}
+	return [...new Set(value as string[])].sort();
+}
+
 export function assertBoolean(value: unknown, fieldName: string): boolean {
 	if (typeof value !== 'boolean') {
 		throw error(400, `${fieldName} must be boolean`);

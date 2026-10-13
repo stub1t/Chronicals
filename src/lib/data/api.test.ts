@@ -46,6 +46,19 @@ describe('handleApiRequest', () => {
 		expect(await status(call('GET', '/api/entries?from=2026-04-01'))).toBe(400);
 	});
 
+	it('stores medication reminder times sorted and without duplicates', async () => {
+		const res = await call('POST', '/api/medications', { name: 'Magnesium', startDate: '2026-01-01', reminderTimes: ['20:00', '08:00', '08:00'] });
+		const med = await res.json();
+		expect(med.reminderTimes).toEqual(['08:00', '20:00']);
+		const cleared = await (await call('PUT', `/api/medications/${med.id}`, { reminderTimes: null })).json();
+		expect(cleared.reminderTimes).toEqual([]);
+		const bad = (reminderTimes: unknown) => status(call('POST', '/api/medications', { name: 'X', startDate: '2026-01-01', reminderTimes }));
+		expect(await bad(['8:00'])).toBe(400);
+		expect(await bad(['24:00'])).toBe(400);
+		expect(await bad(Array.from({ length: 7 }, (_, i) => `0${i}:00`))).toBe(400);
+		expect(await bad('08:00')).toBe(400);
+	});
+
 	it('validates input', async () => {
 		expect(await status(call('GET', '/api/entries?month=2026-3'))).toBe(400);
 		expect(await status(call('POST', '/api/entries', { date: '29.03.2026' }))).toBe(400);

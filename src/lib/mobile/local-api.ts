@@ -16,6 +16,10 @@ export async function localFetch(path: string, init?: RequestInit): Promise<Resp
 
 		if (request.method !== 'GET' && response.ok) {
 			await persist();
+			// Medication reminders follow the medications (and a restored backup).
+			if (/^\/api\/(medications|medication-changes|backup)\b/.test(url.pathname)) {
+				void import('./reminders.js').then((m) => m.syncReminders()).catch(console.error);
+			}
 		}
 		return response;
 	} catch (err) {

@@ -3,6 +3,7 @@
 	import { language, localeStore, type Language, t } from '$lib/stores/locale.js';
 	import { onMount } from 'svelte';
 	import { exportBackup, importBackup } from '$lib/backup.js';
+	import { loadReminderSettings, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
 
 	type ThemeOption = 'system' | 'light' | 'dark';
 
@@ -12,6 +13,7 @@
 	onMount(() => {
 		currentTheme = themeStore.current;
 		currentLanguage = localeStore.current;
+		if (__NATIVE_APP__) reminders = loadReminderSettings();
 	});
 
 	function setTheme(t: ThemeOption) {
@@ -22,6 +24,20 @@
 	function setLanguage(lang: Language) {
 		currentLanguage = lang;
 		localeStore.set(lang);
+	}
+
+	// ── Reminders (Android app) ───────────────────────────────────────────────
+	let reminders = $state<ReminderSettings>({ daily: false, time: '20:00' });
+	let reminderDenied = $state(false);
+
+	async function updateReminders(next: ReminderSettings) {
+		reminders = next;
+		saveReminderSettings(next);
+		if (__NATIVE_APP__) {
+			const { requestReminderPermission, syncReminders } = await import('$lib/mobile/reminders.js');
+			reminderDenied = next.daily && !(await requestReminderPermission());
+			await syncReminders();
+		}
 	}
 
 	// ── Backup ────────────────────────────────────────────────────────────────
@@ -165,6 +181,34 @@
 			</button>
 		</div>
 	</section>
+
+	{#if __NATIVE_APP__}
+		<section class="theme-section" aria-label={t('settings_reminders')}>
+			<p class="theme-title">{t('settings_reminders')}</p>
+			<div class="reminder-row">
+				<label class="switch-label">
+					<input
+						type="checkbox"
+						checked={reminders.daily}
+						onchange={(e) => updateReminders({ ...reminders, daily: e.currentTarget.checked })}
+					/>
+					{t('settings_reminder_daily')}
+				</label>
+				<input
+					class="time-input"
+					type="time"
+					value={reminders.time}
+					disabled={!reminders.daily}
+					aria-label={t('settings_reminder_time')}
+					onchange={(e) => e.currentTarget.value && updateReminders({ ...reminders, time: e.currentTarget.value })}
+				/>
+			</div>
+			<p class="data-note">{t('settings_reminder_daily_note')}</p>
+			{#if reminderDenied}
+				<p class="data-message error" role="alert">{t('settings_reminder_denied')}</p>
+			{/if}
+		</section>
+	{/if}
 
 	<section class="theme-section" aria-label={t('settings_data')}>
 		<p class="theme-title">{t('settings_data')}</p>
@@ -327,6 +371,45 @@
 	.theme-pill:disabled {
 		opacity: 0.5;
 		cursor: default;
+	}
+
+	.reminder-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 14px;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+	}
+
+	.switch-label {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 0.92rem;
+		color: var(--text);
+	}
+
+	.switch-label input {
+		width: 20px;
+		height: 20px;
+		accent-color: var(--text);
+	}
+
+	.time-input {
+		font-family: inherit;
+		font-size: 0.92rem;
+		padding: 6px 8px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--bg);
+		color: var(--text);
+	}
+
+	.time-input:disabled {
+		opacity: 0.5;
 	}
 
 	.data-note {

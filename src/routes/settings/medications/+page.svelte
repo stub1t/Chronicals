@@ -24,6 +24,7 @@
 	let addMedSaving = $state(false);
 	let addMedError = $state<string | null>(null);
 	let editingMedId = $state<string | null>(null);
+	let newMedReminders = $state<string[]>([]);
 	let actionError = $state<string | null>(null);
 
 	// ── Log change modal ──────────────────────────────────────────────────────
@@ -52,6 +53,7 @@
 	// ── Add medication ────────────────────────────────────────────────────────
 	function openAddMed() {
 		editingMedId = null;
+		newMedReminders = [];
 		newMedName = '';
 		newMedDosage = '';
 		newMedUnit = '';
@@ -66,6 +68,7 @@
 		newMedDosage = med.dosage ?? '';
 		newMedUnit = med.unit ?? '';
 		newMedStartDate = med.startDate;
+		newMedReminders = [...(med.reminderTimes ?? [])];
 		addMedError = null;
 		showAddMed = true;
 	}
@@ -82,7 +85,9 @@
 					name: newMedName.trim(),
 					dosage: newMedDosage || null,
 					unit: newMedUnit || null,
-					startDate: newMedStartDate
+					startDate: newMedStartDate,
+					// Reminder times can only be edited in the Android app, where they ring.
+					...(__NATIVE_APP__ && { reminderTimes: newMedReminders.filter(Boolean) })
 				})
 			});
 			if (!res.ok) {
@@ -94,6 +99,10 @@
 					? medications.map((m) => (m.id === med.id ? med : m))
 					: [...medications, med];
 				showAddMed = false;
+				if (__NATIVE_APP__ && med.reminderTimes.length > 0) {
+					const { requestReminderPermission } = await import('$lib/mobile/reminders.js');
+					await requestReminderPermission();
+				}
 			}
 		} catch {
 			addMedError = t('network_error');
@@ -230,6 +239,9 @@
 								<span class="med-dosage">{med.dosage}{med.unit ? ' ' + med.unit : ''}</span>
 							{/if}
 							<span class="med-date">{t('medications_since', { date: formatDate(med.startDate) })}</span>
+							{#if __NATIVE_APP__ && med.reminderTimes?.length}
+								<span class="med-date">{t('medications_reminder_at', { times: med.reminderTimes.join(', ') })}</span>
+							{/if}
 						</div>
 						<div class="med-actions">
 							<button class="change-btn" onclick={() => openChangeModal(med.id)}>{t('medications_log_change')}</button>
@@ -342,6 +354,29 @@
 					<label class="field-label" for="new-med-start">{t('medications_start_date')}</label>
 					<input id="new-med-start" type="date" class="input" bind:value={newMedStartDate} />
 				</div>
+				{#if __NATIVE_APP__}
+					<div class="field">
+						<span class="field-label">{t('medications_reminders')}</span>
+						<div class="reminder-times">
+							{#each newMedReminders as _, i (i)}
+								<span class="reminder-time">
+									<input type="time" class="input" bind:value={newMedReminders[i]} />
+									<button
+										type="button"
+										class="change-btn"
+										aria-label={t('medications_remove_reminder')}
+										onclick={() => (newMedReminders = newMedReminders.filter((_, j) => j !== i))}>×</button
+									>
+								</span>
+							{/each}
+							{#if newMedReminders.length < 6}
+								<button type="button" class="change-btn" onclick={() => (newMedReminders = [...newMedReminders, '08:00'])}
+									>{t('medications_add_reminder')}</button
+								>
+							{/if}
+						</div>
+					</div>
+				{/if}
 
 				{#if addMedError}
 					<p class="form-error">{addMedError}</p>
@@ -552,6 +587,23 @@
 	.change-btn:hover {
 		border-color: var(--text-muted);
 		color: var(--text);
+	}
+
+	.reminder-times {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.reminder-time {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.reminder-time .input {
+		width: auto;
 	}
 
 	.med-actions {

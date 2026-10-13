@@ -15,6 +15,13 @@
 		themeStore.init();
 		localeStore.init();
 
+		if (__NATIVE_APP__) {
+			import('$lib/mobile/reminders.js').then((m) => {
+				m.listenForReminderTaps();
+				m.syncReminders().catch(console.error);
+			});
+		}
+
 		// The Android app keeps its data on the device, so there is nothing to sync.
 		if (!browser || __NATIVE_APP__) return;
 

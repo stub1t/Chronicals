@@ -57,6 +57,7 @@ import {
 	optionalEntryCategory,
 	optionalMetricValues,
 	optionalNumber,
+	optionalReminderTimes,
 	optionalText,
 	optionalTriggerCategory,
 	parseJsonRequest,
@@ -347,7 +348,8 @@ const routes: Route[] = [
 				dosage: optionalText(body.dosage, 64) ?? undefined,
 				unit: optionalText(body.unit, 32) ?? undefined,
 				startDate: assertDate(body.startDate, 'startDate'),
-				notes: optionalText(body.notes, 1000) ?? undefined
+				notes: optionalText(body.notes, 1000) ?? undefined,
+				reminderTimes: optionalReminderTimes(body.reminderTimes)
 			});
 			return json(med, { status: 201 });
 		}
@@ -365,7 +367,8 @@ const routes: Route[] = [
 					endDate: body.endDate === null ? null : assertDate(body.endDate, 'endDate')
 				}),
 				...(body.notes !== undefined && { notes: optionalText(body.notes, 1000) }),
-				...(body.isActive !== undefined && { isActive: assertBoolean(body.isActive, 'isActive') })
+				...(body.isActive !== undefined && { isActive: assertBoolean(body.isActive, 'isActive') }),
+				...(body.reminderTimes !== undefined && { reminderTimes: optionalReminderTimes(body.reminderTimes) })
 			});
 			if (!med) return notFound();
 			return json(med);

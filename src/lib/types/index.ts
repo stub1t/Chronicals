@@ -151,6 +151,8 @@ export interface Medication {
 	endDate: string | null;
 	notes: string | null;
 	isActive: boolean;
+	/** 'HH:MM' times for reminders in the Android app. */
+	reminderTimes: string[];
 }
 
 export type MedicationChangeType = 'started' | 'dosage_change' | 'stopped';

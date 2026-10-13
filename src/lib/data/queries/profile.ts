@@ -20,12 +20,17 @@ export function updateProfile(data: Partial<Omit<UserProfile, 'id' | 'updatedAt'
 	return getProfile();
 }
 
+function parseMedication(row: typeof medications.$inferSelect): Medication {
+	return { ...row, reminderTimes: row.reminderTimes ? JSON.parse(row.reminderTimes) : [] };
+}
+
 export function getMedications(): Medication[] {
-	return db.select().from(medications).all() as Medication[];
+	return db.select().from(medications).all().map(parseMedication);
 }
 
 export function getMedication(id: string): Medication | null {
-	return (db.select().from(medications).where(eq(medications.id, id)).get() as Medication) ?? null;
+	const row = db.select().from(medications).where(eq(medications.id, id)).get();
+	return row ? parseMedication(row) : null;
 }
 
 export function createMedication(data: {
@@ -34,6 +39,7 @@ export function createMedication(data: {
 	unit?: string;
 	startDate: string;
 	notes?: string;
+	reminderTimes?: string[];
 }): Medication {
 	const id = uuidv4();
 	db.insert(medications)
@@ -44,14 +50,24 @@ export function createMedication(data: {
 			unit: data.unit ?? null,
 			startDate: data.startDate,
 			notes: data.notes ?? null,
-			isActive: true
+			isActive: true,
+			reminderTimes: data.reminderTimes?.length ? JSON.stringify(data.reminderTimes) : null
 		})
 		.run();
 	return getMedication(id)!;
 }
 
 export function updateMedication(id: string, data: Partial<Omit<Medication, 'id'>>): Medication | null {
-	db.update(medications).set(data).where(eq(medications.id, id)).run();
+	const { reminderTimes, ...rest } = data;
+	db.update(medications)
+		.set({
+			...rest,
+			...(reminderTimes !== undefined && {
+				reminderTimes: reminderTimes.length ? JSON.stringify(reminderTimes) : null
+			})
+		})
+		.where(eq(medications.id, id))
+		.run();
 	return getMedication(id);
 }
 
