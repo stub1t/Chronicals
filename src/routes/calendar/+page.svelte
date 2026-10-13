@@ -75,9 +75,17 @@
 
 <div class="page">
 	<header class="page-header">
-		<div class="view-tabs">
+		<div class="header-row">
+			<div class="view-tabs">
 				<span class="view-tab active" aria-current="page">{t('month_view')}</span>
 				<a href="/calendar/week" class="view-tab">{t('week_view')}</a>
+			</div>
+			<a href="/search" class="search-link" aria-label={t('search_open')}>
+				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+					<circle cx="11" cy="11" r="7" />
+					<path d="m20 20-3.5-3.5" />
+				</svg>
+			</a>
 		</div>
 		<MonthNav
 			{yearMonth}
@@ -135,6 +143,23 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
+	}
+
+	.header-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.search-link {
+		display: flex;
+		padding: 6px;
+		border-radius: 10px;
+		color: var(--text-muted);
+	}
+
+	.search-link:hover {
+		color: var(--text);
 	}
 
 	.view-tabs {

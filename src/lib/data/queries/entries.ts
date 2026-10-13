@@ -79,16 +79,20 @@ export function countEntries(): number {
 	return db.select({ total: count() }).from(entries).get()?.total ?? 0;
 }
 
-export function getMonthEntries(yearMonth: string): Entry[] {
-	// yearMonth: 'YYYY-MM'
-	const start = `${yearMonth}-01`;
-	const end = `${yearMonth}-31`;
+/** Full entries for every day from `from` to `to` (inclusive, 'YYYY-MM-DD'). */
+export function getEntriesInRange(from: string, to: string): Entry[] {
 	const rows = db
-		.select()
+		.select({ id: entries.id })
 		.from(entries)
-		.where(and(gte(entries.date, start), lte(entries.date, end)))
+		.where(and(gte(entries.date, from), lte(entries.date, to)))
+		.orderBy(entries.date)
 		.all();
 	return rows.map((r) => getEntry(r.id)!).filter(Boolean);
+}
+
+export function getMonthEntries(yearMonth: string): Entry[] {
+	// yearMonth: 'YYYY-MM'
+	return getEntriesInRange(`${yearMonth}-01`, `${yearMonth}-31`);
 }
 
 export function getMonthDotData(yearMonth: string): CalendarDayData[] {

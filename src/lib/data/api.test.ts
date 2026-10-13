@@ -38,6 +38,14 @@ describe('handleApiRequest', () => {
 		expect(await (await call('GET', '/api/entries?date=2026-03-30')).json()).toBeNull();
 	});
 
+	it('returns full entries for a date range in date order', async () => {
+		for (const date of ['2026-03-30', '2026-03-01', '2026-04-02']) await call('POST', '/api/entries', { date });
+		const list = await (await call('GET', '/api/entries?from=2026-03-01&to=2026-03-31')).json();
+		expect(list.map((e: { date: string }) => e.date)).toEqual(['2026-03-01', '2026-03-30']);
+		expect(await status(call('GET', '/api/entries?from=2026-04-01&to=2026-03-01'))).toBe(400);
+		expect(await status(call('GET', '/api/entries?from=2026-04-01'))).toBe(400);
+	});
+
 	it('validates input', async () => {
 		expect(await status(call('GET', '/api/entries?month=2026-3'))).toBe(400);
 		expect(await status(call('POST', '/api/entries', { date: '29.03.2026' }))).toBe(400);

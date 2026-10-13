@@ -17,6 +17,7 @@ import {
 import {
 	getEntry,
 	getEntryByDate,
+	getEntriesInRange,
 	getMonthEntries,
 	getMonthDotData,
 	createEntry,
@@ -117,6 +118,15 @@ const routes: Route[] = [
 		GET: ({ url }) => {
 			const date = url.searchParams.get('date');
 			if (date) return json(getEntryByDate(assertDate(date, 'date')));
+
+			const from = url.searchParams.get('from');
+			const to = url.searchParams.get('to');
+			if (from || to) {
+				const safeFrom = assertDate(from, 'from');
+				const safeTo = assertDate(to, 'to');
+				if (safeFrom > safeTo) error(400, 'from must not be after to');
+				return json(getEntriesInRange(safeFrom, safeTo));
+			}
 
 			const month = url.searchParams.get('month');
 			const dotOnly = url.searchParams.get('dots') === '1';
