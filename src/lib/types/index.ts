@@ -56,6 +56,8 @@ export interface Entry {
 	id: string;
 	date: string; // 'YYYY-MM-DD'
 	note: string | null;
+	/** Daily well-being, 1 (awful) to 5 (great). */
+	wellbeing: number | null;
 	createdAt: string;
 	updatedAt: string;
 	logs?: EntryTypeLog[];

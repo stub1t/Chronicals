@@ -140,16 +140,36 @@ export function getMonthDotData(yearMonth: string): CalendarDayData[] {
 	return Array.from(dayMap.values());
 }
 
-export function createEntry(date: string, note?: string): Entry {
-	const id = uuidv4();
-	db.insert(entries).values({ id, date, note: note ?? null }).run();
-	return getEntry(id)!;
+export interface EntryFields {
+	note?: string | null;
+	wellbeing?: number | null;
 }
 
-export function updateEntry(id: string, data: { note?: string }): Entry | null {
+/**
+ * The entry for a date, created if missing. There is one entry per day, so
+ * calling this again for the same date updates the given fields instead of
+ * adding a second entry.
+ */
+export function createEntry(date: string, fields: EntryFields = {}): { entry: Entry; created: boolean } {
+	const existing = db.select({ id: entries.id }).from(entries).where(eq(entries.date, date)).get();
+	if (existing) return { entry: updateEntry(existing.id, fields)!, created: false };
+
+	const id = uuidv4();
+	db.insert(entries)
+		.values({ id, date, note: fields.note ?? null, wellbeing: fields.wellbeing ?? null })
+		.run();
+	return { entry: getEntry(id)!, created: true };
+}
+
+/** Updates only the fields that are given; `null` clears a field. */
+export function updateEntry(id: string, fields: EntryFields): Entry | null {
 	db
 		.update(entries)
-		.set({ note: data.note ?? null, updatedAt: sql`(datetime('now'))` })
+		.set({
+			...(fields.note !== undefined && { note: fields.note }),
+			...(fields.wellbeing !== undefined && { wellbeing: fields.wellbeing }),
+			updatedAt: sql`(datetime('now'))`
+		})
 		.where(eq(entries.id, id))
 		.run();
 	return getEntry(id);

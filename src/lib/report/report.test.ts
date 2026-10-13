@@ -22,6 +22,7 @@ function entry(date: string, logs: Array<{ start: string; end?: string; intensit
 		id: date,
 		date,
 		note: null,
+		wellbeing: null,
 		createdAt: '',
 		updatedAt: '',
 		triggers: [],

@@ -40,7 +40,7 @@ import {
 	createMedicationChange
 } from './queries/profile.js';
 import { getAllTriggers, getTriggersByCategory, createTrigger, updateTrigger, deleteTrigger } from './queries/triggers.js';
-import { fetchAndCacheEnvData, getEnvDataForDate } from './weather.js';
+import { fetchAndCacheEnvData, getEnvDataForDate, getEnvDataInRange } from './weather.js';
 import { backup } from './db.js';
 import { BACKUP_CONTENT_TYPE, MAX_BACKUP_BYTES, assertSqliteFile, backupFilename } from './backup.js';
 import {
@@ -59,6 +59,7 @@ import {
 	optionalNumber,
 	optionalReminderTimes,
 	optionalText,
+	optionalWellbeing,
 	optionalTriggerCategory,
 	parseJsonRequest,
 	requiredText
@@ -139,8 +140,11 @@ const routes: Route[] = [
 		},
 		POST: async (event) => {
 			const body = await parseJsonRequest(event);
-			const entry = createEntry(assertDate(body.date, 'date'), optionalText(body.note) ?? undefined);
-			return json(entry, { status: 201 });
+			const { entry, created } = createEntry(assertDate(body.date, 'date'), {
+				...(body.note !== undefined && { note: optionalText(body.note) }),
+				...(body.wellbeing !== undefined && { wellbeing: optionalWellbeing(body.wellbeing) })
+			});
+			return json(entry, { status: created ? 201 : 200 });
 		}
 	}),
 
@@ -153,7 +157,8 @@ const routes: Route[] = [
 		PUT: async (event) => {
 			const body = await parseJsonRequest(event);
 			const entry = updateEntry(assertIdentifier(event.params.id, 'id'), {
-				note: optionalText(body.note) ?? undefined
+				...(body.note !== undefined && { note: optionalText(body.note) }),
+				...(body.wellbeing !== undefined && { wellbeing: optionalWellbeing(body.wellbeing) })
 			});
 			if (!entry) return notFound();
 			return json(entry);
@@ -287,6 +292,15 @@ const routes: Route[] = [
 
 	route('/api/environmental', {
 		GET: async ({ url }) => {
+			const from = url.searchParams.get('from');
+			const to = url.searchParams.get('to');
+			if (from || to) {
+				const safeFrom = assertDate(from, 'from');
+				const safeTo = assertDate(to, 'to');
+				if (safeFrom > safeTo) error(400, 'from must not be after to');
+				return json(getEnvDataInRange(safeFrom, safeTo));
+			}
+
 			const date = assertDate(url.searchParams.get('date'), 'date');
 			const cachedOnly = url.searchParams.get('cached') === '1';
 			const profile = getProfile();

@@ -212,7 +212,7 @@
 
 <div class="page">
 	<header class="page-header">
-		<a href="/settings" class="back-link">← {t('settings_title')}</a>
+		<a href="/me" class="back-link">← {t('settings_title')}</a>
 		<h1 class="page-title">{t('medications_title')}</h1>
 	</header>
 

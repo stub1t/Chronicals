@@ -156,7 +156,7 @@
 	<header class="page-header">
 		<div class="title-row">
 			<h1 class="page-title">{t('analysis_title')}</h1>
-			<a href="/analysis/report" class="report-link">{t('report_open')}</a>
+			<a href="/insights/report" class="report-link">{t('report_open')}</a>
 		</div>
 		<p class="page-subtitle">{t('analysis_subtitle')}</p>
 	</header>

@@ -193,6 +193,16 @@ export function optionalColor(value: unknown): string | null | undefined {
 	return value;
 }
 
+/** Daily well-being: an integer 1 to 5, or null to clear it. */
+export function optionalWellbeing(value: unknown): number | null | undefined {
+	if (value === undefined) return undefined;
+	if (value === null) return null;
+	if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 5) {
+		throw error(400, 'wellbeing must be a whole number from 1 to 5');
+	}
+	return value;
+}
+
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Up to 6 distinct 'HH:MM' times, sorted. `null` clears them. */

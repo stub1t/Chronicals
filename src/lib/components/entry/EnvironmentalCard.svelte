@@ -77,7 +77,7 @@
 	{:else if !data}
 		<p class="no-data">
 			{t('env_no_data')}
-			<a href="/settings" class="settings-link">{t('env_set_location')}</a>
+			<a href="/me" class="settings-link">{t('env_set_location')}</a>
 			{t('env_enable')}
 		</p>
 

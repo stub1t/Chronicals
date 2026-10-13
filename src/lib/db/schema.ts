@@ -7,6 +7,7 @@ export const entries = sqliteTable('entries', {
 	id: text('id').primaryKey(),
 	date: text('date').notNull(), // 'YYYY-MM-DD'
 	note: text('note'),
+	wellbeing: integer('wellbeing'), // 1 (awful) to 5 (great), the daily "How are you?"
 	createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 	updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
 }, (t) => [

@@ -84,7 +84,7 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 
 - [x] 1. Foundation: tokens, Nunito, base components, icons, haptics
 - [x] 2. i18n infrastructure (en/de), language picker, RTL (+ no SSR, moved here from 3)
-- [ ] 3. Data: wellbeing column + API, weather range API, no SSR, route skeleton + redirects
+- [x] 3. Data: wellbeing column + API, weather range API, route moves + redirects (Today tab comes with 4)
 - [ ] 4. Today screen + log sheet
 - [ ] 5. Calendar (month/week/day sheet), search
 - [ ] 6. Me section

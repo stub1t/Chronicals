@@ -118,7 +118,7 @@
 
 	<!-- Nav cards -->
 	<nav class="nav-list" aria-label={t('settings_sections')}>
-		<a href="/settings/profile" class="nav-card">
+		<a href="/me/profile" class="nav-card">
 			<span class="nav-icon" aria-hidden="true">
 				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
 					<circle cx="10" cy="7" r="3"/>
@@ -131,7 +131,7 @@
 			</div>
 			<span class="nav-arrow" aria-hidden="true">›</span>
 		</a>
-		<a href="/settings/medications" class="nav-card">
+		<a href="/me/medications" class="nav-card">
 			<span class="nav-icon" aria-hidden="true">
 				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
 					<rect x="4" y="2" width="12" height="16" rx="2"/>
@@ -144,7 +144,7 @@
 			</div>
 			<span class="nav-arrow" aria-hidden="true">›</span>
 		</a>
-		<a href="/settings/entry-types" class="nav-card">
+		<a href="/me/entry-types" class="nav-card">
 			<span class="nav-icon" aria-hidden="true">
 				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
 					<circle cx="10" cy="10" r="3"/>
@@ -157,7 +157,7 @@
 			</div>
 			<span class="nav-arrow" aria-hidden="true">›</span>
 		</a>
-		<a href="/settings/triggers" class="nav-card">
+		<a href="/me/triggers" class="nav-card">
 			<span class="nav-icon" aria-hidden="true">
 				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M3 6h14M5 10h10M7 14h6"/>

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { db } from './db.js';
 import { environmentalData } from '../db/schema.js';
 import type { EnvironmentalData } from '../types/index.js';
@@ -30,6 +30,17 @@ function assertCoordinateRange(lat: number, lon: number): void {
 export function getEnvDataForDate(date: string): EnvironmentalData | null {
 	const row = db.select().from(environmentalData).where(eq(environmentalData.date, date)).get();
 	return row ? formatRow(row) : null;
+}
+
+/** Stored weather for every day from `from` to `to` (inclusive), oldest first. Never fetches. */
+export function getEnvDataInRange(from: string, to: string): EnvironmentalData[] {
+	return db
+		.select()
+		.from(environmentalData)
+		.where(and(gte(environmentalData.date, from), lte(environmentalData.date, to)))
+		.orderBy(asc(environmentalData.date))
+		.all()
+		.map(formatRow);
 }
 
 function getPreviousDayPressure(date: string): number | null {

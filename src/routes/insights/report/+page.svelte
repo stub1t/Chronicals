@@ -99,7 +99,7 @@
 
 <div class="page">
 	<header class="page-header">
-		<a href="/analysis" class="back-link">← {t('analysis_title')}</a>
+		<a href="/insights" class="back-link">← {t('analysis_title')}</a>
 		<h1 class="page-title">{t('report_title')}</h1>
 		<p class="intro">{t('report_intro')}</p>
 	</header>

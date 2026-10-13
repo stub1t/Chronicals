@@ -14,7 +14,7 @@ beforeEach(() => {
 const day = (n: number) => `2026-03-${String(n).padStart(2, '0')}`;
 
 function logDay(n: number, { headache = false, triggers = [] as string[] } = {}) {
-	const entry = createEntry(day(n));
+	const { entry } = createEntry(day(n));
 	if (headache) {
 		createEntryTypeLog({
 			entryId: entry.id,

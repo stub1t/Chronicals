@@ -34,6 +34,33 @@ describe('handleApiRequest', () => {
 		expect(entry).toMatchObject({ date: '2026-03-29', note: 'hello', logs: [], triggers: [] });
 	});
 
+	it('keeps one entry per day and updates only the given fields', async () => {
+		const first = await call('POST', '/api/entries', { date: '2026-03-29', note: 'hello' });
+		expect(first.status).toBe(201);
+		const again = await call('POST', '/api/entries', { date: '2026-03-29', wellbeing: 4 });
+		expect(again.status).toBe(200);
+		const entry = await again.json();
+		expect(entry).toMatchObject({ id: (await first.json()).id, note: 'hello', wellbeing: 4 });
+
+		const updated = await (await call('PUT', `/api/entries/${entry.id}`, { wellbeing: 2 })).json();
+		expect(updated).toMatchObject({ note: 'hello', wellbeing: 2 });
+		const cleared = await (await call('PUT', `/api/entries/${entry.id}`, { note: '', wellbeing: null })).json();
+		expect(cleared).toMatchObject({ note: null, wellbeing: null });
+		expect(await status(call('PUT', `/api/entries/${entry.id}`, { wellbeing: 6 }))).toBe(400);
+		expect(await status(call('PUT', `/api/entries/${entry.id}`, { wellbeing: 2.5 }))).toBe(400);
+	});
+
+	it('returns stored weather for a date range', async () => {
+		const { db } = useTestDatabase();
+		const { environmentalData } = await import('../db/schema.js');
+		for (const [i, date] of ['2026-03-01', '2026-03-02', '2026-04-01'].entries()) {
+			db.insert(environmentalData).values({ id: `w${i}`, date, airPressureHpa: 1000 + i }).run();
+		}
+		const rows = await (await call('GET', '/api/environmental?from=2026-03-01&to=2026-03-31')).json();
+		expect(rows.map((r: { date: string }) => r.date)).toEqual(['2026-03-01', '2026-03-02']);
+		expect(await status(call('GET', '/api/environmental?from=2026-04-01&to=2026-03-01'))).toBe(400);
+	});
+
 	it('returns null for a day without an entry', async () => {
 		expect(await (await call('GET', '/api/entries?date=2026-03-30')).json()).toBeNull();
 	});

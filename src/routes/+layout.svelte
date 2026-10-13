@@ -93,13 +93,13 @@
 					</svg>
 					<span class="nav-label">{t('nav_calendar')}</span>
 				</a>
-				<a href="/analysis" class="nav-item" class:active={isActive('/analysis')} aria-label={t('nav_analysis')}>
+				<a href="/insights" class="nav-item" class:active={isActive('/insights')} aria-label={t('nav_analysis')}>
 					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<path d="M3 18l4-8 4 5 3-3 4 6"/>
 					</svg>
 					<span class="nav-label">{t('nav_analysis')}</span>
 				</a>
-				<a href="/settings" class="nav-item" class:active={isActive('/settings')} aria-label={t('nav_settings')}>
+				<a href="/me" class="nav-item" class:active={isActive('/me')} aria-label={t('nav_settings')}>
 					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<circle cx="12" cy="12" r="3"/>
 						<path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>

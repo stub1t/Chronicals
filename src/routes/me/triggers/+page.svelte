@@ -74,7 +74,7 @@
 
 <div class="page">
 	<header class="page-header">
-		<a href="/settings" class="back">‹ {t('settings_title')}</a>
+		<a href="/me" class="back">‹ {t('settings_title')}</a>
 		<h1>{t('triggers_title')}</h1>
 	</header>
 
