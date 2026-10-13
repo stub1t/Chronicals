@@ -52,12 +52,7 @@ Android 7.0 or newer is required. There are two ways to install the app.
 
 #### With Obtainium
 
-[Obtainium](https://obtainium.imranr.dev) installs the app from the GitHub releases and updates it when a new release comes out. The repository is private, so Obtainium first needs a GitHub token to see the releases:
-
-1. On GitHub, create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with access to this repository only and the permission Contents set to read-only.
-2. In Obtainium, open Settings and paste it into "GitHub personal access token".
-
-Then open this link on the phone:
+[Obtainium](https://obtainium.imranr.dev) installs the app from the GitHub releases and updates it when a new release comes out. Open this link on the phone:
 
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22io.github.stub1t.chronicals%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fstub1t%2FChronicals%22%2C%22author%22%3A%22stub1t%22%2C%22name%22%3A%22Chronicals%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22versionDetection%5C%22%3Atrue%2C%5C%22allowedSigningCertHashes%5C%22%3A%5C%2204%3A3F%3AE1%3AE2%3A27%3AFE%3A49%3A75%3A30%3A8F%3A2B%3AE3%3A64%3A89%3AA8%3A0D%3AFF%3A3F%3AD8%3A6A%3A47%3AB3%3A04%3A9F%3AC5%3A88%3A05%3A22%3A20%3ACA%3ABD%3A89%5C%22%7D%22%7D"><img src="docs/assets/badge-obtainium.png" alt="Get it on Obtainium" height="48"></a>
 

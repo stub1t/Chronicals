@@ -78,4 +78,4 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] Edit custom entry types; rename and recategorise custom triggers
 - [x] About section: version (APK version on Android), AGPL notice, source link
 - [x] LICENSE (AGPL-3.0-or-later)
-- [ ] History scan for secrets and personal data, then make the repo public after the user's OK
+- [x] History scan (gitleaks + manual: no secrets, only stub1t@github.com), repo made public after the user's OK; Obtainium works without a token
