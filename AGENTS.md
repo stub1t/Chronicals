@@ -8,12 +8,14 @@ This file provides guidance to coding agents when working with code in this repo
 
 **chronicals** — Self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
 
+Ships two ways from one codebase: the self-hosted web app (Docker) and a standalone Android app (Capacitor) that keeps all data on the phone, with no server.
+
 ## Tech Stack
 
 - **Framework**: SvelteKit (TypeScript, Svelte 5 runes)
-- **Database**: SQLite via `better-sqlite3` + Drizzle ORM
+- **Database**: SQLite via Drizzle ORM — `better-sqlite3` on the server, `sql.js` (WASM) in the Android app
 - **Styling**: TailwindCSS v4 (`@tailwindcss/vite` plugin)
-- **Deployment**: Docker + docker-compose (primary)
+- **Deployment**: Docker + docker-compose (web); Capacitor 8 Android APK via GitHub Releases
 
 ## Commands
 
@@ -28,6 +30,11 @@ npx svelte-kit sync        # Regenerate $types after adding routes
 
 docker compose up -d       # Start self-hosted (port 3000, SQLite in volume)
 docker compose up --build  # Rebuild and start
+
+npm run build:mobile       # Static SPA for the Android app → build-mobile/
+npm run android:sync       # build:mobile + copy into android/ (run before any Gradle build)
+npm run android:open       # Open android/ in Android Studio
+cd android && ./gradlew assembleDebug   # Debug APK (needs JDK 21 + Android SDK 36)
 ```
 
 > **Build tip**: If `npm run build` fails with `ENOENT: service-worker.js not found`, the real cause is usually a Svelte compile error in a component. The PWA plugin's `closeBundle` hook masks the original error. Check for `{@const}` in invalid positions (must be an immediate child of `{#each}`, `{#if}`, `{:else}`, etc. - not inside HTML elements).
@@ -37,19 +44,27 @@ docker compose up --build  # Rebuild and start
 ```
 src/
 ├── lib/
+│   ├── api.ts               ← api()/getJson(): client transport for /api/* (fetch on web, in-process on Android)
 │   ├── db/
-│   │   ├── schema.ts        ← All Drizzle table definitions (9 tables)
-│   │   └── index.ts         ← SQLite connection (WAL + FK), auto-migrate, seed
+│   │   └── schema.ts        ← All Drizzle table definitions (9 tables)
 │   ├── server/
+│   │   └── db.ts            ← better-sqlite3 connection (WAL + FK), auto-migrate, seed; loaded by hooks.server.ts
+│   ├── mobile/
+│   │   ├── database.ts      ← sql.js connection, bundled migrations, seed, persistence via @capacitor/filesystem
+│   │   └── local-api.ts     ← localFetch(): answers /api/* in-process on Android
+│   ├── data/                ← Platform-neutral (runs on server AND in the Android WebView — no Node APIs)
+│   │   ├── db.ts            ← `db` live binding + useDatabase(); AppDatabase = any sync Drizzle SQLite DB
+│   │   ├── api.ts           ← The single /api/* route table + handleApiRequest()
+│   │   ├── security.ts      ← Request validation helpers (+ CSRF check used by hooks.server.ts)
 │   │   ├── seed.ts          ← Built-in entry types (headache/stomachache/allergy/hypo/med-change/note) + triggers
 │   │   ├── weather.ts       ← Open-Meteo fetch (weather + pollen + pressure delta)
-│   │   └── queries/         ← Server-only DB query functions
+│   │   └── queries/         ← DB query functions (synchronous Drizzle)
 │   │       ├── entries.ts         ← Entry CRUD + dot data for calendar
 │   │       ├── entryTypeLogs.ts   ← Per-log CRUD
 │   │       ├── entryTypes.ts      ← Entry type CRUD
 │   │       ├── triggers.ts        ← Trigger CRUD
 │   │       ├── profile.ts         ← User profile + medications + medication changes
-│   │       └── analysis.ts        ← Phi coefficient correlations + stats
+│   │       └── analysis.ts        ← Phi coefficient correlations + stats + pressure series
 │   ├── types/index.ts       ← All shared TypeScript interfaces
 │   ├── stores/theme.ts      ← System/light/dark theme (localStorage)
 │   ├── utils/date.ts        ← Date helpers + intensityColor()
@@ -62,10 +77,14 @@ src/
 │   ├── calendar/            ← Month view (+page.svelte) + week/ + day/[date]/
 │   ├── analysis/            ← Correlation analysis tab
 │   ├── settings/            ← profile/, medications/, entry-types/, triggers/
-│   └── api/                 ← All REST endpoints under /api/*
-migrations/                  ← Drizzle-generated SQL (auto-applied on startup)
+│   └── api/[...path]/       ← Catch-all that mounts $lib/data/api.ts on the server
+migrations/                  ← Drizzle-generated SQL (auto-applied on startup, also bundled into the app)
 Dockerfile                   ← Multi-stage Node 22 Alpine, 256MB mem limit
 docker-compose.yml           ← Port 3000, named volume for SQLite
+capacitor.config.ts          ← Android app id io.github.stub1t.chronicals, webDir build-mobile
+android/                     ← Capacitor Android project (committed; web assets are copied in by cap sync)
+assets/                      ← Icon sources for `npx @capacitor/assets generate --android`
+.github/workflows/android-release.yml ← Tag v*.*.* → signed APK on GitHub Releases
 ```
 
 ## Key Design Decisions
@@ -76,12 +95,32 @@ docker-compose.yml           ← Port 3000, named volume for SQLite
 - **Special event markers**: Hypo (⚡) and Medication Change (💊) rendered as icon markers on calendar cells, not dots.
 - **Analysis**: Phi coefficient (φ) for binary correlations. φ > 0.2 = "possible", φ > 0.4 = "strong". Environmental variables binned at median before Phi calculation.
 
+## Web + Android from one codebase
+
+- **One API surface**: every `/api/*` route lives in `src/lib/data/api.ts`. Add or change endpoints there, never as new `+server.ts` files — the Android app would not see them.
+- **Always call the API via `api()` / `getJson()` from `$lib/api.ts`**, never bare `fetch('/api/…')`. On Android there is no server; `api()` routes to the on-device database.
+- **Loads are universal (`+page.ts`)** and read through `getJson(fetch, '/api/…')`. Don't add `+page.server.ts` / form actions: the Android build is a static SPA (`ssr = false` via `__NATIVE_APP__`).
+- **`src/lib/data` must stay platform-neutral**: synchronous Drizzle queries on the shared `db`, no `node:*`/`better-sqlite3` imports.
+- **`__NATIVE_APP__`** (vite `define`, true when `CHRONICALS_TARGET=mobile`) gates Android-only code so it is tree-shaken out of the web bundle. Import Capacitor/sql.js only behind it.
+- **Migrations** are applied on Android from the bundled `migrations/` folder on app start, exactly like the server. `npx drizzle-kit generate` covers both.
+- **Persistence on Android**: sql.js runs in memory; `localFetch` awaits `persist()` after every successful mutation (atomic tmp-file swap in the app's private files dir, included in Android auto-backup).
+
+## Android releases
+
+1. Bump `version` in `package.json` (informational), commit, push.
+2. `git tag vX.Y.Z && git push origin vX.Y.Z` — the workflow builds, signs and publishes `chronicals-X.Y.Z.apk`.
+   versionCode = `X*10000 + Y*100 + Z` (Y, Z ≤ 99). Re-run for an existing tag via *Actions → Android release → Run workflow*.
+3. Signing secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+   The keystore lives only outside git (`.signing/`, gitignored). Losing it means existing installs can't be updated.
+4. Local signed build: export `CHRONICALS_KEYSTORE_FILE`, `CHRONICALS_KEYSTORE_PASSWORD`, `CHRONICALS_KEY_ALIAS`, `CHRONICALS_KEY_PASSWORD` (and optionally `CHRONICALS_VERSION_NAME`/`_CODE`) before `./gradlew assembleRelease`.
+
 ## Environment Variables
 
 ```
 DATABASE_PATH   Path to SQLite file (default: ./chronicals.db)
 ORIGIN          Public URL for CSRF protection (default: http://localhost:3000)
 PORT            Server port (default: 3000)
+CHRONICALS_TARGET=mobile   Build-time: produce the Android SPA instead of the Node server
 ```
 
 ---

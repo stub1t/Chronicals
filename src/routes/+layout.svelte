@@ -86,6 +86,8 @@
 		display: flex;
 		flex-direction: column;
 		height: 100dvh;
+		/* viewport-fit=cover: keep content clear of the status bar (Android app, iOS standalone) */
+		padding-top: env(safe-area-inset-top, 0);
 		background: var(--bg);
 	}
 

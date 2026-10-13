@@ -18,6 +18,14 @@ function apply(theme: Theme) {
 		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 		html.classList.toggle('dark', prefersDark);
 	}
+
+	if (__NATIVE_APP__) {
+		// Keep Android status/navigation bar icons legible against the app background.
+		const dark = html.classList.contains('dark');
+		import('@capacitor/core').then(({ SystemBars, SystemBarsStyle }) =>
+			SystemBars.setStyle({ style: dark ? SystemBarsStyle.Dark : SystemBarsStyle.Light })
+		);
+	}
 }
 
 function init() {
