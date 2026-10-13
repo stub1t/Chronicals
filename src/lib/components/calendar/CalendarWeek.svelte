@@ -206,7 +206,7 @@
 							role="button"
 							tabindex="0"
 						>
-							<EntryTypeIcon entryType={et ?? null} size={14} class="event-icon" />
+							<EntryTypeIcon entryType={et ?? null} size={14} />
 							<span class="event-name">{et ? localizeBuiltInText(et.name) : ''}</span>
 							<span class="event-time">{formatTime(log.startTime)}</span>
 						</div>
@@ -407,10 +407,6 @@
 	.event-block:focus {
 		outline: 2px solid var(--text);
 		outline-offset: 1px;
-	}
-
-	.event-icon {
-		flex-shrink: 0;
 	}
 
 	.event-name {

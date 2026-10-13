@@ -117,7 +117,7 @@
 						onkeydown={(e) => { if (e.key === 'Enter') handleEditClick(e, log.id); }}
 					>
 						<div class="event-header">
-							<EntryTypeIcon entryType={et ?? null} size={16} class="event-icon" />
+							<EntryTypeIcon entryType={et ?? null} size={16} />
 							<span class="event-name">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</span>
 						</div>
 						<div class="event-meta">
@@ -291,10 +291,6 @@
 		display: flex;
 		align-items: center;
 		gap: 5px;
-	}
-
-	.event-icon {
-		flex-shrink: 0;
 	}
 
 	.event-name {

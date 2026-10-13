@@ -18,6 +18,8 @@
 	}
 
 	let { date, entryTypes, allTriggers: allTriggersProp, onclose }: Props = $props();
+	// A local copy: triggers created in the drawer are added to it.
+	// svelte-ignore state_referenced_locally
 	let allTriggers = $state(allTriggersProp);
 
 	let entry = $state<Entry | null>(null);
@@ -438,7 +440,7 @@
 										></div>
 										<div class="log-body">
 											<div class="log-title-row">
-												<EntryTypeIcon entryType={et ?? null} size={18} class="log-icon" />
+												<EntryTypeIcon entryType={et ?? null} size={18} />
 												<span class="log-name">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</span>
 												<span class="log-time">{formatTime(log.startTime)}</span>
 												{#if log.endTime}
@@ -571,7 +573,7 @@
 	<div class="modal-backdrop" onclick={(e) => { if ((e.target as HTMLElement).classList.contains('modal-backdrop')) closeLogEditor(); }} role="presentation">
 		<div class="modal" role="dialog" aria-modal="true" aria-label={t('drawer_edit_entry', { name: et ? localizeBuiltInText(et.name) : t('drawer_unknown') })}>
 			<div class="modal-header">
-				<EntryTypeIcon entryType={et ?? null} size={20} class="modal-icon" />
+				<EntryTypeIcon entryType={et ?? null} size={20} />
 				<h3 class="modal-title">{et ? localizeBuiltInText(et.name) : t('drawer_unknown')}</h3>
 				<button class="close-btn" onclick={closeLogEditor} aria-label={t('close')}>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -848,13 +850,6 @@
 		text-align: center;
 	}
 
-	.empty-icon {
-		font-size: 2.5rem;
-		line-height: 1;
-		margin-bottom: 4px;
-		opacity: 0.6;
-	}
-
 	.empty-text {
 		font-size: 0.9rem;
 		font-weight: 600;
@@ -919,10 +914,6 @@
 		align-items: center;
 		gap: 6px;
 		flex-wrap: wrap;
-	}
-
-	.log-icon {
-		flex-shrink: 0;
 	}
 
 	.log-name {
@@ -1197,10 +1188,6 @@
 		gap: 10px;
 		padding: 16px 16px 12px;
 		border-bottom: 1px solid var(--border);
-		flex-shrink: 0;
-	}
-
-	.modal-icon {
 		flex-shrink: 0;
 	}
 

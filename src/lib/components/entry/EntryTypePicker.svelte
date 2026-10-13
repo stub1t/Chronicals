@@ -75,7 +75,7 @@
 									style={et.color ? `--accent: ${et.color}` : '--accent: var(--text-muted)'}
 									onclick={() => onselect?.(et)}
 								>
-									<EntryTypeIcon entryType={et} size={22} class="type-icon" />
+									<EntryTypeIcon entryType={et} size={22} />
 									<span class="type-name">{localizeBuiltInText(et.name)}</span>
 									<span class="type-category">{CATEGORY_LABELS[et.category as EntryCategory]}</span>
 								</button>
@@ -208,10 +208,6 @@
 
 	.type-card:active {
 		transform: scale(0.97);
-	}
-
-	.type-icon {
-		margin-bottom: 2px;
 	}
 
 	.type-name {

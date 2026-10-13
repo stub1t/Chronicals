@@ -38,15 +38,22 @@
 	);
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
 	class="event-block"
 	class:event-type={isEvent}
 	style="top: {topPx()}px; height: {heightPx()}px; border-left: 3px solid {color}; background: {bgColor}20;"
+	role="button"
+	tabindex="0"
 	onclick={() => onclick?.(log)}
-	title="{log.entryType?.name ? localizeBuiltInText(log.entryType.name) : 'Entry'} — {formatTime(log.startTime)}"
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			onclick?.(log);
+		}
+	}}
+	title="{log.entryType?.name ? localizeBuiltInText(log.entryType.name) : 'Entry'} · {formatTime(log.startTime)}"
 >
-	<EntryTypeIcon entryType={log.entryType ?? null} size={14} class="event-icon" />
+	<EntryTypeIcon entryType={log.entryType ?? null} size={14} />
 	{#if heightPx() > 36}
 		<div class="event-body">
 			<span class="event-name">{log.entryType?.name ? localizeBuiltInText(log.entryType.name) : 'Entry'}</span>
@@ -77,10 +84,6 @@
 
 	.event-type {
 		border-style: dashed;
-	}
-
-	.event-icon {
-		flex-shrink: 0;
 	}
 
 	.event-body {

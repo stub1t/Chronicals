@@ -126,7 +126,7 @@
 	// ── Formatting ────────────────────────────────────────────────────────────
 
 	function formatDurationMinutes(mins: number | null): string {
-		if (mins === null) return '—';
+		if (mins === null) return '-';
 		const h = Math.floor(mins / 60);
 		const m = Math.round(mins % 60);
 		if (h === 0) return `${m}m`;
@@ -293,8 +293,8 @@
 									<span class="trigger-cat">{localizeBuiltInText(trigger.triggerCategory)}</span>
 								</td>
 								<td class="num-col">{trigger.coOccurrences}</td>
-								<td class="num-col">{trigger.avgIntensityWith !== null ? trigger.avgIntensityWith.toFixed(1) : '—'}</td>
-								<td class="num-col">{trigger.avgIntensityWithout !== null ? trigger.avgIntensityWithout.toFixed(1) : '—'}</td>
+								<td class="num-col">{trigger.avgIntensityWith !== null ? trigger.avgIntensityWith.toFixed(1) : '-'}</td>
+								<td class="num-col">{trigger.avgIntensityWithout !== null ? trigger.avgIntensityWithout.toFixed(1) : '-'}</td>
 								<td class="badge-col">
 									<span class={`badge ${strengthBadgeClass(trigger.strength)}`}>
 										{trigger.strength === 'strong' ? t('badge_strong') : trigger.strength === 'possible' ? t('badge_possible') : t('badge_none')}

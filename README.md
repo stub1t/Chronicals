@@ -27,7 +27,7 @@ It runs as an Android app that keeps all data on the phone, or as a web app that
 
 - Month, week and day views. Each entry type has its own colour, and the intensity (1 to 5) sets how strong the colour is.
 - Seven built-in entry types: headache, stomachache, allergy or hay fever, hypo, medication change, period and general note. Each has its own form. A headache entry, for example, asks for intensity, location and accompanying symptoms.
-- Custom entry types with your own fields (slider, dropdown, checklist or text).
+- Custom entry types with their own name, icon and colour. They record intensity (1 to 5) and a note.
 - Triggers in four groups: food, environment, activity and custom. A day can have any number of them.
 - Daily weather from [Open-Meteo](https://open-meteo.com): temperature, mean air pressure, the change in pressure since the previous day, UV index and conditions. This needs a location in the profile settings.
 - A medication list with a history of dosage changes.
