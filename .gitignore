@@ -28,6 +28,3 @@ vite.config.ts.timestamp-*
 # Android app
 /build-mobile
 /.signing
-
-# Editor settings
-/.vscode
