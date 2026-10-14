@@ -172,40 +172,6 @@ export interface MedicationChange {
 	notes: string | null;
 }
 
-// ─── Analysis ─────────────────────────────────────────────────────────────────
-
-export interface MonthlyStats {
-	entryTypeId: string;
-	month: string; // 'YYYY-MM'
-	frequency: number;
-	avgIntensity: number | null;
-	avgDurationMinutes: number | null;
-	occurrenceDates: string[];
-}
-
-export interface CorrelationResult {
-	triggerId: string;
-	triggerName: string;
-	triggerCategory: string;
-	coOccurrences: number;
-	daysWithTrigger: number;
-	daysWithSymptom: number;
-	totalDays: number;
-	phi: number;
-	strength: 'none' | 'possible' | 'strong';
-	avgIntensityWith: number | null;
-	avgIntensityWithout: number | null;
-}
-
-export interface EnvironmentalCorrelation {
-	variable: string; // 'pressure_delta' | 'pollen_grass' | 'pollen_birch' | 'uv_index'
-	label: string;
-	phi: number;
-	strength: 'none' | 'possible' | 'strong';
-	avgIntensityHigh: number | null;
-	avgIntensityLow: number | null;
-}
-
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 export type ThemePreference = 'system' | 'light' | 'dark';

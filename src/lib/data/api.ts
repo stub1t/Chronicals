@@ -8,13 +8,6 @@
  */
 import { error, json } from '@sveltejs/kit';
 import {
-	getTriggerCorrelations,
-	getEnvironmentalCorrelations,
-	getMedicationFlags,
-	getMonthlyStats,
-	getPressureSeries
-} from './queries/analysis.js';
-import {
 	getEntry,
 	getEntryByDate,
 	getEntriesInRange,
@@ -438,72 +431,6 @@ const routes: Route[] = [
 			assertSqliteFile(bytes);
 			backup.restore(bytes);
 			return json({ entries: countEntries() });
-		}
-	}),
-
-	// ─── Analysis ─────────────────────────────────────────────────────────────
-
-	route('/api/analysis/stats', {
-		GET: ({ url }) => {
-			const entryTypeId = url.searchParams.get('entryTypeId');
-			const month = url.searchParams.get('month');
-			const startDate = url.searchParams.get('startDate');
-			const endDate = url.searchParams.get('endDate');
-
-			if (!entryTypeId || (!month && (!startDate || !endDate))) {
-				return json({ error: 'entryTypeId and (month or startDate+endDate) required' }, { status: 400 });
-			}
-
-			return json(
-				getMonthlyStats(
-					assertIdentifier(entryTypeId, 'entryTypeId'),
-					month ? assertYearMonth(month, 'month') : 'custom',
-					startDate ? assertDate(startDate, 'startDate') : undefined,
-					endDate ? assertDate(endDate, 'endDate') : undefined
-				)
-			);
-		}
-	}),
-
-	route('/api/analysis/correlations', {
-		GET: ({ url }) => {
-			const entryTypeId = url.searchParams.get('entryTypeId');
-			const startDate = url.searchParams.get('startDate');
-			const endDate = url.searchParams.get('endDate');
-
-			if (!entryTypeId || !startDate || !endDate) {
-				return json({ error: 'entryTypeId, startDate, endDate required' }, { status: 400 });
-			}
-
-			const safeEntryTypeId = assertIdentifier(entryTypeId, 'entryTypeId');
-			const safeStartDate = assertDate(startDate, 'startDate');
-			const safeEndDate = assertDate(endDate, 'endDate');
-
-			return json({
-				triggers: getTriggerCorrelations(safeEntryTypeId, safeStartDate, safeEndDate),
-				environmental: getEnvironmentalCorrelations(safeEntryTypeId, safeStartDate, safeEndDate),
-				medicationFlags: getMedicationFlags(safeStartDate, safeEndDate)
-			});
-		}
-	}),
-
-	route('/api/analysis/pressure', {
-		GET: ({ url }) => {
-			const startDate = url.searchParams.get('startDate');
-			const endDate = url.searchParams.get('endDate');
-			const entryTypeId = url.searchParams.get('entryTypeId');
-
-			if (!startDate || !endDate) {
-				return json({ error: 'startDate and endDate required' }, { status: 400 });
-			}
-
-			return json(
-				getPressureSeries(
-					assertDate(startDate, 'startDate'),
-					assertDate(endDate, 'endDate'),
-					entryTypeId ? assertIdentifier(entryTypeId, 'entryTypeId') : null
-				)
-			);
 		}
 	})
 ];

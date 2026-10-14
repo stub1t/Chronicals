@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Entry, EntryType, Medication, MedicationChange } from '$lib/types/index.js';
 import { reportToCsv } from './csv.js';
+import { escapeHtml, reportToHtml } from './html.js';
 import { buildReport, formatDuration, type ReportInput } from './summary.js';
 
 const headache = {
@@ -41,7 +42,7 @@ function entry(date: string, logs: Array<{ start: string; end?: string; intensit
 }
 
 const german: Record<string, string> = { Headache: 'Kopfschmerz', Location: 'Ort', temples: 'Schläfen', Symptoms: 'Symptome', nausea: 'Übelkeit', Stress: 'Stress' };
-const format = { translate: (s: string) => german[s] ?? s, time: (iso: string) => iso.slice(11, 16) };
+const format = { translate: (s: string) => german[s] ?? s, time: (iso: string) => iso.slice(11, 16), weatherName: (key: string) => key };
 
 const input: ReportInput = {
 	from: '2026-09-01',
@@ -65,16 +66,7 @@ const input: ReportInput = {
 		{ id: 'c1', medicationId: 'm1', changeType: 'dosage_change', oldDosage: '400 mg', newDosage: '600 mg', changeDate: '2026-09-15', reason: null, notes: null },
 		{ id: 'c2', medicationId: 'm1', changeType: 'started', oldDosage: null, newDosage: '400 mg', changeDate: '2026-08-01', reason: null, notes: null }
 	] as MedicationChange[],
-	correlations: {
-		'builtin-headache': {
-			triggers: [
-				{ triggerId: 'a', triggerName: 'Stress', phi: 0.3, strength: 'possible' },
-				{ triggerId: 'b', triggerName: 'Caffeine', phi: 0.05, strength: 'none' },
-				{ triggerId: 'c', triggerName: 'Poor sleep', phi: 0.5, strength: 'strong' }
-			] as ReportInput['correlations'][string]['triggers'],
-			environmental: []
-		}
-	}
+	weather: []
 };
 
 describe('buildReport', () => {
@@ -88,8 +80,10 @@ describe('buildReport', () => {
 	it('summarises each entry type that was logged', () => {
 		expect(report.types).toHaveLength(1);
 		const [summary] = report.types;
-		expect(summary).toMatchObject({ name: 'Kopfschmerz', days: 2, logs: 3, avgIntensity: 3, avgDurationMinutes: 90 });
-		expect(summary.triggers.map((t) => t.triggerName)).toEqual(['Poor sleep', 'Stress']);
+		expect(summary).toMatchObject({ name: 'Kopfschmerz', days: 2, logs: 3, avgIntensity: 3, avgDurationMinutes: 90, per30: 20 });
+		expect(report.trackedDays).toBe(3);
+		// Too few days for any link.
+		expect(summary.links).toEqual([]);
 	});
 
 	it('lists medications active in the period with their changes in the period', () => {
@@ -144,21 +138,56 @@ describe('formatDuration', () => {
 	});
 });
 
-describe('reportToPdf', () => {
-	it('produces a multi-section PDF', async () => {
-		const { reportToPdf } = await import('./pdf.js');
-		const blob = reportToPdf(buildReport(input, format), {
-			t: ((key: string) => key) as never,
-			date: (d) => d,
-			translate: format.translate
-		});
-		const bytes = new Uint8Array(await blob.arrayBuffer());
-		expect(new TextDecoder().decode(bytes.subarray(0, 5))).toBe('%PDF-');
-		expect(bytes.length).toBeGreaterThan(3000);
+describe('reportToHtml', () => {
+	const options = {
+		t: ((key: string, vars?: Record<string, unknown>) => (vars ? `${key} ${JSON.stringify(vars)}` : key)) as never,
+		date: (d: string) => d,
+		number: (v: number) => String(v),
+		lang: 'de',
+		dir: 'ltr' as const,
+		created: '2026-10-14'
+	};
+
+	it('is one document with every section', () => {
+		const html = reportToHtml(buildReport(input, format), options);
+		expect(html.startsWith('<!doctype html>')).toBe(true);
+		expect(html).toContain('<html lang="de" dir="ltr">');
+		for (const key of ['report_summary', 'report_triggers', 'report_medications', 'report_entries', 'report_disclaimer']) expect(html).toContain(key);
+		expect(html).toContain('Magnesium');
+		expect(html).toContain('Ort: Schläfen; Symptome: Übelkeit');
+		expect(html).not.toContain('<script');
 	});
 
-	it('maps text to what the built-in font can show', async () => {
-		const { latin1 } = await import('./pdf.js');
-		expect(latin1('Übelkeit 10:30 → “ok” \u{1F600}')).toBe('Übelkeit 10:30 -> "ok" ?');
+	it('escapes everything from the diary', () => {
+		const evil: ReportInput = { ...input, name: '<img src=x onerror=alert(1)>', entries: [entry('2026-09-05', [], { note: '</td><script>alert(1)</script>' })] };
+		const html = reportToHtml(buildReport(evil, format), options);
+		expect(html).not.toContain('<img');
+		expect(html).not.toContain('<script');
+		expect(html).toContain('&lt;/td&gt;&lt;script&gt;');
+		expect(escapeHtml(`"'&`)).toBe('&quot;&#39;&amp;');
+	});
+
+	it('follows the text direction', () => {
+		expect(reportToHtml(buildReport(input, format), { ...options, lang: 'ar', dir: 'rtl' })).toContain('<html lang="ar" dir="rtl">');
+	});
+});
+
+describe('report links', () => {
+	it('lists triggers with a clear link', () => {
+		// Stress on 10 of 30 days, each with a headache; 2 headaches on the other days.
+		const entries: Entry[] = [];
+		for (let i = 1; i <= 30; i++) {
+			const date = `2026-09-${String(i).padStart(2, '0')}`;
+			const stress = i % 3 === 0;
+			entries.push(
+				entry(date, stress || i === 1 || i === 2 ? [{ start: '09:00', intensity: 3 }] : [], {
+					note: 'day',
+					triggers: stress ? [{ id: `t${i}`, triggerId: 'trig-stress', triggerName: 'Stress', triggerCategory: 'activity', note: null }] : []
+				})
+			);
+		}
+		const report = buildReport({ ...input, entries }, format);
+		const [link] = report.types[0].links;
+		expect(link).toMatchObject({ key: 'trig-stress', name: 'Stress', label: 'likely', lag: 0, exposedDays: 10, withRate: 1 });
 	});
 });

@@ -40,6 +40,8 @@ function buildCsp(): string {
 		"font-src 'self' data:",
 		`connect-src ${connectSources}`,
 		"object-src 'none'",
+		// The doctor report prints from a blob: frame of its own HTML.
+		"frame-src 'self' blob:",
 		"script-src 'self' 'unsafe-inline'",
 		"style-src 'self' 'unsafe-inline'"
 	].join('; ');

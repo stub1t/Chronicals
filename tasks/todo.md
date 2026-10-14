@@ -88,6 +88,6 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] 4. Today screen + log sheet
 - [x] 5. Calendar: month grid + day summary, week agenda, day page (shared DayView), search; old calendar/entry components and the offline write queue removed
 - [x] 6. Me: hub with profile header, Health and App groups, language sheet; entry types with icon picker and a show-on-Today switch (migration 0003 `hidden`); triggers incl. the environment group; profile; medications with a dose-change sheet that updates the dose; in-use entry types answer 409 instead of a foreign key error
-- [ ] 7. Insights engine + screen + printable report + CSV; remove old analysis + jsPDF
+- [x] 7. Insights: pure engine in src/lib/insights (tracked days, Fisher test, same-day and day-before triggers, weather, weekday, time of day, cycle phases, medication before/after, trend), screen with four cards, printable HTML report via @capgo/capacitor-printer, CSV separator by locale; old analysis code, routes and jsPDF removed
 - [ ] 8. 13 more languages + completeness tests
 - [ ] 9. Polish, a11y, dark/RTL passes, screenshots, README, AGENTS.md

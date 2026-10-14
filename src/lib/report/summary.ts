@@ -1,23 +1,16 @@
-import type {
-	CorrelationResult,
-	Entry,
-	EntryType,
-	EntryTypeLog,
-	EnvironmentalCorrelation,
-	Medication,
-	MedicationChange
-} from '$lib/types/index.js';
+import type { Entry, EntryType, EntryTypeLog, EnvironmentalData, Medication, MedicationChange } from '$lib/types/index.js';
+import { indexDiary, links, overview, type Link } from '$lib/insights/engine.js';
 
 export interface ReportInput {
 	from: string;
 	to: string;
 	name: string | null;
+	/** Should start a day before `from`, so "the day before" triggers work on the first day. */
 	entries: Entry[];
+	weather: EnvironmentalData[];
 	entryTypes: EntryType[];
 	medications: Medication[];
 	changes: MedicationChange[];
-	/** Correlations per entry type id, from /api/analysis/correlations. */
-	correlations: Record<string, { triggers: CorrelationResult[]; environmental: EnvironmentalCorrelation[] }>;
 }
 
 /** Language-dependent pieces, passed in so the report can be built and tested anywhere. */
@@ -26,18 +19,23 @@ export interface ReportFormat {
 	translate: (text: string) => string;
 	/** 'HH:MM' (or the locale's form) of an ISO datetime, in local time. */
 	time: (iso: string) => string;
+	/** Name of a weather condition used as a trigger ('pressure-drop', 'hot-day', 'high-uv'). */
+	weatherName: (key: string) => string;
 }
+
+export type NamedLink = Link & { name: string };
 
 export interface TypeSummary {
 	entryType: EntryType;
 	name: string;
 	days: number;
 	logs: number;
+	/** Days with it per 30 tracked days. */
+	per30: number | null;
 	avgIntensity: number | null;
 	avgDurationMinutes: number | null;
-	/** Triggers with a possible or strong association, strongest first. */
-	triggers: CorrelationResult[];
-	environmental: EnvironmentalCorrelation[];
+	/** Triggers and weather with a likely or possible link, or fewer symptoms, strongest first. */
+	links: NamedLink[];
 }
 
 export interface MedicationSummary {
@@ -62,6 +60,8 @@ export interface Report {
 	to: string;
 	name: string | null;
 	daysWithEntries: number;
+	/** Days with any record (log, trigger, note or well-being). */
+	trackedDays: number;
 	types: TypeSummary[];
 	medications: MedicationSummary[];
 	rows: ReportRow[];
@@ -98,24 +98,34 @@ function details(log: EntryTypeLog, translate: (text: string) => string): string
 }
 
 export function buildReport(input: ReportInput, format: ReportFormat): Report {
-	const { translate, time } = format;
+	const { translate, time, weatherName } = format;
 	const entries = input.entries
 		.filter((e) => e.date >= input.from && e.date <= input.to)
 		.sort((a, b) => a.date.localeCompare(b.date));
+	const diary = indexDiary(input.entries);
+	const triggerNames = new Map(input.entries.flatMap((e) => (e.triggers ?? []).map((tr) => [tr.triggerId, tr.triggerName] as const)));
+	const named = (link: Link): NamedLink => ({
+		...link,
+		name: link.kind === 'weather' ? weatherName(link.key) : translate(triggerNames.get(link.key) ?? link.key)
+	});
 
 	const types: TypeSummary[] = input.entryTypes
 		.map((entryType) => {
 			const logs = entries.flatMap((e) => (e.logs ?? []).filter((l) => l.entryTypeId === entryType.id));
-			const correlations = input.correlations[entryType.id];
+			const analysed = entryType.category === 'symptom' || entryType.category === 'event';
 			return {
 				entryType,
 				name: translate(entryType.name),
 				days: entries.filter((e) => e.logs?.some((l) => l.entryTypeId === entryType.id)).length,
 				logs: logs.length,
+				per30: overview(diary, entryType.id, input.from, input.to).per30,
 				avgIntensity: average(logs.map((l) => l.intensityCache).filter((v): v is number => v !== null)),
 				avgDurationMinutes: average(logs.map(durationMinutes).filter((v): v is number => v !== null)),
-				triggers: (correlations?.triggers ?? []).filter((c) => c.strength !== 'none').sort((a, b) => b.phi - a.phi),
-				environmental: (correlations?.environmental ?? []).filter((c) => c.strength !== 'none')
+				links: analysed
+					? links(diary, entryType.id, input.from, input.to, input.weather)
+							.filter((l) => ['likely', 'possible', 'fewer'].includes(l.label))
+							.map(named)
+					: []
 			};
 		})
 		.filter((summary) => summary.logs > 0);
@@ -156,6 +166,7 @@ export function buildReport(input: ReportInput, format: ReportFormat): Report {
 		to: input.to,
 		name: input.name,
 		daysWithEntries: entries.length,
+		trackedDays: entries.filter((e) => diary.get(e.date)?.tracked).length,
 		types,
 		medications,
 		rows
