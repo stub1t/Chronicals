@@ -8,6 +8,11 @@ export const entries = sqliteTable('entries', {
 	date: text('date').notNull(), // 'YYYY-MM-DD'
 	note: text('note'),
 	wellbeing: integer('wellbeing'), // 1 (awful) to 5 (great), the daily "How are you?"
+	/** Where the day was spent, when not at home (travel); null means the home place from the profile. */
+	locationLat: real('location_lat'),
+	locationLon: real('location_lon'),
+	locationName: text('location_name'),
+	locationSource: text('location_source'), // 'auto' (phone location) | 'manual'
 	createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 	updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
 }, (t) => [
@@ -92,7 +97,12 @@ export const environmentalData = sqliteTable('environmental_data', {
 	pollenBirch: real('pollen_birch'),
 	pollenAlder: real('pollen_alder'),
 	pollenMugwort: real('pollen_mugwort'),
+	pollenOlive: real('pollen_olive'),
+	pollenRagweed: real('pollen_ragweed'),
 	uvIndex: real('uv_index'),
+	/** The place the row was fetched for, so a changed place for the day fetches again. */
+	lat: real('lat'),
+	lon: real('lon'),
 	fetchedAt: text('fetched_at').notNull().default(sql`(datetime('now'))`)
 }, (t) => [
 	index('env_date_idx').on(t.date)

@@ -33,6 +33,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Approximate location only: once a day, to use the weather and pollen of where you are. Off unless turned on. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
     <!-- Reminders are scheduled as inexact alarms, so the notification plugin's exact-alarm permission is not needed. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 </manifest>

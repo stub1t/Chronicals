@@ -32,12 +32,13 @@ import {
 	createMedicationChange
 } from './queries/profile.js';
 import { getAllTriggers, getTriggersByCategory, createTrigger, updateTrigger, deleteTrigger } from './queries/triggers.js';
-import { fetchAndCacheEnvData, getEnvDataForDate, getEnvDataInRange } from './weather.js';
+import { datesBetween, ensureEnvData, getEnvDataForDate, getEnvDataInRange } from './weather.js';
 import { backup } from './db.js';
 import { BACKUP_CONTENT_TYPE, MAX_BACKUP_BYTES, assertSqliteFile, backupFilename } from './backup.js';
 import {
 	assertBloodType,
 	assertBoolean,
+	assertDayLocation,
 	assertExtraOptions,
 	assertDate,
 	assertIdentifier,
@@ -139,7 +140,8 @@ const routes: Route[] = [
 			const body = await parseJsonRequest(event);
 			const { entry, created } = createEntry(assertDate(body.date, 'date'), {
 				...(body.note !== undefined && { note: optionalText(body.note) }),
-				...(body.wellbeing !== undefined && { wellbeing: optionalWellbeing(body.wellbeing) })
+				...(body.wellbeing !== undefined && { wellbeing: optionalWellbeing(body.wellbeing) }),
+				...(body.location !== undefined && { location: assertDayLocation(body.location) })
 			});
 			return json(entry, { status: created ? 201 : 200 });
 		}
@@ -155,7 +157,8 @@ const routes: Route[] = [
 			const body = await parseJsonRequest(event);
 			const entry = updateEntry(assertIdentifier(event.params.id, 'id'), {
 				...(body.note !== undefined && { note: optionalText(body.note) }),
-				...(body.wellbeing !== undefined && { wellbeing: optionalWellbeing(body.wellbeing) })
+				...(body.wellbeing !== undefined && { wellbeing: optionalWellbeing(body.wellbeing) }),
+				...(body.location !== undefined && { location: assertDayLocation(body.location) })
 			});
 			if (!entry) return notFound();
 			return json(entry);
@@ -302,19 +305,14 @@ const routes: Route[] = [
 				const safeFrom = assertDate(from, 'from');
 				const safeTo = assertDate(to, 'to');
 				if (safeFrom > safeTo) error(400, 'from must not be after to');
+				// fill=1: fetch what is missing first (the analysis and the report need every day).
+				if (url.searchParams.get('fill') === '1') await ensureEnvData(datesBetween(safeFrom, safeTo));
 				return json(getEnvDataInRange(safeFrom, safeTo));
 			}
 
 			const date = assertDate(url.searchParams.get('date'), 'date');
-			const cachedOnly = url.searchParams.get('cached') === '1';
-			const profile = getProfile();
-
-			if (cachedOnly || profile.locationLat == null || profile.locationLon == null) {
-				return json(getEnvDataForDate(date) ?? null);
-			}
-
-			const data = await fetchAndCacheEnvData(date, profile.locationLat, profile.locationLon);
-			return json(data ?? null);
+			if (url.searchParams.get('cached') !== '1') await ensureEnvData([date]);
+			return json(getEnvDataForDate(date) ?? null);
 		}
 	}),
 

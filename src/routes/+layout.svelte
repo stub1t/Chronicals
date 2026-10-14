@@ -48,6 +48,15 @@
 				m.listenForReminderTaps();
 				m.syncReminders().catch(console.error);
 			});
+			// With automatic location on: today's place for the weather, on start and on each return to the app.
+			import('$lib/mobile/location.js').then((m) => {
+				m.updateTodaysPlace().catch(console.error);
+				import('@capacitor/app').then(({ App }) =>
+					App.addListener('appStateChange', ({ isActive }) => {
+						if (isActive) m.updateTodaysPlace().catch(console.error);
+					})
+				);
+			});
 		}
 
 		// The Android app keeps its data on the device, so there is nothing to sync.

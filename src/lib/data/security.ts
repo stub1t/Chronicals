@@ -207,6 +207,17 @@ export function assertExtraOptions(value: unknown): Record<string, string[]> {
 	return result;
 }
 
+/** A day's place: null (home), or coordinates with an optional name and where it came from. */
+export function assertDayLocation(value: unknown): { lat: number; lon: number; name: string | null; source: 'auto' | 'manual' } | null {
+	if (value === null) return null;
+	if (!isPlainObject(value)) throw error(400, 'location must be an object or null');
+	const lat = optionalNumber(value.lat, 'location.lat', -90, 90);
+	const lon = optionalNumber(value.lon, 'location.lon', -180, 180);
+	if (lat == null || lon == null) throw error(400, 'location needs lat and lon');
+	const source = value.source === 'auto' ? 'auto' : 'manual';
+	return { lat, lon, name: optionalText(value.name, 160), source };
+}
+
 /** Daily well-being: an integer 1 to 5, or null to clear it. */
 export function optionalWellbeing(value: unknown): number | null | undefined {
 	if (value === undefined) return undefined;

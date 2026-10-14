@@ -27,6 +27,7 @@
 	import { exportBackup, importBackup } from '$lib/backup.js';
 	import { loadReminderSettings, ONGOING_HOURS, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
 	import Timer from '@lucide/svelte/icons/timer';
+	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
 	import type { EntryType, Medication, Trigger, UserProfile } from '$lib/types';
 
@@ -43,10 +44,19 @@
 	let languageOpen = $state(false);
 	let version = $state(__APP_VERSION__);
 
+	let autoLocation = $state(false);
+
+	async function toggleAutoLocation(on: boolean) {
+		const { setAutoLocation } = await import('$lib/mobile/location.js');
+		autoLocation = await setAutoLocation(on);
+		if (on && !autoLocation) toasts.show(t('place_permission_denied'), 'error');
+	}
+
 	onMount(() => {
 		theme = themeStore.current;
 		currentLanguage = localeStore.current;
 		if (__NATIVE_APP__) {
+			import('$lib/mobile/location.js').then((m) => (autoLocation = m.isAutoLocationOn()));
 			reminders = loadReminderSettings();
 			appLock = isAppLockEnabled();
 			// The installed APK's version, which is what Obtainium and Android show too.
@@ -220,6 +230,16 @@
 						<p class="ui-hint">{t('settings_reminder_ongoing_note')}</p>
 					</div>
 				{/if}
+			</div>
+			<div>
+				<Toggle
+					icon={LocateFixed}
+					color="#3aa6b9"
+					label={t('settings_auto_location')}
+					description={t('settings_auto_location_note')}
+					bind:checked={autoLocation}
+					onchange={toggleAutoLocation}
+				/>
 			</div>
 			<div>
 				<Toggle

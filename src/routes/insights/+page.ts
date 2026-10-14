@@ -22,9 +22,8 @@ export const load: PageLoad = async ({ fetch, url }) => {
 	// The period before, for the trend; and one more day for "the day before" triggers.
 	const loadFrom = period === 'all' ? from : addDays(from, -(daysBetween(from, today) + 2));
 
-	const [entries, weather, entryTypes, triggers, medications, changes] = await Promise.all([
+	const [entries, entryTypes, triggers, medications, changes] = await Promise.all([
 		getJson<Entry[]>(fetch, `/api/entries?from=${loadFrom}&to=${today}`),
-		getJson<EnvironmentalData[]>(fetch, `/api/environmental?from=${loadFrom}&to=${today}`),
 		getJson<EntryType[]>(fetch, '/api/entry-types'),
 		getJson<Trigger[]>(fetch, '/api/triggers'),
 		getJson<Medication[]>(fetch, '/api/medications'),
@@ -33,6 +32,8 @@ export const load: PageLoad = async ({ fetch, url }) => {
 
 	// "All" starts at the first diary day.
 	if (period === 'all') from = entries.map((e) => e.date).sort()[0] ?? today;
+	// Weather for the period and the day before (for "the day before" links), fetched where missing.
+	const weather = await getJson<EnvironmentalData[]>(fetch, `/api/environmental?from=${addDays(from, -1)}&to=${today}&fill=1`);
 
 	return { period, from, to: today, entries, weather, entryTypes, triggers, medications, changes, type: url.searchParams.get('type') };
 };

@@ -67,6 +67,11 @@ export interface Entry {
 	note: string | null;
 	/** Daily well-being, 1 (awful) to 5 (great). */
 	wellbeing: number | null;
+	/** Where the day was spent when away from home; null: the home place. */
+	locationLat: number | null;
+	locationLon: number | null;
+	locationName: string | null;
+	locationSource: 'auto' | 'manual' | null;
 	createdAt: string;
 	updatedAt: string;
 	logs?: EntryTypeLog[];
@@ -116,7 +121,12 @@ export interface EnvironmentalData {
 	pollenBirch: number | null;
 	pollenAlder: number | null;
 	pollenMugwort: number | null;
+	pollenOlive: number | null;
+	pollenRagweed: number | null;
 	uvIndex: number | null;
+	/** The place the row was fetched for. */
+	lat: number | null;
+	lon: number | null;
 	fetchedAt: string;
 	// Computed
 	pollenStatus?: PollenStatus;

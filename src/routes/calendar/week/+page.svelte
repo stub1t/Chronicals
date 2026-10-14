@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { isTracked } from '$lib/diary/day.svelte.js';
 	import { WELLBEING_COLORS } from '$lib/ui/wellbeing.js';
 	import { goto } from '$app/navigation';
 	import CalendarHeader from '$lib/calendar/CalendarHeader.svelte';
@@ -46,7 +47,7 @@
 			{@const entry = byDate.get(date)}
 			{@const logs = [...(entry?.logs ?? [])].sort((a, b) => a.startTime.localeCompare(b.startTime))}
 			<li>
-				<a class="day" class:today={date === data.today} class:future={date > data.today} class:empty={!entry} href="/calendar/day/{date}">
+				<a class="day" class:today={date === data.today} class:future={date > data.today} class:empty={!isTracked(entry)} href="/calendar/day/{date}">
 					<span class="date">
 						<span class="weekday">{fmt(date, { weekday: 'short' })}</span>
 						<span class="number">{fmt(date, { day: 'numeric' })}</span>
@@ -64,7 +65,7 @@
 									{#if log.intensityCache}<span class="level">{log.intensityCache}/5</span>{/if}
 								</span>
 							{/each}
-						{:else if entry}
+						{:else if isTracked(entry)}
 							<span class="muted">{t('calendar_day_no_symptoms')}</span>
 						{/if}
 						{#if entry?.triggers?.length}

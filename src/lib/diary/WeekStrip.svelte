@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { isTracked } from '$lib/diary/day.svelte.js';
 	import { WELLBEING_COLORS } from '$lib/ui/wellbeing.js';
 	/** The last seven days at a glance: the day's worst symptom colour, or how you felt. */
 	import { dateLocale } from '$lib/i18n';
@@ -30,7 +31,7 @@
 				day: d.getDate(),
 				color: worst?.entryType?.color ?? null,
 				face: entry?.wellbeing ? WELLBEING_COLORS[entry.wellbeing - 1] : null,
-				logged: !!entry
+				logged: isTracked(entry)
 			};
 		});
 	});

@@ -17,6 +17,18 @@ async function send<T>(path: string, method: string, body?: unknown): Promise<T>
 	return res.status === 204 ? (undefined as T) : res.json();
 }
 
+export interface DayPlace {
+	lat: number;
+	lon: number;
+	name: string | null;
+	source: 'auto' | 'manual';
+}
+
+/** A day with something in it; a day that only has a place (set while travelling) counts as empty. */
+export function isTracked(entry: Entry | null | undefined): boolean {
+	return !!entry && ((entry.logs?.length ?? 0) > 0 || (entry.triggers?.length ?? 0) > 0 || !!entry.note?.trim() || entry.wellbeing != null);
+}
+
 export interface LogInput {
 	entryTypeId: string;
 	startTime: string;
@@ -47,7 +59,7 @@ export class DiaryDay {
 	}
 
 	/** Creates the day's entry if needed (one per day) and sets the given fields. */
-	private async upsert(fields: { note?: string | null; wellbeing?: number | null } = {}): Promise<Entry> {
+	private async upsert(fields: { note?: string | null; wellbeing?: number | null; location?: DayPlace | null } = {}): Promise<Entry> {
 		this.entry = await send<Entry>('/api/entries', 'POST', { date: this.date, ...fields });
 		return this.entry;
 	}
@@ -58,6 +70,11 @@ export class DiaryDay {
 
 	saveNote(note: string): Promise<Entry> {
 		return this.upsert({ note });
+	}
+
+	/** Where the day was spent; null goes back to home. */
+	setPlace(place: DayPlace | null): Promise<Entry> {
+		return this.upsert({ location: place });
 	}
 
 	async addLog(input: LogInput): Promise<EntryTypeLog> {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { isTracked } from '$lib/diary/day.svelte.js';
 	import { WELLBEING_COLORS } from '$lib/ui/wellbeing.js';
 	/** A day at a glance under the month: how it felt, entries, triggers, note, and a way in. */
 	import Card from '$lib/ui/Card.svelte';
@@ -41,7 +42,7 @@
 			{/each}
 		</ul>
 	{:else}
-		<p class="empty">{entry ? t('calendar_day_no_symptoms') : t('calendar_day_empty')}</p>
+		<p class="empty">{isTracked(entry) ? t('calendar_day_no_symptoms') : t('calendar_day_empty')}</p>
 	{/if}
 
 	{#if entry?.triggers?.length}
@@ -52,7 +53,7 @@
 	{/if}
 
 	<a class="open" href="/calendar/day/{date}">
-		{entry ? t('calendar_open_day') : t('calendar_add_to_day')}
+		{isTracked(entry) ? t('calendar_open_day') : t('calendar_add_to_day')}
 		<ArrowRight size={18} class="flip-rtl" />
 	</a>
 </Card>

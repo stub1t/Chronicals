@@ -56,7 +56,7 @@
 		loading = true;
 		Promise.all([
 			getJson<Entry[]>(globalThis.fetch, `/api/entries?from=${addDays(start, -1)}&to=${end}`),
-			getJson<EnvironmentalData[]>(globalThis.fetch, `/api/environmental?from=${addDays(start, -1)}&to=${end}`)
+			getJson<EnvironmentalData[]>(globalThis.fetch, `/api/environmental?from=${addDays(start, -1)}&to=${end}&fill=1`)
 		])
 			.then(([entries, weather]) => {
 				if (cancelled) return;

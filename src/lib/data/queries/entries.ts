@@ -51,6 +51,7 @@ export function getEntry(id: string): Entry | null {
 
 	return {
 		...entry,
+		locationSource: entry.locationSource as Entry['locationSource'],
 		logs: logs.map((l) => ({
 			...l,
 			metricValues: JSON.parse(l.metricValues),
@@ -94,6 +95,7 @@ export function getMonthEntries(yearMonth: string): Entry[] {
 
 export interface EntryFields {
 	note?: string | null;
+	location?: { lat: number; lon: number; name: string | null; source: 'auto' | 'manual' } | null;
 	wellbeing?: number | null;
 }
 
@@ -110,7 +112,7 @@ export function createEntry(date: string, fields: EntryFields = {}): { entry: En
 	db.insert(entries)
 		.values({ id, date, note: fields.note ?? null, wellbeing: fields.wellbeing ?? null })
 		.run();
-	return { entry: getEntry(id)!, created: true };
+	return { entry: (fields.location !== undefined ? updateEntry(id, { location: fields.location }) : getEntry(id))!, created: true };
 }
 
 /** Updates only the fields that are given; `null` clears a field. */
@@ -120,6 +122,12 @@ export function updateEntry(id: string, fields: EntryFields): Entry | null {
 		.set({
 			...(fields.note !== undefined && { note: fields.note }),
 			...(fields.wellbeing !== undefined && { wellbeing: fields.wellbeing }),
+			...(fields.location !== undefined && {
+				locationLat: fields.location?.lat ?? null,
+				locationLon: fields.location?.lon ?? null,
+				locationName: fields.location?.name ?? null,
+				locationSource: fields.location?.source ?? null
+			}),
 			updatedAt: sql`(datetime('now'))`
 		})
 		.where(eq(entries.id, id))

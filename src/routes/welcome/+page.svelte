@@ -31,6 +31,7 @@
 	);
 	let reminders = $state<ReminderSettings>({ daily: false, time: '20:00', ongoingHours: 3 });
 	let appLock = $state(false);
+	let autoLocation = $state(false);
 
 	onMount(() => {
 		language = localeStore.current;
@@ -52,6 +53,10 @@
 		if (step === 1) await put('/api/profile', { displayName: name.trim() || null });
 		if (step === 3) {
 			await put('/api/profile', { locationLat: place?.lat ?? null, locationLon: place?.lon ?? null, locationName: place?.name ?? null });
+			if (__NATIVE_APP__ && autoLocation) {
+				const { setAutoLocation } = await import('$lib/mobile/location.js');
+				autoLocation = await setAutoLocation(true);
+			}
 		}
 		if (step === 4) await saveDeviceSettings();
 		if (step < STEPS - 1) step++;
@@ -134,6 +139,9 @@
 			<h1>{t('welcome_place_title')}</h1>
 			<p class="lead">{t('profile_location_hint')}</p>
 			<LocationSearch bind:value={place} id="welcome-place" />
+			{#if __NATIVE_APP__}
+				<Toggle label={t('settings_auto_location')} description={t('settings_auto_location_note')} bind:checked={autoLocation} />
+			{/if}
 		{:else}
 			<h1>{t('welcome_reminders_title')}</h1>
 			<p class="lead">{t('welcome_reminders_text')}</p>
