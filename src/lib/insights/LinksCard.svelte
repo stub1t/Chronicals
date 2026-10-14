@@ -1,7 +1,7 @@
 <script lang="ts">
 	/** What goes along with it: triggers and weather with clear links first, the rest as chips. */
 	import Card from '$lib/ui/Card.svelte';
-	import { formatNumber, localizeBuiltInText, t, type MessageKey } from '$lib/i18n';
+	import { language, formatNumber, localizeBuiltInText, t, type MessageKey } from '$lib/i18n';
 	import type { Link } from './engine.js';
 
 	interface Props {
@@ -17,6 +17,10 @@
 	const nameOf = (link: Link) =>
 		link.kind === 'weather' ? t(`insights_weather_${link.key.replaceAll('-', '_')}` as MessageKey) : localizeBuiltInText(names.get(link.key) ?? link.key);
 	const percent = (v: number) => formatNumber(v, { style: 'percent', maximumFractionDigits: 0 });
+	// Inside a sentence a name starts in lower case ("after poor sleep"), except in German, where nouns
+	// keep their capital, and for abbreviations like "UV".
+	const inSentence = (name: string) =>
+		$language === 'de' || /^\p{Lu}{2}/u.test(name) ? name : name.charAt(0).toLocaleLowerCase() + name.slice(1);
 
 	const found = $derived(links.filter((l) => l.label === 'likely' || l.label === 'possible' || l.label === 'fewer'));
 	const unclear = $derived(links.filter((l) => l.label === 'none'));
@@ -39,7 +43,7 @@
 					</div>
 					<p class="sentence">
 						{t(link.lag ? 'insights_link_next' : 'insights_link_same', {
-							trigger: nameOf(link),
+							trigger: inSentence(nameOf(link)),
 							type: typeName,
 							with: percent(link.withRate),
 							without: percent(link.withoutRate)

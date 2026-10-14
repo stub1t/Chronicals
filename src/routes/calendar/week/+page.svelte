@@ -23,7 +23,7 @@
 
 	const fmt = (date: string, options: Intl.DateTimeFormatOptions) =>
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), options);
-	const time = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+	const time = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' });
 	const title = $derived(
 		`${fmt(data.days[0], { day: 'numeric', month: 'short' })} – ${fmt(data.days[6], { day: 'numeric', month: 'short', year: 'numeric' })}`
 	);

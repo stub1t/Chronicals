@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, ne, sql } from 'drizzle-orm';
 import type { AppDatabase } from './db.js';
 import * as schema from '../db/schema.js';
 
@@ -124,7 +124,7 @@ const BUILT_IN_ENTRY_TYPES = [
 	},
 	{
 		id: 'builtin-allergy',
-		name: 'Allergy / Hayfever',
+		name: 'Allergy / hay fever',
 		icon: 'A',
 		color: '#22c55e',
 		category: 'symptom',
@@ -171,7 +171,7 @@ const BUILT_IN_ENTRY_TYPES = [
 	},
 	{
 		id: 'builtin-hypo',
-		name: 'Hypo',
+		name: 'Low blood sugar',
 		icon: '!',
 		color: '#f59e0b',
 		category: 'event',
@@ -208,7 +208,7 @@ const BUILT_IN_ENTRY_TYPES = [
 				},
 				{
 					key: 'blood_glucose',
-					label: 'Blood Glucose Reading',
+					label: 'Blood sugar reading',
 					type: 'text',
 					required: false,
 					config: { placeholder: 'e.g. 3.2 mmol/L' }
@@ -225,7 +225,7 @@ const BUILT_IN_ENTRY_TYPES = [
 	},
 	{
 		id: 'builtin-medication-change',
-		name: 'Medication Change',
+		name: 'Medication change',
 		icon: 'Rx',
 		color: '#6b7280',
 		category: 'event',
@@ -234,7 +234,7 @@ const BUILT_IN_ENTRY_TYPES = [
 			fields: [
 				{
 					key: 'change_type',
-					label: 'Change Type',
+					label: 'Change type',
 					type: 'select',
 					required: true,
 					config: { options: ['started', 'dosage changed', 'stopped'] }
@@ -248,14 +248,14 @@ const BUILT_IN_ENTRY_TYPES = [
 				},
 				{
 					key: 'old_dosage',
-					label: 'Previous Dosage',
+					label: 'Previous dose',
 					type: 'text',
 					required: false,
 					config: { placeholder: 'e.g. 10mg' }
 				},
 				{
 					key: 'new_dosage',
-					label: 'New Dosage',
+					label: 'New dose',
 					type: 'text',
 					required: false,
 					config: { placeholder: 'e.g. 20mg' }
@@ -330,7 +330,7 @@ const BUILT_IN_ENTRY_TYPES = [
 	},
 	{
 		id: 'builtin-note',
-		name: 'General Note',
+		name: 'Note',
 		icon: 'N',
 		color: '#94a3b8',
 		category: 'note',
@@ -389,10 +389,16 @@ export function seedBuiltIns(db: AppDatabase) {
 		if (!existing) {
 			db.insert(schema.entryTypes).values({ ...type, isBuiltIn: true }).run();
 		} else {
-			// Refresh built-in presentation and schema so updates deploy automatically
+			// Refresh built-in presentation and schema so updates deploy automatically.
+			// A renamed built-in keeps its old name if a custom type already has the new one.
+			const nameTaken = db
+				.select({ id: schema.entryTypes.id })
+				.from(schema.entryTypes)
+				.where(and(eq(schema.entryTypes.name, type.name), ne(schema.entryTypes.id, type.id)))
+				.get();
 			db.update(schema.entryTypes)
 				.set({
-					name: type.name,
+					...(!nameTaken && { name: type.name }),
 					icon: type.icon,
 					color: type.color,
 					category: type.category,

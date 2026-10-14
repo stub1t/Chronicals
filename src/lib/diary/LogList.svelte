@@ -15,14 +15,14 @@
 	let { logs, onopen, onend }: Props = $props();
 
 	const time = (iso: string) =>
-		new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+		new Date(iso).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' });
 
 	function duration(log: EntryTypeLog): string {
 		if (!log.endTime) return '';
 		const minutes = Math.round((Date.parse(log.endTime) - Date.parse(log.startTime)) / 60000);
 		return minutes < 60
 			? t('duration_minutes', { count: minutes })
-			: t('duration_hours', { count: Math.round(minutes / 6) / 10 });
+			: t('duration_hours', { count: Math.round(minutes / 30) / 2 });
 	}
 
 	const sorted = $derived([...logs].sort((a, b) => a.startTime.localeCompare(b.startTime)));

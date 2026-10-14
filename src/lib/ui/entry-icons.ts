@@ -34,6 +34,7 @@ import Wind from '@lucide/svelte/icons/wind';
 import Wine from '@lucide/svelte/icons/wine';
 import Zap from '@lucide/svelte/icons/zap';
 import Stomach from './icons/Stomach.svelte';
+import type { DuoIconName } from './icons/duo.js';
 
 type IconComponent = Component<{ size?: number; strokeWidth?: number; color?: string }>;
 
@@ -76,13 +77,13 @@ export const ENTRY_ICONS: Record<string, IconComponent> = {
 	'notebook-pen': NotebookPen
 };
 
-/** Icons of the built-in entry types. */
-export const BUILT_IN_ICONS: Record<string, IconComponent> = {
-	'builtin-headache': Brain,
-	'builtin-stomachache': Stomach,
-	'builtin-allergy': Flower2,
-	'builtin-hypo': Candy,
-	'builtin-medication-change': Pill,
-	'builtin-period': Droplets,
-	'builtin-note': NotebookPen
+/** Drawn icons of the built-in entry types (see icons/duo.ts). */
+export const BUILT_IN_ICONS: Record<string, DuoIconName> = {
+	'builtin-headache': 'headache',
+	'builtin-stomachache': 'stomachache',
+	'builtin-allergy': 'allergy',
+	'builtin-hypo': 'low-blood-sugar',
+	'builtin-medication-change': 'medication',
+	'builtin-period': 'period',
+	'builtin-note': 'note'
 };

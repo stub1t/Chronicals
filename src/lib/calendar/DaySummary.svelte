@@ -17,7 +17,7 @@
 	const title = $derived(
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
 	);
-	const time = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+	const time = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' });
 	const logs = $derived([...(entry?.logs ?? [])].sort((a, b) => a.startTime.localeCompare(b.startTime)));
 </script>
 

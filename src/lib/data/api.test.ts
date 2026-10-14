@@ -96,6 +96,23 @@ describe('handleApiRequest', () => {
 		expect(types.find((t: { id: string }) => t.id === 'builtin-headache').hidden).toBe(false);
 	});
 
+	it('renames built-in types on start unless a custom type has the new name', async () => {
+		const { db } = useTestDatabase();
+		const { entryTypes } = await import('../db/schema.js');
+		const { seedBuiltIns } = await import('./seed.js');
+		const { eq } = await import('drizzle-orm');
+		const name = (id: string) => db.select().from(entryTypes).where(eq(entryTypes.id, id)).get()!.name;
+
+		db.update(entryTypes).set({ name: 'Hypo' }).where(eq(entryTypes.id, 'builtin-hypo')).run();
+		seedBuiltIns(db);
+		expect(name('builtin-hypo')).toBe('Low blood sugar');
+
+		db.update(entryTypes).set({ name: 'Hypo' }).where(eq(entryTypes.id, 'builtin-hypo')).run();
+		await call('POST', '/api/entry-types', { name: 'Low blood sugar', metricSchema: { fields: [] } });
+		expect(() => seedBuiltIns(db)).not.toThrow();
+		expect(name('builtin-hypo')).toBe('Hypo');
+	});
+
 	it('deletes only unused custom entry types', async () => {
 		const type = await (await call('POST', '/api/entry-types', { name: 'Tinnitus', metricSchema: { fields: [] } })).json();
 		const entry = await (await call('POST', '/api/entries', { date: '2026-03-01' })).json();
