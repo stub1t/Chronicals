@@ -25,17 +25,26 @@
 	let showAll = $state(false);
 	let newName = $state('');
 
-	const CATEGORIES: TriggerCategory[] = ['activity', 'food', 'environment', 'custom'];
+	const CATEGORIES: TriggerCategory[] = ['activity', 'food', 'environment', 'medication', 'custom'];
 	const categoryLabel = (c: TriggerCategory) =>
-		({ activity: t('trigger_activity'), food: t('trigger_food'), environment: t('analysis_environment'), custom: t('trigger_custom') })[c];
+		({
+			activity: t('trigger_activity'),
+			food: t('trigger_food'),
+			environment: t('trigger_environment'),
+			medication: t('trigger_medication'),
+			custom: t('trigger_custom')
+		})[c];
+
+	// Deleted triggers only show on days that have them.
+	const offered = $derived(triggers.filter((tr) => !tr.hidden || day.hasTrigger(tr.id)));
 
 	// Most used first, then today's other picks, then the rest alphabetically.
 	const quick = $derived.by(() => {
-		const byId = new Map(triggers.map((tr) => [tr.id, tr]));
+		const byId = new Map(offered.map((tr) => [tr.id, tr]));
 		const ordered = [
 			...ranking.map((id) => byId.get(id)).filter((tr): tr is Trigger => !!tr),
-			...triggers.filter((tr) => day.hasTrigger(tr.id) && !ranking.includes(tr.id)),
-			...triggers.filter((tr) => !ranking.includes(tr.id))
+			...offered.filter((tr) => day.hasTrigger(tr.id) && !ranking.includes(tr.id)),
+			...offered.filter((tr) => !ranking.includes(tr.id))
 		];
 		return [...new Map(ordered.map((tr) => [tr.id, tr])).values()].slice(0, max);
 	});
@@ -53,9 +62,16 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ name, category: 'custom' })
 		});
+		// A trigger with that name exists already: pick it instead.
+		const existing = triggers.find((tr) => tr.name.toLowerCase() === name.toLowerCase() || localizeBuiltInText(tr.name).toLowerCase() === name.toLowerCase());
+		if (res.status === 409 && existing) {
+			newName = '';
+			if (!day.hasTrigger(existing.id)) await toggle(existing.id);
+			return;
+		}
 		if (!res.ok) return;
 		const created: Trigger = await res.json();
-		triggers = [...triggers, created];
+		triggers = [...triggers.filter((tr) => tr.id !== created.id), created];
 		newName = '';
 		await toggle(created.id);
 	}
@@ -75,7 +91,7 @@
 
 <Sheet bind:open={showAll} title={t('triggers_title')} closeLabel={t('close')}>
 	{#each CATEGORIES as category (category)}
-		{@const group = triggers.filter((tr) => tr.category === category)}
+		{@const group = offered.filter((tr) => tr.category === category)}
 		{#if group.length}
 			<h3 class="group">{categoryLabel(category)}</h3>
 			<div class="chips">

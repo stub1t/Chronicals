@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Pill from '@lucide/svelte/icons/pill';
 	/** The logs of one day as tappable cards; ongoing ones get an "End now" button. */
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import CircleStop from '@lucide/svelte/icons/circle-stop';
@@ -39,6 +40,12 @@
 					<span class="meta">
 						{time(log.startTime)}{#if log.endTime}&nbsp;–&nbsp;{time(log.endTime)} · {duration(log)}{/if}
 					</span>
+					{#if Array.isArray(log.metricValues?.relief) && log.metricValues.relief.length}
+						<span class="taken">
+							<Pill size={13} />
+							{(log.metricValues.relief as string[]).map((name) => localizeBuiltInText(name)).join(', ')}
+						</span>
+					{/if}
 				</span>
 				{#if log.intensityCache}
 					<span class="dots" aria-label={t('log_intensity_value', { value: log.intensityCache })}>
@@ -100,6 +107,15 @@
 
 	.name {
 		font-weight: 800;
+	}
+
+	.taken {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: var(--text-xs);
+		font-weight: 700;
+		color: var(--text-muted);
 	}
 
 	.meta {

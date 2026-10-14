@@ -16,7 +16,7 @@
 	import { localizeBuiltInText, t } from '$lib/i18n';
 	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { hapticSuccess, hapticTap } from '$lib/haptics.js';
-	import type { EntryType, EntryTypeLog, Trigger } from '$lib/types';
+	import type { EntryType, EntryTypeLog, Medication, Trigger } from '$lib/types';
 
 	interface Props {
 		day: DiaryDay;
@@ -27,9 +27,11 @@
 		triggerRanking: string[];
 		hasLocation: boolean;
 		isToday: boolean;
+		/** Offered under "Taken anything for it?" in the log sheet. */
+		medications?: Medication[];
 	}
 
-	let { day, entryTypes, triggers = $bindable(), typeRanking, triggerRanking, hasLocation, isToday }: Props = $props();
+	let { day, entryTypes, triggers = $bindable(), typeRanking, triggerRanking, hasLocation, isToday, medications = [] }: Props = $props();
 
 	let sheetOpen = $state(false);
 	let sheetType = $state<EntryType | null>(null);
@@ -152,7 +154,7 @@
 	</section>
 </div>
 
-<LogSheet bind:open={sheetOpen} {day} entryType={sheetType} log={sheetLog} />
+<LogSheet bind:open={sheetOpen} {day} entryType={sheetType} log={sheetLog} {medications} />
 
 <style>
 	.day-view {

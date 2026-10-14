@@ -137,6 +137,75 @@ describe('handleApiRequest', () => {
 		expect(rows.c.intensityCache).toBeNull();
 	});
 
+	it('lets built-in triggers be renamed, deleted and brought back', async () => {
+		const { db } = useTestDatabase();
+		const { seedBuiltIns } = await import('./seed.js');
+		const get = async (id: string) => ((await (await call('GET', '/api/triggers')).json()) as Array<{ id: string }>).find((t) => t.id === id);
+
+		await call('DELETE', '/api/triggers/trig-stress');
+		expect(await get('trig-stress')).toMatchObject({ hidden: true, isBuiltIn: true });
+		seedBuiltIns(db);
+		expect(await get('trig-stress')).toMatchObject({ hidden: true });
+		// Adding the same name again brings it back.
+		expect((await call('POST', '/api/triggers', { name: 'Stress', category: 'activity' })).status).toBe(201);
+		expect(await get('trig-stress')).toMatchObject({ hidden: false });
+		expect(await status(call('POST', '/api/triggers', { name: 'Stress' }))).toBe(409);
+
+		const renamed = await (await call('PUT', '/api/triggers/trig-caffeine', { name: 'Coffee', category: 'custom' })).json();
+		expect(renamed).toMatchObject({ name: 'Coffee', category: 'custom', isBuiltIn: false });
+		seedBuiltIns(db);
+		expect(await get('trig-caffeine')).toMatchObject({ name: 'Coffee' });
+		expect(await status(call('PUT', '/api/triggers/trig-caffeine', { name: 'Dairy' }))).toBe(409);
+
+		// An unused own trigger is removed; a used one is only hidden.
+		const unused = await (await call('POST', '/api/triggers', { name: 'Unused' })).json();
+		await call('DELETE', `/api/triggers/${unused.id}`);
+		expect(await get(unused.id)).toBeUndefined();
+		const used = await (await call('POST', '/api/triggers', { name: 'Used' })).json();
+		const entry = await (await call('POST', '/api/entries', { date: '2026-03-01' })).json();
+		await call('PATCH', `/api/entries/${entry.id}`, { action: 'add_trigger', triggerId: used.id });
+		await call('DELETE', `/api/triggers/${used.id}`);
+		expect(await get(used.id)).toMatchObject({ hidden: true });
+		const day = await (await call('GET', '/api/entries?date=2026-03-01')).json();
+		expect(day.triggers.map((t: { triggerName: string }) => t.triggerName)).toEqual(['Used']);
+	});
+
+	it('turns old medication change logs into the medication change trigger', async () => {
+		const { db } = useTestDatabase();
+		const { entryTypes, entryTypeLogs } = await import('../db/schema.js');
+		const { seedBuiltIns } = await import('./seed.js');
+		db.insert(entryTypes).values({ id: 'builtin-medication-change', name: 'Medication change', metricSchema: '{"fields":[]}', category: 'event', isBuiltIn: true }).run();
+		const entry = await (await call('POST', '/api/entries', { date: '2026-03-02' })).json();
+		db.insert(entryTypeLogs)
+			.values({
+				id: 'old',
+				entryId: entry.id,
+				entryTypeId: 'builtin-medication-change',
+				startTime: '2026-03-02T09:00:00.000Z',
+				metricValues: JSON.stringify({ medication_name: 'Magnesium', change_type: 'dosage changed', old_dosage: '400 mg', new_dosage: '600 mg' })
+			})
+			.run();
+		seedBuiltIns(db);
+		const day = await (await call('GET', '/api/entries?date=2026-03-02')).json();
+		expect(day.logs).toEqual([]);
+		expect(day.triggers).toMatchObject([{ triggerId: 'trig-medication-change', note: 'Magnesium, dosage changed, 400 mg → 600 mg' }]);
+		const types = await (await call('GET', '/api/entry-types')).json();
+		expect(types.some((t: { id: string }) => t.id === 'builtin-medication-change')).toBe(false);
+	});
+
+	it('marks medication starts and dose changes as a trigger on their day', async () => {
+		const med = await (await call('POST', '/api/medications', { name: 'Magnesium', dosage: '400', unit: 'mg', startDate: '2026-03-01' })).json();
+		await call('POST', '/api/medication-changes', { medicationId: med.id, changeType: 'dosage_change', oldDosage: '400 mg', newDosage: '600 mg', changeDate: '2026-03-10' });
+		const start = await (await call('GET', '/api/entries?date=2026-03-01')).json();
+		expect(start.triggers).toMatchObject([{ triggerId: 'trig-medication-change', note: 'Magnesium 400 mg' }]);
+		const change = await (await call('GET', '/api/entries?date=2026-03-10')).json();
+		expect(change.triggers).toMatchObject([{ triggerId: 'trig-medication-change', note: 'Magnesium: 400 mg → 600 mg' }]);
+		// Not when the user deleted that trigger.
+		await call('DELETE', '/api/triggers/trig-medication-change');
+		await call('POST', '/api/medications', { name: 'Other', startDate: '2026-03-20' });
+		expect(await (await call('GET', '/api/entries?date=2026-03-20')).json()).toBeNull();
+	});
+
 	it('deletes only unused custom entry types', async () => {
 		const type = await (await call('POST', '/api/entry-types', { name: 'Tinnitus', metricSchema: { fields: [] } })).json();
 		const entry = await (await call('POST', '/api/entries', { date: '2026-03-01' })).json();

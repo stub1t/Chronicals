@@ -13,7 +13,7 @@
 	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { hapticSuccess, hapticTap } from '$lib/haptics.js';
 	import { toDateString } from '$lib/utils/date';
-	import type { EntryType, EntryTypeLog } from '$lib/types';
+	import type { EntryType, EntryTypeLog, Medication } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -21,9 +21,11 @@
 		entryType: EntryType | null;
 		/** An existing log to edit; null to add a new one. */
 		log?: EntryTypeLog | null;
+		/** Active ones are offered under "Taken anything for it?". */
+		medications?: Medication[];
 	}
 
-	let { open = $bindable(), day, entryType, log = null }: Props = $props();
+	let { open = $bindable(), day, entryType, log = null, medications = [] }: Props = $props();
 
 	const DURATIONS = [15, 30, 60, 120, 240];
 
@@ -32,6 +34,27 @@
 	let endTime = $state('13:00');
 	let values = $state<Record<string, unknown>>({});
 	let saving = $state(false);
+
+	// "Painkiller" is stored in English, like other built-in options, and translated when shown.
+	const PAINKILLER = 'Painkiller';
+	let reliefInput = $state('');
+	let addingRelief = $state(false);
+	const relief = $derived(Array.isArray(values.relief) ? (values.relief as string[]) : []);
+	const reliefOptions = $derived([
+		...new Set([...medications.filter((m) => m.isActive).map((m) => m.name), PAINKILLER, ...relief])
+	]);
+
+	function toggleRelief(name: string) {
+		values = { ...values, relief: relief.includes(name) ? relief.filter((r) => r !== name) : [...relief, name] };
+		hapticTap();
+	}
+
+	function addRelief() {
+		const name = reliefInput.trim();
+		if (name && !relief.includes(name)) values = { ...values, relief: [...relief, name] };
+		reliefInput = '';
+		addingRelief = false;
+	}
 
 	// Reset the form whenever the sheet opens.
 	$effect(() => {
@@ -76,7 +99,9 @@
 	async function save() {
 		if (!entryType) return;
 		saving = true;
-		const cleaned = Object.fromEntries(Object.entries(values).filter(([, v]) => v !== undefined && v !== ''));
+		const cleaned = Object.fromEntries(
+			Object.entries(values).filter(([, v]) => v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))
+		);
 		try {
 			if (log) {
 				await day.updateLog(log.id, { startTime: localDateTime(day.date, time), endTime: computedEnd(), metricValues: cleaned });
@@ -167,6 +192,31 @@
 			</section>
 
 			<LogFields schema={entryType.metricSchema} {values} color={entryType.color ?? 'var(--accent)'} onchange={(key, value) => (values = { ...values, [key]: value })} />
+
+			{#if entryType.category === 'symptom'}
+				<section class="when">
+					<span class="label" id="relief-label">{t('log_relief')}</span>
+					<div class="chips" role="group" aria-labelledby="relief-label">
+						{#each reliefOptions as option (option)}
+							<button
+								type="button"
+								class="option"
+								class:picked={relief.includes(option)}
+								aria-pressed={relief.includes(option)}
+								onclick={() => toggleRelief(option)}>{localizeBuiltInText(option)}</button
+							>
+						{/each}
+						{#if addingRelief}
+							<form class="add-relief" onsubmit={(e) => { e.preventDefault(); addRelief(); }}>
+								<!-- svelte-ignore a11y_autofocus -->
+								<input class="relief-input" bind:value={reliefInput} placeholder={t('log_relief_placeholder')} aria-label={t('log_relief_other')} maxlength="80" autofocus onblur={addRelief} />
+							</form>
+						{:else}
+							<button type="button" class="option add" onclick={() => (addingRelief = true)}>+ {t('log_relief_other')}</button>
+						{/if}
+					</div>
+				</section>
+			{/if}
 		</div>
 
 		{#snippet footer()}
@@ -263,6 +313,22 @@
 	.option.picked {
 		background: color-mix(in srgb, var(--type) 18%, var(--bg-card));
 		border-color: var(--type);
+	}
+
+	.option.add {
+		border-style: dashed;
+		color: var(--text-muted);
+	}
+
+	.relief-input {
+		min-height: 40px;
+		width: 160px;
+		padding: 0 14px;
+		border: 1.5px solid var(--type);
+		border-radius: var(--radius-pill);
+		background: var(--bg-card);
+		color: var(--text);
+		font-size: var(--text-sm);
 	}
 
 	.actions {

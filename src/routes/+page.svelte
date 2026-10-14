@@ -4,12 +4,13 @@
 	import WeekStrip from '$lib/diary/WeekStrip.svelte';
 	import { DiaryDay } from '$lib/diary/day.svelte.js';
 	import { dateLocale, t } from '$lib/i18n';
-	import type { Entry, EntryType, Trigger, UserProfile } from '$lib/types';
+	import type { Entry, EntryType, Medication, Trigger, UserProfile } from '$lib/types';
 
 	interface Props {
 		data: {
 			today: string;
 			entryTypes: EntryType[];
+			medications: Medication[];
 			triggers: Trigger[];
 			profile: UserProfile;
 			recent: Entry[];
@@ -50,6 +51,7 @@
 	<DayView
 		{day}
 		entryTypes={data.entryTypes}
+		medications={data.medications}
 		bind:triggers
 		typeRanking={data.typeRanking}
 		triggerRanking={data.triggerRanking}

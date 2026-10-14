@@ -1,6 +1,6 @@
 import { getJson } from '$lib/api.js';
 import { toDateString } from '$lib/utils/date';
-import type { Entry, EntryType, Trigger, UserProfile } from '$lib/types/index.js';
+import type { Entry, EntryType, Medication, Trigger, UserProfile } from '$lib/types/index.js';
 
 function rank(ids: string[]): string[] {
 	const counts = new Map<string, number>();
@@ -16,14 +16,16 @@ function rank(ids: string[]): string[] {
 export async function loadDayData(fetchFn: typeof fetch, date: string) {
 	const since = new Date(`${date}T12:00:00`);
 	since.setDate(since.getDate() - 90);
-	const [entryTypes, triggers, profile, recent] = await Promise.all([
+	const [entryTypes, triggers, profile, recent, medications] = await Promise.all([
 		getJson<EntryType[]>(fetchFn, '/api/entry-types'),
 		getJson<Trigger[]>(fetchFn, '/api/triggers'),
 		getJson<UserProfile>(fetchFn, '/api/profile'),
-		getJson<Entry[]>(fetchFn, `/api/entries?from=${toDateString(since)}&to=${date}`)
+		getJson<Entry[]>(fetchFn, `/api/entries?from=${toDateString(since)}&to=${date}`),
+		getJson<Medication[]>(fetchFn, '/api/medications')
 	]);
 	return {
 		entryTypes,
+		medications,
 		triggers,
 		profile,
 		recent,

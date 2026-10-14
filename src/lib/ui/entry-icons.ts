@@ -83,7 +83,6 @@ export const BUILT_IN_ICONS: Record<string, DuoIconName> = {
 	'builtin-stomachache': 'stomachache',
 	'builtin-allergy': 'allergy',
 	'builtin-hypo': 'low-blood-sugar',
-	'builtin-medication-change': 'medication',
 	'builtin-period': 'period',
 	'builtin-note': 'note'
 };

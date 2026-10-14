@@ -54,8 +54,10 @@ export const entryTypeLogs = sqliteTable('entry_type_logs', {
 export const triggers = sqliteTable('triggers', {
 	id: text('id').primaryKey(),
 	name: text('name').notNull(),
-	category: text('category').notNull(), // 'food' | 'environment' | 'activity' | 'custom'
+	category: text('category').notNull(), // 'food' | 'environment' | 'activity' | 'medication' | 'custom'
 	isBuiltIn: integer('is_built_in', { mode: 'boolean' }).notNull().default(false),
+	/** Deleted by the user but kept, so past days keep it and the seed does not bring it back. */
+	hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),
 	createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
 }, (t) => [
 	index('triggers_category_idx').on(t.category),

@@ -93,13 +93,15 @@ export interface CalendarDayData {
 
 // ─── Triggers ─────────────────────────────────────────────────────────────────
 
-export type TriggerCategory = 'food' | 'environment' | 'activity' | 'custom';
+export type TriggerCategory = 'food' | 'environment' | 'activity' | 'medication' | 'custom';
 
 export interface Trigger {
 	id: string;
 	name: string;
 	category: TriggerCategory;
 	isBuiltIn: boolean;
+	/** Deleted: no longer offered, but kept on the days that have it. */
+	hidden: boolean;
 }
 
 // ─── Environmental Data ───────────────────────────────────────────────────────

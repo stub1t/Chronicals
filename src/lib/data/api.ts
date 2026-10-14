@@ -263,6 +263,7 @@ const routes: Route[] = [
 				name: requiredText(body.name, 'name', 120),
 				category: optionalTriggerCategory(body.category)
 			});
+			if (trigger === 'exists') error(409, 'A trigger with this name exists already.');
 			return json(trigger, { status: 201 });
 		}
 	}),
@@ -272,8 +273,10 @@ const routes: Route[] = [
 			const body = await parseJsonRequest(event);
 			const trigger = updateTrigger(assertIdentifier(event.params.id, 'id'), {
 				...(body.name !== undefined && { name: requiredText(body.name, 'name', 120) }),
-				...(body.category !== undefined && { category: optionalTriggerCategory(body.category) })
+				...(body.category !== undefined && { category: optionalTriggerCategory(body.category) }),
+				...(body.hidden !== undefined && { hidden: assertBoolean(body.hidden, 'hidden') })
 			});
+			if (trigger === 'exists') error(409, 'A trigger with this name exists already.');
 			if (!trigger) return notFound();
 			return json(trigger);
 		},

@@ -224,60 +224,6 @@ const BUILT_IN_ENTRY_TYPES = [
 		})
 	},
 	{
-		id: 'builtin-medication-change',
-		name: 'Medication change',
-		icon: 'Rx',
-		color: '#6b7280',
-		category: 'event',
-		sortOrder: 4,
-		metricSchema: JSON.stringify({
-			fields: [
-				{
-					key: 'change_type',
-					label: 'Change type',
-					type: 'select',
-					required: true,
-					config: { options: ['started', 'dosage changed', 'stopped'] }
-				},
-				{
-					key: 'medication_name',
-					label: 'Medication',
-					type: 'text',
-					required: true,
-					config: { placeholder: 'Medication name' }
-				},
-				{
-					key: 'old_dosage',
-					label: 'Previous dose',
-					type: 'text',
-					required: false,
-					config: { placeholder: 'e.g. 10mg' }
-				},
-				{
-					key: 'new_dosage',
-					label: 'New dose',
-					type: 'text',
-					required: false,
-					config: { placeholder: 'e.g. 20mg' }
-				},
-				{
-					key: 'reason',
-					label: 'Reason',
-					type: 'text',
-					required: false,
-					config: { placeholder: 'Why was this changed?' }
-				},
-				{
-					key: 'notes',
-					label: 'Notes',
-					type: 'textarea',
-					required: false,
-					config: { placeholder: 'Additional notes...' }
-				}
-			]
-		})
-	},
-	{
 		id: 'builtin-period',
 		name: 'Period',
 		icon: 'P',
@@ -375,7 +321,9 @@ const BUILT_IN_TRIGGERS = [
 	{ id: 'trig-screen', name: 'Screen time', category: 'activity' },
 	{ id: 'trig-travel', name: 'Travel', category: 'activity' },
 	{ id: 'trig-dehydration', name: 'Dehydration', category: 'activity' },
-	{ id: 'trig-skipped-meal', name: 'Skipped meal', category: 'activity' }
+	{ id: 'trig-skipped-meal', name: 'Skipped meal', category: 'activity' },
+	// Medication
+	{ id: 'trig-medication-change', name: 'Medication change', category: 'medication' }
 ];
 
 export function seedBuiltIns(db: AppDatabase) {
@@ -442,8 +390,10 @@ export function seedBuiltIns(db: AppDatabase) {
 		}
 	}
 
-	// Remove pollen trigger (user doesn't want pollen data)
+	// An early pollen trigger, replaced by measured pollen in the weather data.
 	db.delete(schema.triggers).where(eq(schema.triggers.id, 'trig-pollen')).run();
+
+	medicationChangeLogsToTriggers(db);
 
 	// Seed default profile row
 	const profile = db
@@ -476,4 +426,31 @@ function upgradeLogValues(db: AppDatabase) {
 			.where(eq(schema.entryTypeLogs.id, row.id))
 			.run();
 	}
+}
+
+/**
+ * Medication change used to be an entry type. Its logs become the trigger
+ * 'Medication change' on their day, with the details as the trigger's note,
+ * and the old type is removed.
+ */
+function medicationChangeLogsToTriggers(db: AppDatabase) {
+	const OLD_TYPE = 'builtin-medication-change';
+	const logs = db.select().from(schema.entryTypeLogs).where(eq(schema.entryTypeLogs.entryTypeId, OLD_TYPE)).all();
+	for (const log of logs) {
+		const v = JSON.parse(log.metricValues) as Record<string, string | undefined>;
+		const dose = [v.old_dosage, v.new_dosage].filter(Boolean).join(' → ');
+		const note = [v.medication_name, v.change_type, dose, v.reason, v.notes].filter(Boolean).join(', ') || null;
+		const linked = db
+			.select({ id: schema.entryTriggers.id })
+			.from(schema.entryTriggers)
+			.where(and(eq(schema.entryTriggers.entryId, log.entryId), eq(schema.entryTriggers.triggerId, 'trig-medication-change')))
+			.get();
+		if (!linked) {
+			db.insert(schema.entryTriggers)
+				.values({ id: `medchange-${log.id}`, entryId: log.entryId, triggerId: 'trig-medication-change', note })
+				.run();
+		}
+		db.delete(schema.entryTypeLogs).where(eq(schema.entryTypeLogs.id, log.id)).run();
+	}
+	db.delete(schema.entryTypes).where(eq(schema.entryTypes.id, OLD_TYPE)).run();
 }

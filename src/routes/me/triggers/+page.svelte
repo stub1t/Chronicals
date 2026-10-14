@@ -5,6 +5,8 @@
 	import CloudSun from '@lucide/svelte/icons/cloud-sun';
 	import Footprints from '@lucide/svelte/icons/footprints';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import Pill from '@lucide/svelte/icons/pill';
+	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import { api } from '$lib/api.js';
 	import SubPage from '$lib/me/SubPage.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -22,7 +24,8 @@
 		{ value: 'food', icon: Utensils, color: '#d9822b', label: () => t('trigger_food') },
 		{ value: 'environment', icon: CloudSun, color: '#3aa6b9', label: () => t('trigger_environment') },
 		{ value: 'activity', icon: Footprints, color: '#7462e8', label: () => t('trigger_activity') },
-		{ value: 'custom', icon: Sparkles, color: '#e0679a', label: () => t('trigger_custom') }
+		{ value: 'medication', icon: Pill, color: '#e0679a', label: () => t('trigger_medication') },
+		{ value: 'custom', icon: Sparkles, color: '#94a3b8', label: () => t('trigger_custom') }
 	] as const;
 
 	const byName = (a: Trigger, b: Trigger) => localizeBuiltInText(a.name).localeCompare(localizeBuiltInText(b.name));
@@ -42,35 +45,54 @@
 
 	function openEdit(trigger: Trigger) {
 		editing = trigger;
-		name = trigger.name;
+		name = localizeBuiltInText(trigger.name);
 		category = trigger.category;
 		sheetOpen = true;
+	}
+
+	const hidden = $derived(triggers.filter((tr) => tr.hidden).sort(byName));
+
+	async function restore(trigger: Trigger) {
+		const res = await api(`/api/triggers/${trigger.id}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ hidden: false })
+		});
+		if (res.ok) {
+			const saved: Trigger = await res.json();
+			triggers = triggers.map((tr) => (tr.id === saved.id ? saved : tr));
+		}
 	}
 
 	async function save() {
 		if (!name.trim()) return;
 		saving = true;
+		// A built-in name shown in translation counts as unchanged.
+		const unchanged = editing && name.trim() === localizeBuiltInText(editing.name);
 		const res = await api(editing ? `/api/triggers/${editing.id}` : '/api/triggers', {
 			method: editing ? 'PUT' : 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name: name.trim(), category })
+			body: JSON.stringify(unchanged ? { category } : { name: name.trim(), category })
 		});
 		saving = false;
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
-			toasts.show(err.message ?? t('network_error'), 'error');
+			toasts.show(res.status === 409 ? t('triggers_exists') : (err.message ?? t('network_error')), 'error');
 			return;
 		}
 		const saved: Trigger = await res.json();
 		triggers = editing ? triggers.map((tr) => (tr.id === saved.id ? saved : tr)) : [...triggers, saved];
-		toasts.show(t('log_saved', { name: saved.name }), 'success');
+		toasts.show(t('log_saved', { name: localizeBuiltInText(saved.name) }), 'success');
 		sheetOpen = false;
 	}
 
 	async function remove() {
-		if (!editing || !confirm(t('triggers_delete_confirm', { name: editing.name }))) return;
-		await api(`/api/triggers/${editing.id}`, { method: 'DELETE' });
-		triggers = triggers.filter((tr) => tr.id !== editing?.id);
+		const target = editing;
+		if (!target || !confirm(t('triggers_delete_confirm', { name: localizeBuiltInText(target.name) }))) return;
+		await api(`/api/triggers/${target.id}`, { method: 'DELETE' });
+		// Built-in or used triggers stay as hidden ones (see deleteTrigger).
+		const res = await api('/api/triggers');
+		triggers = res.ok ? await res.json() : triggers.filter((tr) => tr.id !== target.id);
 		sheetOpen = false;
 	}
 </script>
@@ -83,7 +105,7 @@
 	<p class="ui-hint">{t('triggers_hint')}</p>
 
 	{#each CATEGORIES as group (group.value)}
-		{@const items = triggers.filter((tr) => tr.category === group.value).sort(byName)}
+		{@const items = triggers.filter((tr) => tr.category === group.value && !tr.hidden).sort(byName)}
 		<Card>
 			<h2 class="group-title" style="--group: {group.color}">
 				<span class="bubble" aria-hidden="true"><group.icon size={18} /></span>
@@ -91,14 +113,16 @@
 			</h2>
 			<div class="chips">
 				{#each items as trigger (trigger.id)}
-					{#if trigger.isBuiltIn}
-						<span class="chip">{localizeBuiltInText(trigger.name)}</span>
-					{:else}
-						<button type="button" class="chip own" onclick={() => openEdit(trigger)} aria-label={t('triggers_edit', { name: trigger.name })}>
-							{trigger.name}
-							<Pencil size={14} />
-						</button>
-					{/if}
+					<button
+						type="button"
+						class="chip"
+						class:own={!trigger.isBuiltIn}
+						onclick={() => openEdit(trigger)}
+						aria-label={t('triggers_edit', { name: localizeBuiltInText(trigger.name) })}
+					>
+						{localizeBuiltInText(trigger.name)}
+						<Pencil size={14} />
+					</button>
 				{/each}
 				<button type="button" class="chip add" onclick={() => openNew(group.value)} aria-label={t('triggers_add_to', { group: group.label() })}>
 					<Plus size={16} />
@@ -106,6 +130,20 @@
 			</div>
 		</Card>
 	{/each}
+	{#if hidden.length}
+		<details class="deleted">
+			<summary>{t('triggers_deleted', { count: hidden.length })}</summary>
+			<p class="ui-hint">{t('triggers_deleted_hint')}</p>
+			<div class="chips">
+				{#each hidden as trigger (trigger.id)}
+					<button type="button" class="chip" onclick={() => restore(trigger)} aria-label={t('triggers_restore', { name: localizeBuiltInText(trigger.name) })}>
+						{localizeBuiltInText(trigger.name)}
+						<RotateCcw size={14} />
+					</button>
+				{/each}
+			</div>
+		</details>
+	{/if}
 </SubPage>
 
 <Sheet bind:open={sheetOpen} title={editing ? editing.name : t('triggers_new')} closeLabel={t('close')}>
@@ -185,10 +223,32 @@
 		font-weight: 600;
 	}
 
-	.chip.own {
+	button.chip {
 		cursor: pointer;
+	}
+
+	.chip :global(svg) {
+		color: var(--text-subtle);
+	}
+
+	.chip.own {
 		border-color: var(--accent);
 		background: var(--accent-soft);
+	}
+
+	.deleted {
+		padding: var(--space-3) var(--space-4);
+		border-radius: var(--radius-lg);
+		background: var(--bg-subtle);
+	}
+
+	.deleted summary {
+		font-weight: 800;
+		cursor: pointer;
+	}
+
+	.deleted .ui-hint {
+		margin: var(--space-2) 0;
 	}
 
 	.chip.add {

@@ -1,6 +1,7 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db.js';
-import { userProfile, medications, medicationChanges } from '../../db/schema.js';
+import { entryTriggers, medicationChanges, medications, triggers, userProfile } from '../../db/schema.js';
+import { createEntry } from './entries.js';
 import type { UserProfile, Medication, MedicationChange, MedicationChangeType } from '../../types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -54,7 +55,32 @@ export function createMedication(data: {
 			reminderTimes: data.reminderTimes?.length ? JSON.stringify(data.reminderTimes) : null
 		})
 		.run();
+	markMedicationDay(data.startDate, [data.name, data.dosage && `${data.dosage}${data.unit ? ` ${data.unit}` : ''}`].filter(Boolean).join(' '));
 	return getMedication(id)!;
+}
+
+/**
+ * A start, stop or dose change is also the trigger "Medication change" on
+ * that day of the diary (unless the user deleted that trigger), so the
+ * analysis and the calendar see it.
+ */
+function markMedicationDay(date: string, note: string) {
+	const trigger = db.select().from(triggers).where(eq(triggers.id, 'trig-medication-change')).get();
+	if (!trigger || trigger.hidden) return;
+	const { entry } = createEntry(date);
+	const linked = db
+		.select({ id: entryTriggers.id, note: entryTriggers.note })
+		.from(entryTriggers)
+		.where(and(eq(entryTriggers.entryId, entry.id), eq(entryTriggers.triggerId, trigger.id)))
+		.get();
+	if (!linked) {
+		db.insert(entryTriggers).values({ id: uuidv4(), entryId: entry.id, triggerId: trigger.id, note }).run();
+	} else if (!linked.note?.includes(note)) {
+		db.update(entryTriggers)
+			.set({ note: [linked.note, note].filter(Boolean).join('; ') })
+			.where(eq(entryTriggers.id, linked.id))
+			.run();
+	}
 }
 
 export function updateMedication(id: string, data: Partial<Omit<Medication, 'id'>>): Medication | null {
@@ -116,6 +142,11 @@ export function createMedicationChange(data: {
 				.run();
 		}
 	});
+	const med = data.medicationId ? getMedication(data.medicationId) : null;
+	if (med) {
+		const dose = data.changeType === 'dosage_change' ? `: ${[data.oldDosage, data.newDosage].filter(Boolean).join(' → ')}` : '';
+		markMedicationDay(data.changeDate, `${med.name}${dose}`);
+	}
 	const row = db.select().from(medicationChanges).where(eq(medicationChanges.id, id)).get()!;
 	return { ...row, changeType: row.changeType as MedicationChangeType };
 }

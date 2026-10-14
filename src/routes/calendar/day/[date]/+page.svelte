@@ -6,13 +6,14 @@
 	import { DiaryDay } from '$lib/diary/day.svelte.js';
 	import { dateLocale, t } from '$lib/i18n';
 	import { toDateString } from '$lib/utils/date';
-	import type { Entry, EntryType, Trigger, UserProfile } from '$lib/types';
+	import type { Entry, EntryType, Medication, Trigger, UserProfile } from '$lib/types';
 
 	interface Props {
 		data: {
 			date: string;
 			today: string;
 			entryTypes: EntryType[];
+			medications: Medication[];
 			triggers: Trigger[];
 			profile: UserProfile;
 			entry: Entry | null;
@@ -63,6 +64,7 @@
 		<DayView
 			{day}
 			entryTypes={data.entryTypes}
+			medications={data.medications}
 			bind:triggers
 			typeRanking={data.typeRanking}
 			triggerRanking={data.triggerRanking}

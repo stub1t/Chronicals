@@ -410,7 +410,7 @@ export function medicationEffects(diary: Diary, typeId: string, events: Medicati
 export function analysableTypes(diary: Diary, entryTypes: EntryType[], from: string, to: string): Array<{ type: EntryType; days: number }> {
 	const days = trackedDays(diary, from, to);
 	return entryTypes
-		.filter((type) => type.category !== 'note' && type.id !== 'builtin-medication-change')
+		.filter((type) => type.category !== 'note')
 		.map((type) => ({ type, days: days.filter((date) => diary.get(date)!.types.has(type.id)).length }))
 		.filter((item) => item.days > 0)
 		.sort((a, b) => b.days - a.days);

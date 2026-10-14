@@ -11,7 +11,7 @@ const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 const BLOOD_TYPES = new Set<BloodType>(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']);
 const ENTRY_CATEGORIES = new Set<EntryCategory>(['symptom', 'event', 'note']);
-const TRIGGER_CATEGORIES = new Set<TriggerCategory>(['food', 'environment', 'activity', 'custom']);
+const TRIGGER_CATEGORIES = new Set<TriggerCategory>(['food', 'environment', 'activity', 'medication', 'custom']);
 const MEDICATION_CHANGE_TYPES = new Set<MedicationChangeType>(['started', 'dosage_change', 'stopped']);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

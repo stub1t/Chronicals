@@ -82,7 +82,8 @@ function average(values: number[]): number | null {
 /** "Location: temples; Symptoms: aura, nausea" from a log's form values, without intensity. */
 function details(log: EntryTypeLog, translate: (text: string) => string): string {
 	const fields = log.entryType?.metricSchema?.fields ?? [];
-	const label = (key: string) => translate(fields.find((f) => f.key === key)?.label ?? key);
+	// "relief" is not a form field: it is the answer to "Taken anything for it?".
+	const label = (key: string) => translate(key === 'relief' ? 'Taken' : (fields.find((f) => f.key === key)?.label ?? key));
 	const show = (value: unknown): string => {
 		if (Array.isArray(value)) return value.map(show).filter(Boolean).join(', ');
 		if (typeof value === 'string') return translate(value);
