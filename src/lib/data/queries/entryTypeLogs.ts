@@ -93,7 +93,7 @@ function extractIntensity(metricValues: Record<string, unknown>): number | null 
 	const v = metricValues['intensity'] ?? metricValues['severity'];
 	if (typeof v === 'number') return v;
 	if (typeof v === 'string') {
-		const map: Record<string, number> = { mild: 1, moderate: 3, severe: 5 };
+		const map: Record<string, number> = { mild: 2, moderate: 3, severe: 4 };
 		return map[v] ?? null;
 	}
 	return null;

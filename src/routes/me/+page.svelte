@@ -21,7 +21,8 @@
 	import Toggle from '$lib/ui/Toggle.svelte';
 	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { themeStore } from '$lib/stores/theme.js';
-	import { LANGUAGES, localeStore, setLanguage, type LanguageCode, t } from '$lib/i18n';
+	import { LANGUAGES, localeStore, setLanguage, setTimeFormat, timeFormat, type LanguageCode, type TimeFormat, t } from '$lib/i18n';
+	import Clock from '@lucide/svelte/icons/clock';
 	import { exportBackup, importBackup } from '$lib/backup.js';
 	import { loadReminderSettings, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
@@ -225,6 +226,21 @@
 						{ value: 'system', label: t('settings_theme_system') },
 						{ value: 'light', label: t('settings_theme_light') },
 						{ value: 'dark', label: t('settings_theme_dark') }
+					]}
+				/>
+			</div>
+		</div>
+		<div>
+			<MenuRow icon={Clock} color="#5b8def" label={t('settings_time_format')} />
+			<div class="sub">
+				<Segmented
+					label={t('settings_time_format')}
+					value={$timeFormat}
+					onchange={(value: TimeFormat) => setTimeFormat(value)}
+					options={[
+						{ value: 'auto', label: t('settings_time_auto') },
+						{ value: '24', label: t('settings_time_24') },
+						{ value: '12', label: t('settings_time_12') }
 					]}
 				/>
 			</div>

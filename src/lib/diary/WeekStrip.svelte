@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { WELLBEING_COLORS } from '$lib/ui/wellbeing.js';
 	/** The last seven days at a glance: the day's worst symptom colour, or how you felt. */
 	import { dateLocale } from '$lib/i18n';
 	import { toDateString } from '$lib/utils/date';
@@ -12,7 +13,6 @@
 
 	let { entries, today, label }: Props = $props();
 
-	const FACE_COLORS = ['#ec8a9a', '#f2ac72', '#e9c66b', '#94d29c', '#62c393'];
 
 	const days = $derived.by(() => {
 		const byDate = new Map(entries.map((e) => [e.date, e]));
@@ -29,7 +29,7 @@
 				weekday: d.toLocaleDateString(dateLocale(), { weekday: 'narrow' }),
 				day: d.getDate(),
 				color: worst?.entryType?.color ?? null,
-				face: entry?.wellbeing ? FACE_COLORS[entry.wellbeing - 1] : null,
+				face: entry?.wellbeing ? WELLBEING_COLORS[entry.wellbeing - 1] : null,
 				logged: !!entry
 			};
 		});

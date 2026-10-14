@@ -91,3 +91,14 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] 7. Insights: pure engine in src/lib/insights (tracked days, Fisher test, same-day and day-before triggers, weather, weekday, time of day, cycle phases, medication before/after, trend), screen with four cards, printable HTML report via @capgo/capacitor-printer, CSV separator by locale; old analysis code, routes and jsPDF removed
 - [ ] 8. 13 more languages + completeness tests
 - [ ] 9. Polish, a11y, dark/RTL passes, screenshots, README, AGENTS.md
+
+## Round 2: feedback on the redesign (plan: ~/.claude/plans/enchanted-sprouting-castle.md)
+
+- [x] R1. Names (Eintragen, Trigger heute, Wo es weh tut, Auswertung, Bericht exportieren, Alle Schmerztypen, Stärke), time format setting, word scale for well-being, intensity 1-5 everywhere with data upgrade, "x/5"
+- [ ] R2. Built-in triggers editable and deletable, Medikamente group, medication change becomes a trigger, dose changes count, "Etwas dagegen genommen?"
+- [ ] R3. Own options in forms (extra_options), "+ Neu" tile, Blutzucker, meal type with foods
+- [ ] R4. Reminder for ongoing logs (Android) and web banner, onboarding
+- [ ] R5. Place per day, automatic location (Android), weather backfill, pollen
+- [ ] R6. Analysis rework from the two reviews (statistics fixes, exact period, one timeline, "Alle" view, foods/pollen/medication as exposures)
+- [ ] R7. Report export: structure, columns, x/5, day grouping, type selection, CSV
+- [ ] Then phase 8 (languages) and phase 9 (polish)

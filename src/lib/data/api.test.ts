@@ -113,6 +113,30 @@ describe('handleApiRequest', () => {
 		expect(name('builtin-hypo')).toBe('Hypo');
 	});
 
+	it('turns old severity values into intensity 1 to 5 on start', async () => {
+		const { db } = useTestDatabase();
+		const { entryTypeLogs } = await import('../db/schema.js');
+		const { seedBuiltIns } = await import('./seed.js');
+		const entry = await (await call('POST', '/api/entries', { date: '2026-03-01' })).json();
+		const old = [
+			['a', 'builtin-allergy', { severity: 4, symptoms: ['sneezing'] }],
+			['b', 'builtin-hypo', { severity: 'moderate', blood_glucose: '58' }],
+			['c', 'builtin-hypo', { severity: 'unknown' }]
+		] as const;
+		for (const [id, type, values] of old) {
+			db.insert(entryTypeLogs)
+				.values({ id, entryId: entry.id, entryTypeId: type, startTime: '2026-03-01T10:00:00.000Z', metricValues: JSON.stringify(values) })
+				.run();
+		}
+		seedBuiltIns(db);
+		const rows = Object.fromEntries(db.select().from(entryTypeLogs).all().map((r) => [r.id, r]));
+		expect(JSON.parse(rows.a.metricValues)).toEqual({ intensity: 4, symptoms: ['sneezing'] });
+		expect(rows.a.intensityCache).toBe(4);
+		expect(JSON.parse(rows.b.metricValues)).toEqual({ intensity: 3, blood_glucose: '58' });
+		expect(JSON.parse(rows.c.metricValues)).toEqual({});
+		expect(rows.c.intensityCache).toBeNull();
+	});
+
 	it('deletes only unused custom entry types', async () => {
 		const type = await (await call('POST', '/api/entry-types', { name: 'Tinnitus', metricSchema: { fields: [] } })).json();
 		const entry = await (await call('POST', '/api/entries', { date: '2026-03-01' })).json();

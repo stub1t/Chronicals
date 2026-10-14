@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { WELLBEING_COLORS } from '$lib/ui/wellbeing.js';
 	import { goto } from '$app/navigation';
 	import CalendarHeader from '$lib/calendar/CalendarHeader.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
-	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
+	import { dateLocale, formatTime, localizeBuiltInText, t } from '$lib/i18n';
 	import { toDateString } from '$lib/utils/date';
 	import type { Entry } from '$lib/types';
 
@@ -12,7 +13,6 @@
 
 	let { data }: Props = $props();
 
-	const FACE_COLORS = ['#ec8a9a', '#f2ac72', '#e9c66b', '#94d29c', '#62c393'];
 	const byDate = $derived(new Map(data.entries.map((e) => [e.date, e])));
 
 	function shift(days: number) {
@@ -23,7 +23,7 @@
 
 	const fmt = (date: string, options: Intl.DateTimeFormatOptions) =>
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), options);
-	const time = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' });
+	const time = (iso: string) => formatTime(iso);
 	const title = $derived(
 		`${fmt(data.days[0], { day: 'numeric', month: 'short' })} – ${fmt(data.days[6], { day: 'numeric', month: 'short', year: 'numeric' })}`
 	);
@@ -51,7 +51,7 @@
 						<span class="weekday">{fmt(date, { weekday: 'short' })}</span>
 						<span class="number">{fmt(date, { day: 'numeric' })}</span>
 						{#if entry?.wellbeing}
-							<span class="face" style="background: {FACE_COLORS[entry.wellbeing - 1]}"></span>
+							<span class="face" style="background: {WELLBEING_COLORS[entry.wellbeing - 1]}"></span>
 						{/if}
 					</span>
 					<span class="content">
@@ -61,7 +61,7 @@
 									<EntryTypeIcon entryType={log.entryType} size={22} />
 									<span class="name">{localizeBuiltInText(log.entryType?.name ?? '')}</span>
 									<span class="time">{time(log.startTime)}</span>
-									{#if log.intensityCache}<span class="level">{log.intensityCache}</span>{/if}
+									{#if log.intensityCache}<span class="level">{log.intensityCache}/5</span>{/if}
 								</span>
 							{/each}
 						{:else if entry}

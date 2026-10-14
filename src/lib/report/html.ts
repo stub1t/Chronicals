@@ -82,7 +82,7 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 	const entries = report.rows.length
 		? table(
 				[t('report_col_date'), t('report_col_time'), t('report_col_type'), t('report_col_intensity_single'), t('report_col_details'), t('report_col_triggers'), t('report_col_note')],
-				report.rows.map((r) => [date(r.date), [r.start, r.end].filter(Boolean).join(' – '), r.type, r.intensity, r.details, r.triggers, r.note]),
+				report.rows.map((r) => [date(r.date), [r.start, r.end].filter(Boolean).join(' – '), r.type, r.intensity === null ? '' : `${r.intensity}/5`, r.details, r.triggers, r.note]),
 				'entries'
 			)
 		: empty('report_empty');

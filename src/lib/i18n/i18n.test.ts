@@ -32,3 +32,15 @@ describe.each(Object.entries(locales).filter(([path]) => !path.endsWith('/en.ts'
 		}
 	});
 });
+
+describe('formatTime', () => {
+	it('follows the chosen clock', async () => {
+		const { formatTime, setTimeFormat } = await import('./index.js');
+		const afternoon = new Date(2026, 2, 1, 15, 5);
+		setTimeFormat('24');
+		expect(formatTime(afternoon)).toMatch(/^15:05$/);
+		setTimeFormat('12');
+		expect(formatTime(afternoon)).toMatch(/^3:05\s?PM$/i);
+		setTimeFormat('auto');
+	});
+});

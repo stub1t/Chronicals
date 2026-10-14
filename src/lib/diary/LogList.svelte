@@ -3,7 +3,7 @@
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import CircleStop from '@lucide/svelte/icons/circle-stop';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
-	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
+	import { dateLocale, formatTime, localizeBuiltInText, t } from '$lib/i18n';
 	import type { EntryTypeLog } from '$lib/types';
 
 	interface Props {
@@ -15,7 +15,7 @@
 	let { logs, onopen, onend }: Props = $props();
 
 	const time = (iso: string) =>
-		new Date(iso).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' });
+		formatTime(iso);
 
 	function duration(log: EntryTypeLog): string {
 		if (!log.endTime) return '';

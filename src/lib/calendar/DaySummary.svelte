@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { WELLBEING_COLORS } from '$lib/ui/wellbeing.js';
 	/** A day at a glance under the month: how it felt, entries, triggers, note, and a way in. */
 	import Card from '$lib/ui/Card.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
-	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
+	import { dateLocale, formatTime, localizeBuiltInText, t } from '$lib/i18n';
 	import type { Entry } from '$lib/types';
 
 	interface Props {
@@ -13,11 +14,10 @@
 
 	let { date, entry }: Props = $props();
 
-	const FACE_COLORS = ['#ec8a9a', '#f2ac72', '#e9c66b', '#94d29c', '#62c393'];
 	const title = $derived(
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
 	);
-	const time = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: 'numeric', minute: '2-digit' });
+	const time = (iso: string) => formatTime(iso);
 	const logs = $derived([...(entry?.logs ?? [])].sort((a, b) => a.startTime.localeCompare(b.startTime)));
 </script>
 
@@ -25,7 +25,7 @@
 	<div class="head">
 		<h2 class="title">{title}</h2>
 		{#if entry?.wellbeing}
-			<span class="face" style="background: {FACE_COLORS[entry.wellbeing - 1]}" title={t(`wellbeing_${entry.wellbeing as 1 | 2 | 3 | 4 | 5}`)}></span>
+			<span class="face" style="background: {WELLBEING_COLORS[entry.wellbeing - 1]}" title={t(`wellbeing_${entry.wellbeing as 1 | 2 | 3 | 4 | 5}`)}></span>
 		{/if}
 	</div>
 

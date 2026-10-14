@@ -21,7 +21,7 @@ const BUILT_IN_ENTRY_TYPES = [
 				},
 				{
 					key: 'location',
-					label: 'Location',
+					label: 'Where it hurts',
 					type: 'select',
 					required: false,
 					config: {
@@ -132,8 +132,8 @@ const BUILT_IN_ENTRY_TYPES = [
 		metricSchema: JSON.stringify({
 			fields: [
 				{
-					key: 'severity',
-					label: 'Severity',
+					key: 'intensity',
+					label: 'Intensity',
 					type: 'slider',
 					required: true,
 					config: { min: 1, max: 5, step: 1 }
@@ -179,11 +179,11 @@ const BUILT_IN_ENTRY_TYPES = [
 		metricSchema: JSON.stringify({
 			fields: [
 				{
-					key: 'severity',
-					label: 'Severity',
-					type: 'select',
+					key: 'intensity',
+					label: 'Intensity',
+					type: 'slider',
 					required: true,
-					config: { options: ['mild', 'moderate', 'severe'] }
+					config: { min: 1, max: 5, step: 1 }
 				},
 				{
 					key: 'symptoms',
@@ -410,6 +410,8 @@ export function seedBuiltIns(db: AppDatabase) {
 		}
 	}
 
+	upgradeLogValues(db);
+
 	// Merge accidental custom period duplicates into the built-in type so old logs survive.
 	const duplicatePeriods = db
 		.select({ id: schema.entryTypes.id })
@@ -451,5 +453,27 @@ export function seedBuiltIns(db: AppDatabase) {
 		.get();
 	if (!profile) {
 		db.insert(schema.userProfile).values({ id: 'default' }).run();
+	}
+}
+
+/** Older 'severity' values (allergy 1 to 5, low blood sugar mild/moderate/severe) become 'intensity' 1 to 5. */
+const SEVERITY_WORDS: Record<string, number> = { mild: 2, moderate: 3, severe: 4 };
+
+function upgradeLogValues(db: AppDatabase) {
+	const rows = db
+		.select({ id: schema.entryTypeLogs.id, metricValues: schema.entryTypeLogs.metricValues })
+		.from(schema.entryTypeLogs)
+		.where(sql`${schema.entryTypeLogs.metricValues} like '%"severity"%'`)
+		.all();
+	for (const row of rows) {
+		const values = JSON.parse(row.metricValues) as Record<string, unknown>;
+		if (!('severity' in values)) continue;
+		const { severity, ...rest } = values;
+		const intensity = typeof severity === 'number' ? severity : typeof severity === 'string' ? (SEVERITY_WORDS[severity] ?? null) : null;
+		const next = intensity === null || 'intensity' in rest ? rest : { ...rest, intensity };
+		db.update(schema.entryTypeLogs)
+			.set({ metricValues: JSON.stringify(next), intensityCache: (next.intensity as number | undefined) ?? null })
+			.where(eq(schema.entryTypeLogs.id, row.id))
+			.run();
 	}
 }

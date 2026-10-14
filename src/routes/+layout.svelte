@@ -4,7 +4,7 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { themeStore } from '$lib/stores/theme.js';
-	import { language, t } from '$lib/i18n';
+	import { language, t, timeFormat } from '$lib/i18n';
 	import { flush, pendingCount } from '$lib/utils/offline-queue.js';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
 	import Toaster from '$lib/ui/Toaster.svelte';
@@ -84,8 +84,8 @@
 		</div>
 	{/if}
 
-	<!-- Re-render on language change, including the lock screen. -->
-	{#key $language}
+	<!-- Re-render on language or time format change, including the lock screen. -->
+	{#key `${$language}-${$timeFormat}`}
 		{#if appLocked}
 			<div class="lock-screen">
 				<span class="lock-icon"><Lock size={34} /></span>

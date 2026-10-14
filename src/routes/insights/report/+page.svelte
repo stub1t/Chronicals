@@ -12,7 +12,7 @@
 	import { reportToHtml } from '$lib/report/html.js';
 	import { buildReport, type Report } from '$lib/report/summary.js';
 	import { addDays } from '$lib/insights/dates.js';
-	import { dateLocale, formatNumber, isRtl, language, localizeBuiltInText, t, type MessageKey } from '$lib/i18n';
+	import { dateLocale, formatNumber, formatTime, isRtl, language, localizeBuiltInText, t, type MessageKey } from '$lib/i18n';
 	import type { Entry, EntryType, EnvironmentalData, Medication, MedicationChange, UserProfile } from '$lib/types/index.js';
 	import { toDateString } from '$lib/utils/date';
 
@@ -38,8 +38,6 @@
 
 	const formatDate = (date: string) =>
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
-	// 24-hour times: shorter in the tables, and usual in medical records.
-	const formatTime = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 	function pick(value: Range) {
 		range = value;

@@ -132,9 +132,52 @@ export function localizeBuiltInText(text: string | null | undefined): string {
 	return table[text] ?? text;
 }
 
-/** BCP 47 locale of the active language, for Intl date and number formatting. */
+/**
+ * BCP 47 locale for dates and numbers: the device's own locale when it is in
+ * the app's language (so an English phone in Austria gets "14 Oct" and 24-hour
+ * times), otherwise the language's default.
+ */
 export function dateLocale(code: LanguageCode = get(language)): string {
+	if (typeof navigator !== 'undefined') {
+		const device = (navigator.languages?.length ? navigator.languages : [navigator.language]).find(
+			(tag) => tag?.split('-')[0].toLowerCase() === code
+		);
+		if (device && device.includes('-')) return device;
+	}
 	return info(code).locale;
+}
+
+export type TimeFormat = 'auto' | '24' | '12';
+const TIME_FORMAT_KEY = 'time-format';
+
+function storedTimeFormat(): TimeFormat {
+	try {
+		const value = localStorage.getItem(TIME_FORMAT_KEY);
+		return value === '24' || value === '12' ? value : 'auto';
+	} catch {
+		return 'auto';
+	}
+}
+
+/** 'auto' follows the locale above; '24' and '12' override it. */
+export const timeFormat = writable<TimeFormat>(storedTimeFormat());
+
+export function setTimeFormat(value: TimeFormat): void {
+	try {
+		localStorage.setItem(TIME_FORMAT_KEY, value);
+	} catch {
+		// Not remembered without storage.
+	}
+	timeFormat.set(value);
+}
+
+/** A clock time ("8:40", "08:40" or "8:40 AM") in the chosen format. */
+export function formatTime(value: string | number | Date): string {
+	const format = get(timeFormat);
+	const options: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+	if (format === '24') options.hourCycle = 'h23';
+	if (format === '12') options.hourCycle = 'h12';
+	return new Date(value).toLocaleTimeString(dateLocale(), options);
 }
 
 export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {

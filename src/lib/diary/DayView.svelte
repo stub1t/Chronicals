@@ -4,7 +4,7 @@
 	 * triggers, weather and note. Used by Today and by the calendar's day page.
 	 */
 	import Card from '$lib/ui/Card.svelte';
-	import FaceRating from '$lib/ui/FaceRating.svelte';
+	import WellbeingScale from '$lib/ui/WellbeingScale.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import Sprout from '@lucide/svelte/icons/sprout';
@@ -94,7 +94,7 @@
 <div class="day-view">
 	<Card>
 		<h2 class="card-title">{isToday ? t('today_how_are_you') : t('day_how_were_you')}</h2>
-		<FaceRating
+		<WellbeingScale
 			value={day.entry?.wellbeing ?? null}
 			labels={[t('wellbeing_1'), t('wellbeing_2'), t('wellbeing_3'), t('wellbeing_4'), t('wellbeing_5')]}
 			groupLabel={isToday ? t('today_how_are_you') : t('day_how_were_you')}
@@ -127,6 +127,7 @@
 
 	<section>
 		<h2 class="section-title">{isToday ? t('today_triggers') : t('day_triggers')}</h2>
+		<p class="section-hint">{isToday ? t('today_triggers_hint') : t('day_triggers_hint')}</p>
 		<TriggerChips {day} bind:triggers ranking={triggerRanking} />
 	</section>
 
@@ -173,6 +174,12 @@
 		margin: 0 0 var(--space-3);
 		font-size: var(--text-md);
 		font-weight: 800;
+	}
+
+	.section-hint {
+		margin: calc(var(--space-2) * -1) 0 var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--text-muted);
 	}
 
 	.saved {

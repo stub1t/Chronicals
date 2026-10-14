@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { WELLBEING_COLORS } from '$lib/ui/wellbeing.js';
 	/**
 	 * A month as a grid of soft day cells. A day is tinted by its strongest
 	 * symptom (stronger = more colour), shows a dot per entry type, and falls
@@ -18,7 +19,6 @@
 
 	let { yearMonth, entries, selected, today, onselect }: Props = $props();
 
-	const FACE_COLORS = ['#ec8a9a', '#f2ac72', '#e9c66b', '#94d29c', '#62c393'];
 	const weekdays = getWeekdayLabels();
 
 	const cells = $derived.by(() => {
@@ -34,7 +34,7 @@
 			return {
 				date,
 				day: i + 1,
-				tint: worst?.entryType?.color ?? (entry?.wellbeing ? FACE_COLORS[entry.wellbeing - 1] : null),
+				tint: worst?.entryType?.color ?? (entry?.wellbeing ? WELLBEING_COLORS[entry.wellbeing - 1] : null),
 				strength: worst ? 0.12 + (worst.intensityCache ?? 3) * 0.07 : 0.16,
 				colors,
 				label: new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
