@@ -51,7 +51,7 @@
 	"dependencies": {
 		"@capacitor/geolocation": "^8.2.3",
 		"@capgo/capacitor-printer": "^8.1.7",
-		"@sveltejs/adapter-node": "^5.5.7",
+		"@sveltejs/adapter-node": "^6.0.0",
 		"@vite-pwa/sveltekit": "^1.1.0",
 		"better-sqlite3": "^12.11.1",
 		"drizzle-orm": "^0.45.4",
