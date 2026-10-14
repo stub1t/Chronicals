@@ -1,5 +1,5 @@
 /**
- * The doctor report as one self-contained HTML document, printed through the
+ * The export report as one self-contained HTML document, printed through the
  * system print dialog (which also offers "Save as PDF"). Real text in any
  * script, no fonts or scripts to load. Every value from the diary is escaped.
  */
@@ -10,7 +10,11 @@ export interface HtmlOptions {
 	t: (key: MessageKey, vars?: Record<string, string | number>) => string;
 	/** A date for people, e.g. "14 Oct 2026". */
 	date: (date: string) => string;
+	/** A date with the weekday, for the diary. */
+	day: (date: string) => string;
 	number: (value: number, options?: Intl.NumberFormatOptions) => string;
+	/** Well-being 1 to 5 as a word. */
+	wellbeing: (value: number) => string;
 	lang: string;
 	dir: 'ltr' | 'rtl';
 	/** When the report was made, already formatted. */
@@ -27,7 +31,7 @@ function table(head: string[], rows: Array<Array<string | number | null>>, class
 		.join('')}</tbody></table>`;
 }
 
-export function reportToHtml(report: Report, { t, date, number, lang, dir, created }: HtmlOptions): string {
+export function reportToHtml(report: Report, { t, date, day, number, wellbeing, lang, dir, created }: HtmlOptions): string {
 	const one = (v: number | null) => (v === null ? '' : number(v, { maximumFractionDigits: 1 }));
 	const percent = (v: number) => number(v, { style: 'percent', maximumFractionDigits: 0 });
 	const section = (title: string, body: string) => `<section><h2>${escapeHtml(title)}</h2>${body}</section>`;
@@ -35,14 +39,14 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 
 	const summary = report.types.length
 		? table(
-				[t('report_col_type'), t('report_col_days'), t('report_col_per30'), t('report_col_logs'), t('report_col_intensity'), t('report_col_duration')],
+				[t('report_col_type'), t('report_col_days'), t('report_col_share'), t('report_col_intensity'), t('report_col_duration'), t('report_col_relief')],
 				report.types.map((s) => [
 					s.name,
 					s.days,
-					one(s.per30),
-					s.logs,
-					s.avgIntensity === null ? '' : `${one(s.avgIntensity)} / 5`,
-					formatDuration(s.avgDurationMinutes)
+					percent(s.share),
+					s.avgIntensity === null ? '' : `${one(s.avgIntensity)}/5`,
+					formatDuration(s.typicalMinutes),
+					s.entryType.category === 'symptom' ? t('report_relief_days', { count: s.reliefDays, total: s.days }) : ''
 				])
 			)
 		: empty('report_empty');
@@ -51,6 +55,7 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 		s.links.map((l) => [
 			s.name,
 			l.name,
+			t(`insights_kind_${l.kind}`),
 			t(l.lag ? 'report_timing_next' : 'report_timing_same'),
 			percent(l.withRate),
 			percent(l.withoutRate),
@@ -60,7 +65,7 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 	);
 	const linksBody = links.length
 		? table(
-				[t('report_col_type'), t('report_col_trigger'), t('report_col_timing'), t('report_col_with'), t('report_col_without'), t('report_col_seen'), t('report_col_assessment')],
+				[t('report_col_type'), t('report_col_trigger'), t('report_col_kind'), t('report_col_timing'), t('report_col_with'), t('report_col_without'), t('report_col_seen'), t('report_col_assessment')],
 				links
 			) + `<p class="muted">${escapeHtml(t('report_links_note'))}</p>`
 		: empty('report_no_triggers');
@@ -79,25 +84,48 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 			)
 		: empty('report_no_medications');
 
-	const entries = report.rows.length
-		? table(
-				[t('report_col_date'), t('report_col_time'), t('report_col_type'), t('report_col_intensity_single'), t('report_col_details'), t('report_col_triggers'), t('report_col_note')],
-				report.rows.map((r) => [date(r.date), [r.start, r.end].filter(Boolean).join(' – '), r.type, r.intensity === null ? '' : `${r.intensity}/5`, r.details, r.triggers, r.note]),
-				'entries'
-			)
+	// The diary: one block per day with what belongs to the day, then its entries.
+	const head = [t('report_col_time'), t('report_col_type'), t('report_col_intensity_single'), t('report_col_duration_single'), t('report_col_details'), t('report_col_relief_single')];
+	const diary = report.days.length
+		? `<table class="diary"><thead><tr>${head.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>${report.days
+				.map((d) => {
+					const facts = [
+						d.wellbeing ? `${t('report_wellbeing')}: ${wellbeing(d.wellbeing)}` : '',
+						d.triggers.length ? `${t('report_col_triggers')}: ${d.triggers.join(', ')}` : '',
+						d.place !== null ? `${t('report_place')}: ${d.place || t('place_away')}` : ''
+					].filter(Boolean);
+					const dayRow = `<tr class="day"><th colspan="6">${escapeHtml(day(d.date))}${facts.length ? `<span>${facts.map(escapeHtml).join(' · ')}</span>` : ''}</th></tr>`;
+					const note = d.note ? `<tr class="note"><td colspan="6">${escapeHtml(d.note).replaceAll('\n', '<br>')}</td></tr>` : '';
+					const rows = d.entries
+						.map((e) =>
+							`<tr>${[
+								[e.start, e.end].filter(Boolean).join(' – '),
+								e.type,
+								e.intensity === null ? '' : `${e.intensity}/5`,
+								formatDuration(e.durationMinutes),
+								e.details,
+								e.taken
+							]
+								.map((v) => `<td>${escapeHtml(v)}</td>`)
+								.join('')}</tr>`
+						)
+						.join('');
+					return `<tbody>${dayRow}${note}${rows}</tbody>`;
+				})
+				.join('')}</table>`
 		: empty('report_empty');
 
 	const facts = [
 		report.name ? `<div><dt>${escapeHtml(t('report_name'))}</dt><dd>${escapeHtml(report.name)}</dd></div>` : '',
 		`<div><dt>${escapeHtml(t('report_period_label'))}</dt><dd>${escapeHtml(t('report_period', { from: date(report.from), to: date(report.to) }))}</dd></div>`,
-		`<div><dt>${escapeHtml(t('report_tracked_days'))}</dt><dd>${escapeHtml(report.trackedDays)}</dd></div>`
+		`<div><dt>${escapeHtml(t('report_tracked_days'))}</dt><dd>${escapeHtml(t('report_days_of', { count: report.trackedDays, total: report.totalDays }))}</dd></div>`
 	].join('');
 
 	return `<!doctype html>
 <html lang="${escapeHtml(lang)}" dir="${dir}">
 <head>
 <meta charset="utf-8">
-<title>${escapeHtml(t('report_title'))}</title>
+<title>${escapeHtml(t('report_doc_title'))}</title>
 <style>
 	@page { size: A4; margin: 16mm 14mm 18mm; }
 	* { box-sizing: border-box; }
@@ -113,7 +141,11 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 	th { background: #efebe6; font-weight: 700; }
 	tr { break-inside: avoid; }
 	thead { display: table-header-group; }
-	table.entries td:nth-child(1), table.entries td:nth-child(2) { white-space: nowrap; }
+	.diary tbody { break-inside: avoid; }
+	.diary tr.day th { background: #f7f4f0; border-top: 1pt solid #b9b0a6; padding-top: 5pt; }
+	.diary tr.day span { display: block; font-weight: 400; color: #4a433d; }
+	.diary tr.note td { font-style: italic; color: #4a433d; }
+	.diary td:first-child { white-space: nowrap; }
 	.muted { color: #6b625a; font-size: 9pt; }
 	@media screen { body { padding: 20px; min-width: 620px; } }
 	footer { margin-top: 18pt; padding-top: 6pt; border-top: 0.5pt solid #d8d2ca; font-size: 8pt; color: #6b625a; }
@@ -121,13 +153,13 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 </head>
 <body>
 <header>
-<h1>${escapeHtml(t('report_title'))}</h1>
+<h1>${escapeHtml(t('report_doc_title'))}</h1>
 <dl>${facts}</dl>
 </header>
 ${section(t('report_summary'), summary)}
 ${section(t('report_triggers'), linksBody)}
 ${section(t('report_medications'), medications)}
-${section(t('report_entries'), entries)}
+${section(t('report_diary'), diary)}
 <footer>${escapeHtml(t('report_disclaimer'))} ${escapeHtml(t('report_created', { date: created }))}</footer>
 </body>
 </html>`;

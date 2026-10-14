@@ -7,6 +7,8 @@
 	import Button from '$lib/ui/Button.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Segmented from '$lib/ui/Segmented.svelte';
+	import Chip from '$lib/ui/Chip.svelte';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { reportToCsv } from '$lib/report/csv.js';
 	import { reportToHtml } from '$lib/report/html.js';
@@ -36,6 +38,20 @@
 	let html = $state('');
 	let loading = $state(false);
 
+	const formatDay = (date: string) =>
+		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+	const wellbeingWord = (value: number) => t(`wellbeing_${value as 1 | 2 | 3 | 4 | 5}`);
+
+	// Which entry types go into the report; none picked means everything.
+	let picked = $state<Set<string>>(new Set());
+	const choosable = $derived(data.entryTypes.filter((type) => !type.hidden || picked.has(type.id)));
+	function toggleType(id: string) {
+		const next = new Set(picked);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		picked = next;
+	}
+
 	const formatDate = (date: string) =>
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -51,6 +67,7 @@
 	$effect(() => {
 		const [start, end] = [from, to];
 		void $language;
+		void picked;
 		if (!start || !end || start > end) return;
 		let cancelled = false;
 		loading = true;
@@ -61,17 +78,32 @@
 			.then(([entries, weather]) => {
 				if (cancelled) return;
 				const built = buildReport(
-					{ from: start, to: end, name: data.profile.displayName, entries, weather, entryTypes: data.entryTypes, medications: data.medications, changes: data.changes },
+					{
+						from: start,
+						to: end,
+						name: data.profile.displayName,
+						entries,
+						weather,
+						entryTypes: data.entryTypes,
+						medications: data.medications,
+						changes: data.changes,
+						typeIds: [...picked]
+					},
 					{
 						translate: localizeBuiltInText,
 						time: formatTime,
-						weatherName: (key) => t(`insights_weather_${key.replaceAll('-', '_')}` as MessageKey)
+						exposureName: (kind, key) =>
+							kind === 'weather'
+								? t(`insights_weather_${key.replaceAll('-', '_')}` as MessageKey)
+								: t('insights_pollen_high', { species: t(`pollen_${key}` as MessageKey) })
 					}
 				);
 				report = built;
 				html = reportToHtml(built, {
 					t,
 					date: formatDate,
+					day: formatDay,
+					wellbeing: wellbeingWord,
 					number: formatNumber,
 					lang: $language,
 					dir: isRtl() ? 'rtl' : 'ltr',
@@ -100,16 +132,21 @@
 		const separator = formatNumber(1.5).includes(',') ? ';' : ',';
 		const csv = reportToCsv(report, {
 			separator,
+			wellbeing: wellbeingWord,
 			headings: [
 				t('report_col_date'),
+				t('report_csv_wellbeing'),
+				t('report_csv_triggers'),
+				t('report_csv_note'),
+				t('report_csv_place'),
 				t('report_col_type'),
 				t('report_col_start'),
 				t('report_col_end'),
 				t('report_col_minutes'),
 				t('report_col_intensity_single'),
+				t('report_col_scale'),
 				t('report_col_details'),
-				t('report_col_triggers'),
-				t('report_col_note')
+				t('report_col_relief_single')
 			]
 		});
 		try {
@@ -152,6 +189,18 @@
 					</label>
 				</div>
 			{/if}
+			<div class="ui-field">
+				<span class="ui-label" id="report-types">{t('report_types')}</span>
+				<div class="types" role="group" aria-labelledby="report-types">
+					<Chip selected={picked.size === 0} onclick={() => (picked = new Set())}>{t('report_types_all')}</Chip>
+					{#each choosable as type (type.id)}
+						<Chip selected={picked.has(type.id)} color={type.color} onclick={() => toggleType(type.id)}>
+							<EntryTypeIcon entryType={type} size={18} />
+							{localizeBuiltInText(type.name)}
+						</Chip>
+					{/each}
+				</div>
+			</div>
 			{#if report}
 				<p class="meta">
 					{t('report_period', { from: formatDate(report.from), to: formatDate(report.to) })} ·
@@ -208,6 +257,12 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+	}
+
+	.types {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
 	}
 
 	.dates {

@@ -45,8 +45,8 @@ function entry(date: string, logs: Array<{ start: string; end?: string; intensit
 	};
 }
 
-const german: Record<string, string> = { Headache: 'Kopfschmerz', Location: 'Ort', temples: 'Schläfen', Symptoms: 'Symptome', nausea: 'Übelkeit', Stress: 'Stress' };
-const format = { translate: (s: string) => german[s] ?? s, time: (iso: string) => iso.slice(11, 16), weatherName: (key: string) => key };
+const german: Record<string, string> = { Headache: 'Kopfschmerz', Location: 'Ort', temples: 'Schläfen', Symptoms: 'Symptome', nausea: 'Übelkeit', Stress: 'Stress', Painkiller: 'Schmerzmittel' };
+const format = { translate: (s: string) => german[s] ?? s, time: (iso: string) => iso.slice(11, 16), exposureName: (_kind: string, key: string) => key };
 
 const input: ReportInput = {
 	from: '2026-09-01',
@@ -55,8 +55,9 @@ const input: ReportInput = {
 	entryTypes: [headache, allergy],
 	entries: [
 		entry('2026-08-31', [{ start: '08:00', intensity: 5 }]),
-		entry('2026-09-03', [{ start: '08:00', end: '10:30', intensity: 4, values: { location: 'temples', symptoms: ['nausea'] } }], {
+		entry('2026-09-03', [{ start: '08:00', end: '10:30', intensity: 4, values: { location: 'temples', symptoms: ['nausea'], relief: ['Painkiller'] } }], {
 			note: 'Long day',
+			wellbeing: 2,
 			triggers: [{ id: 't', triggerId: 'trig-stress', triggerName: 'Stress', triggerCategory: 'activity', note: null }]
 		}),
 		entry('2026-09-10', [{ start: '14:00', end: '14:30', intensity: 2 }, { start: '20:00', intensity: 3 }]),
@@ -76,18 +77,34 @@ const input: ReportInput = {
 describe('buildReport', () => {
 	const report = buildReport(input, format);
 
-	it('only uses entries inside the period', () => {
-		expect(report.daysWithEntries).toBe(3);
-		expect(report.rows.map((r) => r.date)).toEqual(['2026-09-03', '2026-09-10', '2026-09-10', '2026-09-12']);
+	it('lists the days of the period with what belongs to the day', () => {
+		expect(report.days.map((d) => d.date)).toEqual(['2026-09-03', '2026-09-10', '2026-09-12']);
+		expect(report).toMatchObject({ trackedDays: 3, totalDays: 30 });
+		expect(report.days[0]).toMatchObject({ wellbeing: 2, triggers: ['Stress'], note: 'Long day', place: null });
+	});
+
+	it('writes each entry with translated details, intensity and what was taken', () => {
+		expect(report.days[0].entries).toEqual([
+			{
+				type: 'Kopfschmerz',
+				start: '08:00',
+				end: '10:30',
+				startTime: '2026-09-03T08:00:00Z',
+				endTime: '2026-09-03T10:30:00Z',
+				durationMinutes: 150,
+				intensity: 4,
+				details: 'Ort: Schläfen; Symptome: Übelkeit',
+				taken: 'Schmerzmittel'
+			}
+		]);
+		expect(report.days[1].entries.map((e) => [e.start, e.end])).toEqual([['14:00', '14:30'], ['20:00', '']]);
 	});
 
 	it('summarises each entry type that was logged', () => {
 		expect(report.types).toHaveLength(1);
-		const [summary] = report.types;
-		expect(summary).toMatchObject({ name: 'Kopfschmerz', days: 2, logs: 3, avgIntensity: 3, avgDurationMinutes: 90, per30: 20 });
-		expect(report.trackedDays).toBe(3);
+		expect(report.types[0]).toMatchObject({ name: 'Kopfschmerz', days: 2, share: 2 / 3, avgIntensity: 3, typicalMinutes: 90, reliefDays: 1 });
 		// Too few days for any link.
-		expect(summary.links).toEqual([]);
+		expect(report.types[0].links).toEqual([]);
 	});
 
 	it('lists medications active in the period with their changes in the period', () => {
@@ -95,40 +112,49 @@ describe('buildReport', () => {
 		expect(report.medications[0].changes.map((c) => c.id)).toEqual(['c1']);
 	});
 
-	it('writes translated details without the intensity', () => {
-		expect(report.rows[0]).toMatchObject({
-			type: 'Kopfschmerz',
-			start: '08:00',
-			end: '10:30',
-			durationMinutes: 150,
-			intensity: 4,
-			details: 'Ort: Schläfen; Symptome: Übelkeit',
-			triggers: 'Stress',
-			note: 'Long day'
-		});
+	it('can leave out types, and then lists only their days', () => {
+		const only = buildReport({ ...input, typeIds: ['builtin-allergy'] }, format);
+		expect(only.types).toEqual([]);
+		expect(only.days).toEqual([]);
+	});
+
+	it('joins a value and its unit, and names a meal by its kind', () => {
+		const sugar = { id: 'builtin-hypo', name: 'Blood sugar', category: 'event', metricSchema: { fields: [{ key: 'blood_glucose', label: 'Reading' }] } } as unknown as EntryType;
+		const meal = { id: 'builtin-meal', name: 'Meal', category: 'meal', metricSchema: { fields: [{ key: 'foods', label: 'Foods' }] } } as unknown as EntryType;
+		const day = entry('2026-09-20', []);
+		day.logs = [
+			{ id: 'a', entryId: day.id, entryTypeId: sugar.id, entryType: sugar, startTime: '2026-09-20T09:00:00Z', endTime: null, metricValues: { blood_glucose: 220, blood_glucose_unit: 'mg/dL' }, intensityCache: null },
+			{ id: 'b', entryId: day.id, entryTypeId: meal.id, entryType: meal, startTime: '2026-09-20T12:00:00Z', endTime: null, metricValues: { meal: 'lunch', foods: ['pasta'] }, intensityCache: null }
+		];
+		const r = buildReport({ ...input, entries: [day], entryTypes: [sugar, meal] }, format);
+		expect(r.days[0].entries.map((e) => [e.type, e.details])).toEqual([
+			['Blood sugar', 'Reading: 220 mg/dL'],
+			['lunch', 'Foods: pasta']
+		]);
 	});
 });
 
 describe('reportToCsv', () => {
 	const report = buildReport(input, format);
-	const headings = ['Date', 'Type', 'Start', 'End', 'Minutes', 'Intensity', 'Details', 'Triggers', 'Note'];
+	const headings = ['Date', 'Well-being', 'Triggers', 'Note', 'Place', 'Type', 'Start', 'End', 'Minutes', 'Intensity', 'Scale', 'Details', 'Taken'];
+	const wellbeing = (n: number) => ['', 'very bad', 'bad', 'so-so', 'good', 'very good'][n];
 
-	it('starts with a BOM and quotes cells containing the separator', () => {
-		const csv = reportToCsv(report, { separator: ';', headings });
-		expect(csv.startsWith('\uFEFFDate;Type;Start;End;Minutes;Intensity;Details;Triggers;Note\r\n')).toBe(true);
-		expect(csv.split('\r\n')[1]).toBe(
-			'2026-09-03;Kopfschmerz;08:00;10:30;150;4;"Ort: Schläfen; Symptome: Übelkeit";Stress;Long day'
-		);
+	it('starts with a BOM and repeats the day on each of its entries', () => {
+		const csv = reportToCsv(report, { separator: ';', headings, wellbeing });
+		const lines = csv.split('\r\n');
+		expect(lines[0]).toBe('\uFEFFDate;Well-being;Triggers;Note;Place;Type;Start;End;Minutes;Intensity;Scale;Details;Taken');
+		expect(lines[1]).toBe('2026-09-03;bad;Stress;Long day;;Kopfschmerz;20:00;22:30;150;4;5;"Ort: Schläfen; Symptome: Übelkeit";Schmerzmittel');
+		expect(lines[2]).toBe('2026-09-10;;;;;Kopfschmerz;02:00;02:30;30;2;5;;');
+		expect(lines[3]).toBe('2026-09-10;;;;;Kopfschmerz;08:00;;;3;5;;');
 	});
 
-	it('leaves cells unquoted when they do not contain the separator', () => {
-		const csv = reportToCsv(report, { separator: ',', headings });
-		expect(csv.split('\r\n')[1]).toBe('2026-09-03,Kopfschmerz,08:00,10:30,150,4,Ort: Schläfen; Symptome: Übelkeit,Stress,Long day');
+	it('gives a day without entries one row', () => {
+		const csv = reportToCsv(report, { separator: ',', headings, wellbeing });
+		expect(csv.split('\r\n')[4]).toMatch(/^2026-09-12,,,"'=HYPERLINK\(""http:\/\/evil""\)",,,,,,,,,$/);
 	});
 
 	it('neutralises cells a spreadsheet would run as a formula', () => {
-		const csv = reportToCsv(report, { separator: ',', headings });
-		expect(csv).toContain(`"'=HYPERLINK(""http://evil"")"`);
+		const csv = reportToCsv(report, { separator: ',', headings, wellbeing });
 		expect(csv).not.toMatch(/(^|,)=HYPERLINK/m);
 	});
 });
@@ -146,19 +172,25 @@ describe('reportToHtml', () => {
 	const options = {
 		t: ((key: string, vars?: Record<string, unknown>) => (vars ? `${key} ${JSON.stringify(vars)}` : key)) as never,
 		date: (d: string) => d,
+		day: (d: string) => `day ${d}`,
 		number: (v: number) => String(v),
+		wellbeing: (n: number) => `mood ${n}`,
 		lang: 'de',
 		dir: 'ltr' as const,
 		created: '2026-10-14'
 	};
 
-	it('is one document with every section', () => {
+	it('is one document with every section and the diary by day', () => {
 		const html = reportToHtml(buildReport(input, format), options);
 		expect(html.startsWith('<!doctype html>')).toBe(true);
 		expect(html).toContain('<html lang="de" dir="ltr">');
-		for (const key of ['report_summary', 'report_triggers', 'report_medications', 'report_entries', 'report_disclaimer']) expect(html).toContain(key);
+		for (const key of ['report_summary', 'report_triggers', 'report_medications', 'report_diary', 'report_disclaimer']) expect(html).toContain(key);
 		expect(html).toContain('Magnesium');
-		expect(html).toContain('Ort: Schläfen; Symptome: Übelkeit');
+		// The day's triggers and mood appear once, in the day's row, not on each entry.
+		expect(html.match(/report_col_triggers: Stress/g)).toHaveLength(1);
+		expect(html).toContain('day 2026-09-03');
+		expect(html).toContain('report_wellbeing: mood 2');
+		expect(html).toContain('<td>4/5</td>');
 		expect(html).not.toContain('<script');
 	});
 
@@ -175,7 +207,6 @@ describe('reportToHtml', () => {
 		expect(reportToHtml(buildReport(input, format), { ...options, lang: 'ar', dir: 'rtl' })).toContain('<html lang="ar" dir="rtl">');
 	});
 });
-
 describe('report links', () => {
 	it('lists triggers with a clear link', () => {
 		// Stress on 10 of 30 days, each with a headache; 2 headaches on the other days.

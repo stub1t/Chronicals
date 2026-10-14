@@ -1,10 +1,16 @@
 import type { Report } from './summary.js';
 
 export interface CsvOptions {
-	/** ';' for German Excel, ',' elsewhere. */
+	/** ';' where the decimal mark is a comma, ',' elsewhere. */
 	separator: ';' | ',';
-	/** Column headings in this order: date, type, start, end, duration, intensity, details, triggers, note. */
+	/**
+	 * Column headings in this order: date, well-being of the day, triggers of the
+	 * day, note of the day, place, type, start, end, duration (minutes),
+	 * intensity, scale, details, taken.
+	 */
 	headings: string[];
+	/** Well-being 1 to 5 as a word. */
+	wellbeing: (value: number) => string;
 }
 
 /**
@@ -18,18 +24,24 @@ function cell(value: string | number | null, separator: string): string {
 	return text.includes(separator) || /["\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-/** One row per log (days with only a note or triggers get one row), UTF-8 with BOM for Excel. */
-export function reportToCsv(report: Report, { separator, headings }: CsvOptions): string {
-	const lines = [headings, ...report.rows.map((r) => [
-		r.date,
-		r.type,
-		r.start,
-		r.end,
-		r.durationMinutes,
-		r.intensity,
-		r.details,
-		r.triggers,
-		r.note
-	])].map((row) => row.map((value) => cell(value, separator)).join(separator));
+/** Local 24-hour "HH:MM", whatever the clock setting: spreadsheets sort and read it. */
+function clock(iso: string | null): string {
+	if (!iso) return '';
+	const d = new Date(iso);
+	return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/**
+ * One row per entry, with the day's well-being, triggers, note and place
+ * repeated on each (they belong to the day, not the entry); a day with no
+ * entries gets one row. UTF-8 with BOM for Excel.
+ */
+export function reportToCsv(report: Report, { separator, headings, wellbeing }: CsvOptions): string {
+	const rows = report.days.flatMap((day) => {
+		const dayCells = [day.date, day.wellbeing ? wellbeing(day.wellbeing) : '', day.triggers.join(', '), day.note, day.place ?? ''];
+		if (!day.entries.length) return [[...dayCells, '', '', '', null, null, null, '', '']];
+		return day.entries.map((e) => [...dayCells, e.type, clock(e.startTime), clock(e.endTime), e.durationMinutes, e.intensity, e.intensity === null ? null : 5, e.details, e.taken]);
+	});
+	const lines = [headings, ...rows].map((row) => row.map((value) => cell(value, separator)).join(separator));
 	return `﻿${lines.join('\r\n')}\r\n`;
 }
