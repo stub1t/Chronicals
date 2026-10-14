@@ -1,18 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Chronicals: a diary page with coloured days and one smiling day -->
+  <!-- Chronicals: a C whose open end turns into three coloured days -->
   <defs><linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9787f5"/><stop offset="1" stop-color="#6a55e3"/></linearGradient></defs>
-  <rect width="512" height="512" rx="116" fill="url(#tile)"/><g transform="translate(256 262) scale(1.12) translate(-256 -258)">
-  <rect x="104" y="146" width="304" height="266" rx="58" fill="#fffaf3"/>
-  <rect x="104" y="146" width="304" height="78" rx="58" fill="#ffe2ec"/>
-  <rect x="104" y="196" width="304" height="28" fill="#ffe2ec"/>
-  <rect x="170" y="104" width="30" height="78" rx="15" fill="#fffaf3" stroke="#6a55e3" stroke-width="10"/>
-  <rect x="312" y="104" width="30" height="78" rx="15" fill="#fffaf3" stroke="#6a55e3" stroke-width="10"/>
-  <circle cx="178" cy="276" r="25" fill="#5b8def"/>
-  <circle cx="256" cy="276" r="25" fill="#c084fc"/>
-  <circle cx="334" cy="276" r="25" fill="none" stroke="#e7ddd2" stroke-width="9"/>
-  <circle cx="178" cy="350" r="25" fill="none" stroke="#e7ddd2" stroke-width="9"/>
-  <circle cx="256" cy="350" r="25" fill="#3cbf88"/><circle cx="334" cy="350" r="25" fill="#f6a93b"/>
-  <g fill="none" stroke="#fffaf3" stroke-width="6" stroke-linecap="round">
-    <path d="M324 342v0M344 342v0M323 355q11 10 22 0"/>
-  </g></g>
+  <rect width="512" height="512" rx="116" fill="url(#tile)"/><g transform="translate(250 256) scale(1.04) translate(-256 -256)"><path d="M309.1 381.2A136 136 0 1 1 309.1 130.8" fill="none" stroke="#fffaf3" stroke-width="62" stroke-linecap="round"/><circle cx="367.4" cy="178" r="30" fill="#f472b6"/><circle cx="392" cy="256" r="30" fill="#f6b13b"/><circle cx="367.4" cy="334" r="30" fill="#3cbf88"/></g>
 </svg>
