@@ -35,6 +35,8 @@ export interface EntryType {
 	category: EntryCategory;
 	sortOrder: number;
 	isBuiltIn: boolean;
+	/** No tile on the day screens; past logs stay. */
+	hidden: boolean;
 }
 
 // ─── Entry Type Logs ──────────────────────────────────────────────────────────

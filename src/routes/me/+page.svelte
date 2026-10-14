@@ -1,18 +1,47 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import Pill from '@lucide/svelte/icons/pill';
+	import Shapes from '@lucide/svelte/icons/shapes';
+	import Zap from '@lucide/svelte/icons/zap';
+	import Bell from '@lucide/svelte/icons/bell';
+	import Fingerprint from '@lucide/svelte/icons/fingerprint';
+	import Palette from '@lucide/svelte/icons/palette';
+	import Languages from '@lucide/svelte/icons/languages';
+	import Download from '@lucide/svelte/icons/download';
+	import Upload from '@lucide/svelte/icons/upload';
+	import Info from '@lucide/svelte/icons/info';
+	import CodeXml from '@lucide/svelte/icons/code-xml';
+	import User from '@lucide/svelte/icons/user';
+	import Check from '@lucide/svelte/icons/check';
+	import MapPin from '@lucide/svelte/icons/map-pin';
+	import MenuGroup from '$lib/me/MenuGroup.svelte';
+	import MenuRow from '$lib/me/MenuRow.svelte';
+	import Segmented from '$lib/ui/Segmented.svelte';
+	import Sheet from '$lib/ui/Sheet.svelte';
+	import Toggle from '$lib/ui/Toggle.svelte';
+	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { themeStore } from '$lib/stores/theme.js';
 	import { LANGUAGES, localeStore, setLanguage, type LanguageCode, t } from '$lib/i18n';
-	import { onMount } from 'svelte';
 	import { exportBackup, importBackup } from '$lib/backup.js';
 	import { loadReminderSettings, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
+	import type { EntryType, Medication, Trigger, UserProfile } from '$lib/types';
+
+	interface Props {
+		data: { profile: UserProfile; medications: Medication[]; entryTypes: EntryType[]; triggers: Trigger[] };
+	}
+
+	let { data }: Props = $props();
 
 	type ThemeOption = 'system' | 'light' | 'dark';
 
-	let currentTheme = $state<ThemeOption>('system');
+	let theme = $state<ThemeOption>('system');
 	let currentLanguage = $state<LanguageCode>('en');
+	let languageOpen = $state(false);
+	let version = $state(__APP_VERSION__);
 
 	onMount(() => {
-		currentTheme = themeStore.current;
+		theme = themeStore.current;
 		currentLanguage = localeStore.current;
 		if (__NATIVE_APP__) {
 			reminders = loadReminderSettings();
@@ -25,13 +54,13 @@
 		}
 	});
 
-	function setTheme(t: ThemeOption) {
-		currentTheme = t;
-		themeStore.set(t);
-	}
+	const name = $derived(data.profile.displayName?.trim() ?? '');
+	const activeMeds = $derived(data.medications.filter((m) => m.isActive).length);
+	const hiddenTypes = $derived(data.entryTypes.filter((type) => type.hidden).length);
 
 	async function chooseLanguage(code: LanguageCode) {
 		currentLanguage = code;
+		languageOpen = false;
 		await setLanguage(code);
 	}
 
@@ -49,18 +78,15 @@
 		}
 	}
 
-	let version = $state(__APP_VERSION__);
-
 	// ── App lock (Android app) ────────────────────────────────────────────────
 	let appLock = $state(false);
 	let appLockMessage = $state<string | null>(null);
 
-	async function toggleAppLock(event: Event & { currentTarget: HTMLInputElement }) {
-		const checkbox = event.currentTarget;
+	async function toggleAppLock(on: boolean) {
 		appLockMessage = null;
 		if (__NATIVE_APP__) {
 			const { enableAppLock, disableAppLock } = await import('$lib/mobile/app-lock.js');
-			if (checkbox.checked) {
+			if (on) {
 				const result = await enableAppLock();
 				if (result === 'unavailable') appLockMessage = t('settings_app_lock_unavailable');
 			} else {
@@ -69,23 +95,18 @@
 		}
 		// Reflect what actually happened (a cancelled prompt leaves it unchanged).
 		appLock = isAppLockEnabled();
-		checkbox.checked = appLock;
 	}
 
 	// ── Backup ────────────────────────────────────────────────────────────────
 	let fileInput: HTMLInputElement;
 	let dataBusy = $state(false);
-	let dataMessage = $state<string | null>(null);
-	let dataError = $state(false);
 
 	async function handleExport() {
 		dataBusy = true;
-		dataMessage = null;
 		try {
 			await exportBackup();
 		} catch (err) {
-			dataError = true;
-			dataMessage = t('settings_export_failed', { message: (err as Error).message });
+			toasts.show(t('settings_export_failed', { message: (err as Error).message }), 'error');
 		} finally {
 			dataBusy = false;
 		}
@@ -97,420 +118,277 @@
 		if (!file || !confirm(t('settings_import_confirm', { name: file.name }))) return;
 
 		dataBusy = true;
-		dataMessage = null;
 		try {
 			const count = await importBackup(file);
-			dataError = false;
-			dataMessage = t('settings_import_done', { count });
+			toasts.show(t('settings_import_done', { count }), 'success');
 			setTimeout(() => location.reload(), 1500);
 		} catch (err) {
-			dataError = true;
-			dataMessage = t('settings_import_failed', { message: (err as Error).message });
+			toasts.show(t('settings_import_failed', { message: (err as Error).message }), 'error');
 			dataBusy = false;
 		}
 	}
 </script>
 
 <div class="page">
-	<header class="page-header">
-		<h1 class="page-title">{t('settings_title')}</h1>
-	</header>
-
-	<!-- Nav cards -->
-	<nav class="nav-list" aria-label={t('settings_sections')}>
-		<a href="/me/profile" class="nav-card">
-			<span class="nav-icon" aria-hidden="true">
-				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="10" cy="7" r="3"/>
-					<path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/>
-				</svg>
+	<a class="profile" href="/me/profile">
+		<span class="avatar" aria-hidden="true">{#if name}{name[0].toUpperCase()}{:else}<User size={30} />{/if}</span>
+		<span class="who">
+			<span class="name">{name || t('me_add_name')}</span>
+			<span class="where">
+				{#if data.profile.locationName}
+					<MapPin size={14} />
+					{data.profile.locationName.split(',')[0]}
+				{:else}
+					{t('settings_profile_desc')}
+				{/if}
 			</span>
-			<div class="nav-text">
-				<span class="nav-label">{t('settings_profile')}</span>
-				<span class="nav-desc">{t('settings_profile_desc')}</span>
-			</div>
-			<span class="nav-arrow" aria-hidden="true">›</span>
-		</a>
-		<a href="/me/medications" class="nav-card">
-			<span class="nav-icon" aria-hidden="true">
-				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-					<rect x="4" y="2" width="12" height="16" rx="2"/>
-					<path d="M8 7h4M8 11h4M8 15h2"/>
-				</svg>
-			</span>
-			<div class="nav-text">
-				<span class="nav-label">{t('settings_meds')}</span>
-				<span class="nav-desc">{t('settings_meds_desc')}</span>
-			</div>
-			<span class="nav-arrow" aria-hidden="true">›</span>
-		</a>
-		<a href="/me/entry-types" class="nav-card">
-			<span class="nav-icon" aria-hidden="true">
-				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="10" cy="10" r="3"/>
-					<circle cx="10" cy="10" r="8"/>
-				</svg>
-			</span>
-			<div class="nav-text">
-				<span class="nav-label">{t('settings_entry_types')}</span>
-				<span class="nav-desc">{t('settings_entry_types_desc')}</span>
-			</div>
-			<span class="nav-arrow" aria-hidden="true">›</span>
-		</a>
-		<a href="/me/triggers" class="nav-card">
-			<span class="nav-icon" aria-hidden="true">
-				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M3 6h14M5 10h10M7 14h6"/>
-				</svg>
-			</span>
-			<div class="nav-text">
-				<span class="nav-label">{t('settings_triggers')}</span>
-				<span class="nav-desc">{t('settings_triggers_desc')}</span>
-			</div>
-			<span class="nav-arrow" aria-hidden="true">›</span>
-		</a>
-	</nav>
+		</span>
+		<span class="edit">{t('entry_types_edit')}</span>
+	</a>
 
-	<!-- Theme toggle -->
-	<section class="theme-section" aria-label={t('settings_theme')}>
-		<p class="theme-title">{t('settings_theme')}</p>
-		<div class="theme-pills" role="group" aria-label={t('settings_choose_theme')}>
-			{#each ([
-				{ value: 'system', label: t('settings_theme_system') },
-				{ value: 'light', label: t('settings_theme_light') },
-				{ value: 'dark', label: t('settings_theme_dark') }
-			] as const) as opt (opt.value)}
-				<button
-					class="theme-pill"
-					class:active={currentTheme === opt.value}
-					onclick={() => setTheme(opt.value)}
-					aria-pressed={currentTheme === opt.value}
-				>
-					{opt.label}
-				</button>
-			{/each}
-		</div>
-	</section>
+	<MenuGroup title={t('me_health')}>
+		<MenuRow
+			icon={Pill}
+			color="#e0679a"
+			href="/me/medications"
+			label={t('settings_meds')}
+			detail={activeMeds ? t('me_meds_active', { count: activeMeds }) : t('me_meds_none')}
+		/>
+		<MenuRow
+			icon={Shapes}
+			color="#5b8def"
+			href="/me/entry-types"
+			label={t('settings_entry_types')}
+			detail={t('me_types_count', { count: data.entryTypes.length }) +
+				(hiddenTypes ? ` · ${t('me_types_hidden', { count: hiddenTypes })}` : '')}
+		/>
+		<MenuRow
+			icon={Zap}
+			color="#e3a13b"
+			href="/me/triggers"
+			label={t('settings_triggers')}
+			detail={t('me_triggers_count', { count: data.triggers.length })}
+		/>
+	</MenuGroup>
 
-	<section class="theme-section" aria-label={t('settings_language')}>
-		<p class="theme-title">{t('settings_language')}</p>
-		<select
-			class="language-select"
-			aria-label={t('settings_choose_language')}
-			value={currentLanguage}
-			onchange={(e) => chooseLanguage(e.currentTarget.value as LanguageCode)}
-		>
-			{#each LANGUAGES as lang (lang.code)}
-				<option value={lang.code} lang={lang.code} dir={lang.dir}>{lang.name}</option>
-			{/each}
-		</select>
-	</section>
-
-	{#if __NATIVE_APP__}
-		<section class="theme-section" aria-label={t('settings_reminders')}>
-			<p class="theme-title">{t('settings_reminders')}</p>
-			<div class="reminder-row">
-				<label class="switch-label">
-					<input
-						type="checkbox"
-						checked={reminders.daily}
-						onchange={(e) => updateReminders({ ...reminders, daily: e.currentTarget.checked })}
-					/>
-					{t('settings_reminder_daily')}
-				</label>
-				<input
-					class="time-input"
-					type="time"
-					value={reminders.time}
-					disabled={!reminders.daily}
-					aria-label={t('settings_reminder_time')}
-					onchange={(e) => e.currentTarget.value && updateReminders({ ...reminders, time: e.currentTarget.value })}
+	<MenuGroup title={t('me_app')}>
+		{#if __NATIVE_APP__}
+			<div>
+				<Toggle
+					icon={Bell}
+					color="#7462e8"
+					label={t('settings_reminder_daily')}
+					description={reminders.daily ? t('me_reminder_at', { time: reminders.time }) : null}
+					checked={reminders.daily}
+					onchange={(on) => updateReminders({ ...reminders, daily: on })}
+				/>
+				{#if reminders.daily}
+					<div class="sub">
+						<label class="ui-label" for="reminder-time">{t('settings_reminder_time')}</label>
+						<input
+							id="reminder-time"
+							class="ui-input time"
+							type="time"
+							value={reminders.time}
+							onchange={(e) => e.currentTarget.value && updateReminders({ ...reminders, time: e.currentTarget.value })}
+						/>
+						<p class="ui-hint">{t('settings_reminder_daily_note')}</p>
+						{#if reminderDenied}<p class="ui-error" role="alert">{t('settings_reminder_denied')}</p>{/if}
+					</div>
+				{/if}
+			</div>
+			<div>
+				<Toggle
+					icon={Fingerprint}
+					color="#2f9e6e"
+					label={t('settings_app_lock')}
+					description={t('settings_app_lock_toggle')}
+					bind:checked={appLock}
+					onchange={toggleAppLock}
+				/>
+				{#if appLock || appLockMessage}
+					<div class="sub">
+						{#if appLockMessage}<p class="ui-error" role="alert">{appLockMessage}</p>{/if}
+						<p class="ui-hint">{t('settings_app_lock_note')}</p>
+					</div>
+				{/if}
+			</div>
+		{/if}
+		<div>
+			<MenuRow icon={Palette} color="#d9822b" label={t('settings_theme')} />
+			<div class="sub">
+				<Segmented
+					label={t('settings_theme')}
+					bind:value={theme}
+					onchange={(value) => themeStore.set(value)}
+					options={[
+						{ value: 'system', label: t('settings_theme_system') },
+						{ value: 'light', label: t('settings_theme_light') },
+						{ value: 'dark', label: t('settings_theme_dark') }
+					]}
 				/>
 			</div>
-			<p class="data-note">{t('settings_reminder_daily_note')}</p>
-			{#if reminderDenied}
-				<p class="data-message error" role="alert">{t('settings_reminder_denied')}</p>
-			{/if}
-		</section>
-	{/if}
-
-	{#if __NATIVE_APP__}
-		<section class="theme-section" aria-label={t('settings_app_lock')}>
-			<p class="theme-title">{t('settings_app_lock')}</p>
-			<div class="reminder-row">
-				<label class="switch-label">
-					<input type="checkbox" checked={appLock} onchange={toggleAppLock} />
-					{t('settings_app_lock_toggle')}
-				</label>
-			</div>
-			<p class="data-note">{t('settings_app_lock_note')}</p>
-			{#if appLockMessage}
-				<p class="data-message error" role="alert">{appLockMessage}</p>
-			{/if}
-		</section>
-	{/if}
-
-	<section class="theme-section" aria-label={t('settings_data')}>
-		<p class="theme-title">{t('settings_data')}</p>
-		<p class="data-note">{t('settings_data_note')}</p>
-		<div class="theme-pills">
-			<button class="theme-pill" onclick={handleExport} disabled={dataBusy}>{t('settings_export')}</button>
-			<button class="theme-pill" onclick={() => fileInput.click()} disabled={dataBusy}>{t('settings_import')}</button>
 		</div>
-		<!-- No accept filter in the app: Android's file picker has no type for .db and would hide the file. -->
-		<input
-			type="file"
-			hidden
-			accept={__NATIVE_APP__ ? undefined : '.db,.sqlite,.sqlite3'}
-			bind:this={fileInput}
-			onchange={handleImport}
+		<MenuRow
+			icon={Languages}
+			color="#3aa6b9"
+			label={t('settings_language')}
+			detail={LANGUAGES.find((l) => l.code === currentLanguage)?.name}
+			onclick={() => (languageOpen = true)}
 		/>
-		{#if dataBusy && !dataMessage}
-			<p class="data-note">{t('settings_working')}</p>
-		{/if}
-		{#if dataMessage}
-			<p class="data-message" class:error={dataError} role="status">{dataMessage}</p>
-		{/if}
-	</section>
+	</MenuGroup>
 
-	<section class="theme-section" aria-label={t('settings_about')}>
-		<p class="theme-title">{t('settings_about')}</p>
-		<div class="about">
-			<p><strong>Chronicals</strong> {version}</p>
-			<p>{t('settings_license')}</p>
-			<a href="https://github.com/stub1t/Chronicals" target="_blank" rel="noopener noreferrer">{t('settings_source')}</a>
-		</div>
-	</section>
+	<MenuGroup title={t('settings_data')}>
+		<MenuRow icon={Download} color="#5b8def" label={t('settings_export')} onclick={dataBusy ? undefined : handleExport} />
+		<MenuRow icon={Upload} color="#d6455d" label={t('settings_import')} onclick={dataBusy ? undefined : () => fileInput.click()} />
+	</MenuGroup>
+	<p class="ui-hint note">{t('settings_data_note')}</p>
+	<!-- No accept filter in the app: Android's file picker has no type for .db and would hide the file. -->
+	<input type="file" hidden accept={__NATIVE_APP__ ? undefined : '.db,.sqlite,.sqlite3'} bind:this={fileInput} onchange={handleImport} />
+
+	<MenuGroup title={t('settings_about')}>
+		<MenuRow icon={Info} color="var(--text-muted)" label="Chronicals {version}" detail={t('settings_license')} />
+		<MenuRow icon={CodeXml} color="var(--text-muted)" label={t('settings_source')} href="https://github.com/stub1t/Chronicals" external />
+	</MenuGroup>
 </div>
+
+<Sheet bind:open={languageOpen} title={t('settings_language')} closeLabel={t('close')}>
+	<ul class="languages" role="radiogroup" aria-label={t('settings_language')}>
+		{#each LANGUAGES as lang (lang.code)}
+			<li>
+				<button
+					type="button"
+					role="radio"
+					aria-checked={currentLanguage === lang.code}
+					class="language"
+					class:current={currentLanguage === lang.code}
+					lang={lang.code}
+					dir={lang.dir}
+					onclick={() => chooseLanguage(lang.code)}
+				>
+					<span>{lang.name}</span>
+					{#if currentLanguage === lang.code}<Check size={20} />{/if}
+				</button>
+			</li>
+		{/each}
+	</ul>
+</Sheet>
 
 <style>
 	.page {
-		max-width: 560px;
+		max-width: 640px;
 		margin: 0 auto;
-		padding: 24px 16px 80px;
+		padding: var(--space-5) var(--space-4) var(--space-8);
 		display: flex;
 		flex-direction: column;
-		gap: 24px;
+		gap: var(--space-6);
 	}
 
-	.page-header {
-		margin-bottom: 4px;
-	}
-
-	.page-title {
-		font-size: 1.6rem;
-		font-weight: 800;
-		color: var(--text);
-		margin: 0;
-	}
-
-	/* Nav cards */
-	.nav-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1px;
-		background: var(--border);
-		border: 1px solid var(--border);
-		border-radius: 16px;
-		overflow: hidden;
-	}
-
-	.nav-card {
+	.profile {
 		display: flex;
 		align-items: center;
-		gap: 14px;
-		padding: 16px;
-		background: var(--bg-card);
+		gap: var(--space-4);
+		padding: var(--space-4);
+		border-radius: var(--radius-lg);
+		background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, #f2ac72 20%, var(--bg-card)));
+		color: var(--text);
 		text-decoration: none;
-		color: var(--text);
-		transition: background 0.15s;
 	}
 
-	.nav-card:hover {
-		background: var(--bg-subtle);
-	}
-
-	.nav-card:first-child {
-		border-radius: 15px 15px 0 0;
-	}
-
-	.nav-card:last-child {
-		border-radius: 0 0 15px 15px;
-	}
-
-	.nav-icon {
-		width: 36px;
-		height: 36px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--bg-subtle);
-		border-radius: 10px;
+	.avatar {
+		width: 64px;
+		height: 64px;
 		flex-shrink: 0;
-		color: var(--text-muted);
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		background: var(--accent);
+		color: var(--on-accent);
+		font-size: 1.75rem;
+		font-weight: 800;
+		box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
 	}
 
-	.nav-icon svg {
-		width: 18px;
-		height: 18px;
-	}
-
-	.nav-text {
+	.who {
 		flex: 1;
+		min-width: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
 	}
 
-	.nav-label {
-		font-size: 0.95rem;
-		font-weight: 600;
+	.name {
+		font-size: var(--text-xl);
+		font-weight: 800;
 	}
 
-	.nav-desc {
-		font-size: 0.78rem;
+	.where {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: var(--text-sm);
 		color: var(--text-muted);
 	}
 
-	.nav-arrow {
-		font-size: 1.3rem;
-		color: var(--text-subtle);
+	.edit {
+		padding: 6px 14px;
+		border-radius: var(--radius-pill);
+		background: var(--bg-card);
+		font-size: var(--text-sm);
+		font-weight: 700;
 	}
 
-	/* Theme toggle */
-	.theme-section {
+	.sub {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: var(--space-2);
+		padding: 0 var(--space-4) var(--space-4);
+		/* Line up with the text next to the icon bubble. */
+		padding-inline-start: calc(var(--space-4) + 40px + var(--space-3));
 	}
 
-	.theme-title {
-		font-size: 0.82rem;
-		font-weight: 700;
-		color: var(--text-muted);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+	.time {
+		max-width: 160px;
+	}
+
+	.note {
+		margin-top: calc(var(--space-6) * -1 + var(--space-2));
+		padding: 0 var(--space-1);
+	}
+
+	.languages {
+		list-style: none;
 		margin: 0;
-	}
-
-	.theme-pills {
-		display: flex;
-		gap: 8px;
-	}
-
-	.theme-pill {
-		flex: 1;
-		padding: 10px 0;
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 20px;
-		font-family: inherit;
-		font-size: 0.88rem;
-		font-weight: 500;
-		color: var(--text-muted);
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.theme-pill:hover {
-		border-color: var(--text-muted);
-		color: var(--text);
-	}
-
-	.language-select {
-		min-height: 46px;
-		padding: 0 var(--space-4);
-		border: 1.5px solid var(--border);
-		border-radius: var(--radius-md);
-		background: var(--bg-card);
-		color: var(--text);
-		font-size: var(--text-md);
-	}
-
-	.theme-pill:disabled {
-		opacity: 0.5;
-		cursor: default;
-	}
-
-	.reminder-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 10px 14px;
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 14px;
-	}
-
-	.switch-label {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		font-size: 0.92rem;
-		color: var(--text);
-	}
-
-	.switch-label input {
-		width: 20px;
-		height: 20px;
-		accent-color: var(--text);
-	}
-
-	.time-input {
-		font-family: inherit;
-		font-size: 0.92rem;
-		padding: 6px 8px;
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		background: var(--bg);
-		color: var(--text);
-	}
-
-	.time-input:disabled {
-		opacity: 0.5;
-	}
-
-	.about {
+		padding: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
-		font-size: 0.85rem;
-		color: var(--text-muted);
 	}
 
-	.about p {
-		margin: 0;
-	}
-
-	.about strong {
+	.language {
+		width: 100%;
+		min-height: 52px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 var(--space-4);
+		border: none;
+		border-radius: var(--radius-md);
+		background: none;
 		color: var(--text);
+		font-size: var(--text-md);
+		font-weight: 600;
+		text-align: start;
+		cursor: pointer;
 	}
 
-	.about a {
-		color: var(--text);
+	.language:hover {
+		background: var(--bg-subtle);
 	}
 
-	.data-note {
-		font-size: 0.82rem;
-		color: var(--text-muted);
-		margin: 0;
-	}
-
-	.data-message {
-		font-size: 0.85rem;
-		color: var(--text);
-		margin: 0;
-	}
-
-	.data-message.error {
-		color: #dc2626;
-	}
-
-	.theme-pill.active {
-		background: var(--text);
-		color: var(--bg);
-		border-color: var(--text);
-		font-weight: 700;
+	.language.current {
+		background: var(--accent-soft);
+		color: var(--accent);
+		font-weight: 800;
 	}
 </style>

@@ -86,6 +86,29 @@ describe('handleApiRequest', () => {
 		expect(await bad('08:00')).toBe(400);
 	});
 
+	it('hides built-in entry types but keeps them otherwise read-only', async () => {
+		const hidden = await call('PUT', '/api/entry-types/builtin-period', { hidden: true });
+		expect(await hidden.json()).toMatchObject({ id: 'builtin-period', hidden: true });
+		expect(await status(call('PUT', '/api/entry-types/builtin-period', { name: 'Cycle' }))).toBe(404);
+		expect(await status(call('PUT', '/api/entry-types/builtin-period', { hidden: 'yes' }))).toBe(400);
+		const types = await (await call('GET', '/api/entry-types')).json();
+		expect(types.find((t: { id: string }) => t.id === 'builtin-period').hidden).toBe(true);
+		expect(types.find((t: { id: string }) => t.id === 'builtin-headache').hidden).toBe(false);
+	});
+
+	it('deletes only unused custom entry types', async () => {
+		const type = await (await call('POST', '/api/entry-types', { name: 'Tinnitus', metricSchema: { fields: [] } })).json();
+		const entry = await (await call('POST', '/api/entries', { date: '2026-03-01' })).json();
+		const log = await (
+			await call('POST', '/api/entry-type-logs', { entryId: entry.id, entryTypeId: type.id, startTime: '2026-03-01T10:00:00.000Z' })
+		).json();
+		expect(await status(call('DELETE', `/api/entry-types/${type.id}`))).toBe(409);
+		await call('DELETE', `/api/entry-type-logs/${log.id}`);
+		expect(await status(call('DELETE', `/api/entry-types/${type.id}`))).toBe(204);
+		const types = await (await call('GET', '/api/entry-types')).json();
+		expect(types.some((t: { id: string }) => t.id === type.id)).toBe(false);
+	});
+
 	it('validates input', async () => {
 		expect(await status(call('GET', '/api/entries?month=2026-3'))).toBe(400);
 		expect(await status(call('POST', '/api/entries', { date: '29.03.2026' }))).toBe(400);

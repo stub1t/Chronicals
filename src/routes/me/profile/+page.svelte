@@ -1,5 +1,13 @@
 <script lang="ts">
+	import MapPin from '@lucide/svelte/icons/map-pin';
+	import Search from '@lucide/svelte/icons/search';
+	import X from '@lucide/svelte/icons/x';
 	import { api } from '$lib/api.js';
+	import SubPage from '$lib/me/SubPage.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import { toasts } from '$lib/ui/toast.svelte.js';
+	import { hapticSuccess } from '$lib/haptics.js';
 	import { t } from '$lib/i18n';
 	import type { UserProfile } from '$lib/types';
 
@@ -34,8 +42,6 @@
 	let geoResults = $state<GeoResult[]>([]);
 	let geoLoading = $state(false);
 	let saving = $state(false);
-	let saveSuccess = $state(false);
-	let saveError = $state<string | null>(null);
 
 	const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -50,7 +56,8 @@
 				const json = await res.json();
 				geoResults = json.results ?? [];
 			}
-		} catch (e) {
+		} catch {
+			toasts.show(t('network_error'), 'error');
 		} finally {
 			geoLoading = false;
 		}
@@ -72,14 +79,12 @@
 
 	async function save() {
 		saving = true;
-		saveSuccess = false;
-		saveError = null;
 		try {
 			const res = await api('/api/profile', {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					displayName: displayName || null,
+					displayName: displayName.trim() || null,
 					bloodType: bloodType || null,
 					locationLat,
 					locationLon,
@@ -88,377 +93,240 @@
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				saveError = err.message ?? t('profile_save_failed');
+				toasts.show(err.message ?? t('profile_save_failed'), 'error');
 			} else {
-				saveSuccess = true;
-				setTimeout(() => { saveSuccess = false; }, 3000);
+				hapticSuccess();
+				toasts.show(t('profile_save_success'), 'success');
 			}
-		} catch (e) {
-			saveError = t('network_error');
+		} catch {
+			toasts.show(t('network_error'), 'error');
 		} finally {
 			saving = false;
 		}
 	}
 </script>
 
-<div class="page">
-	<header class="page-header">
-		<a href="/me" class="back-link">← {t('settings_title')}</a>
-		<h1 class="page-title">{t('profile_title')}</h1>
-	</header>
-
+<SubPage title={t('profile_title')}>
 	<form class="form" onsubmit={(e) => { e.preventDefault(); save(); }}>
-		<!-- Display name -->
-		<div class="field">
-			<label class="field-label" for="display-name">{t('profile_display_name')}</label>
-			<input
-				id="display-name"
-				type="text"
-				class="input"
-				placeholder={t('profile_display_name_placeholder')}
-				bind:value={displayName}
-				autocomplete="name"
-			/>
-		</div>
-
-		<!-- Blood type -->
-		<div class="field">
-			<label class="field-label" for="blood-type">{t('profile_blood_type')}</label>
-			<div class="select-wrap">
-				<select id="blood-type" class="input select" bind:value={bloodType}>
-					<option value="">{t('profile_blood_type_unset')}</option>
-					{#each bloodTypes as bt (bt)}
-						<option value={bt}>{bt}</option>
-					{/each}
-				</select>
-			</div>
-		</div>
-
-		<!-- Location -->
-		<div class="field">
-			<label class="field-label" for="city-search">{t('profile_location')}</label>
-
-			{#if locationName}
-				<div class="location-selected">
-					<span class="location-icon" aria-hidden="true">📍</span>
-					<span class="location-name">{locationName}</span>
-					{#if locationLat !== null && locationLon !== null}
-						<span class="location-coords">{locationLat.toFixed(3)}, {locationLon.toFixed(3)}</span>
-					{/if}
-					<button
-						type="button"
-						class="location-clear"
-						onclick={clearLocation}
-						aria-label={t('profile_location_clear')}
-					>×</button>
-				</div>
-			{:else}
-				<div class="location-search-row">
+		<Card>
+			<div class="fields">
+				<div class="ui-field">
+					<label class="ui-label" for="display-name">{t('profile_display_name')}</label>
 					<input
-						id="city-search"
+						id="display-name"
 						type="text"
-						class="input"
-						placeholder={t('profile_location_search')}
-						bind:value={citySearch}
-						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchLocation(); } }}
+						class="ui-input"
+						placeholder={t('profile_display_name_placeholder')}
+						bind:value={displayName}
+						autocomplete="given-name"
+						maxlength="120"
 					/>
-					<button
-						type="button"
-						class="search-btn"
-						onclick={searchLocation}
-						disabled={geoLoading || !citySearch.trim()}
-					>
-						{geoLoading ? '…' : t('profile_location_search_button')}
-					</button>
+					<p class="ui-hint">{t('profile_display_name_hint')}</p>
 				</div>
-			{/if}
 
-			<!-- Geo results dropdown -->
-			{#if geoResults.length > 0}
-				<ul class="geo-results" role="listbox" aria-label={t('profile_location_suggestions')}>
-					{#each geoResults as result (result.id)}
-						<li
-							class="geo-result"
-							role="option"
-							aria-selected="false"
-							tabindex="0"
-							onclick={() => selectLocation(result)}
-							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') selectLocation(result); }}
-						>
-							<span class="geo-name">{result.name}</span>
-							<span class="geo-meta">{[result.admin1, result.country].filter(Boolean).join(', ')}</span>
-							<span class="geo-coords">{result.latitude.toFixed(3)}, {result.longitude.toFixed(3)}</span>
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		</div>
+				<div class="ui-field">
+					<span class="ui-label" id="blood-type-label">{t('profile_blood_type')}</span>
+					<div class="blood" role="radiogroup" aria-labelledby="blood-type-label">
+						{#each ['', ...bloodTypes] as bt (bt)}
+							<button
+								type="button"
+								role="radio"
+								aria-checked={bloodType === bt}
+								class="blood-option"
+								class:picked={bloodType === bt}
+								onclick={() => (bloodType = bt)}
+							>
+								{bt || t('profile_blood_type_unset')}
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+		</Card>
 
-		<!-- Save -->
-		<div class="save-row">
-			<button type="submit" class="save-btn" disabled={saving}>
-				{saving ? t('entry_types_saving') : t('save')}
-			</button>
-			{#if saveSuccess}
-				<span class="save-feedback success">{t('profile_save_success')} ✓</span>
-			{/if}
-			{#if saveError}
-				<span class="save-feedback error">{saveError}</span>
-			{/if}
-		</div>
+		<Card>
+			<div class="fields">
+				<div class="ui-field">
+					<label class="ui-label" for="city-search">{t('profile_location')}</label>
+					<p class="ui-hint">{t('profile_location_hint')}</p>
+
+					{#if locationName}
+						<div class="location">
+							<span class="pin" aria-hidden="true"><MapPin size={20} /></span>
+							<span class="location-text">
+								<span class="location-name">{locationName}</span>
+								{#if locationLat !== null && locationLon !== null}
+									<span class="coords">{locationLat.toFixed(3)}, {locationLon.toFixed(3)}</span>
+								{/if}
+							</span>
+							<button type="button" class="clear" onclick={clearLocation} aria-label={t('profile_location_clear')}>
+								<X size={18} />
+							</button>
+						</div>
+					{:else}
+						<div class="search">
+							<input
+								id="city-search"
+								type="text"
+								class="ui-input"
+								placeholder={t('profile_location_search')}
+								bind:value={citySearch}
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										searchLocation();
+									}
+								}}
+							/>
+							<Button
+								variant="secondary"
+								loading={geoLoading}
+								disabled={!citySearch.trim()}
+								onclick={searchLocation}
+								aria-label={t('profile_location_search_button')}
+							>
+								<Search size={18} />
+							</Button>
+						</div>
+					{/if}
+
+					{#if geoResults.length > 0}
+						<ul class="results" aria-label={t('profile_location_suggestions')}>
+							{#each geoResults as result (result.id)}
+								<li>
+									<button type="button" class="result" onclick={() => selectLocation(result)}>
+										<span class="result-name">{result.name}</span>
+										<span class="result-meta">{[result.admin1, result.country].filter(Boolean).join(', ')}</span>
+									</button>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
+			</div>
+		</Card>
+
+		<Button type="submit" size="lg" block loading={saving}>{t('save')}</Button>
 	</form>
-</div>
+</SubPage>
 
 <style>
-	.page {
-		max-width: 560px;
-		margin: 0 auto;
-		padding: 24px 16px 80px;
+	.form {
 		display: flex;
 		flex-direction: column;
-		gap: 24px;
+		gap: var(--space-4);
 	}
 
-	.page-header {
+	.fields {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-5);
+	}
+
+	.blood {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+		gap: var(--space-2);
+	}
+
+	.blood-option {
+		min-height: 44px;
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border);
+		background: var(--bg-card);
+		color: var(--text);
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.blood-option:first-child {
+		grid-column: 1 / -1;
+	}
+
+	.blood-option.picked {
+		border-color: var(--danger);
+		background: var(--danger-soft);
+		color: var(--danger);
+	}
+
+	.location {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		background: var(--accent-soft);
+	}
+
+	.pin {
+		color: var(--accent);
+		display: grid;
+	}
+
+	.location-text {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.location-name {
+		font-weight: 700;
+	}
+
+	.coords {
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.clear {
+		width: 40px;
+		height: 40px;
+		display: grid;
+		place-items: center;
+		border: none;
+		border-radius: 50%;
+		background: var(--bg-card);
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+
+	.search {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.results {
+		list-style: none;
+		margin: 0;
+		padding: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
 
-	.back-link {
-		font-size: 0.82rem;
-		color: var(--text-muted);
-		text-decoration: none;
-		align-self: flex-start;
-	}
-
-	.back-link:hover {
-		color: var(--text);
-	}
-
-	.page-title {
-		font-size: 1.6rem;
-		font-weight: 800;
-		color: var(--text);
-		margin: 0;
-	}
-
-	/* Form */
-	.form {
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.field-label {
-		font-size: 0.78rem;
-		font-weight: 700;
-		color: var(--text-muted);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-	}
-
-	.input {
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		padding: 10px 14px;
-		font-family: inherit;
-		font-size: 0.9rem;
-		color: var(--text);
-		transition: border-color 0.15s;
+	.result {
 		width: 100%;
-	}
-
-	.input:focus {
-		outline: none;
-		border-color: var(--text-muted);
-	}
-
-	.select-wrap {
-		position: relative;
-	}
-
-	.select {
-		appearance: none;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
-		background-repeat: no-repeat;
-		background-position: right 12px center;
-		cursor: pointer;
-	}
-
-	/* Location */
-	.location-selected {
 		display: flex;
-		align-items: center;
-		gap: 8px;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 2px;
+		padding: var(--space-2) var(--space-3);
+		border: none;
+		border-radius: var(--radius-md);
 		background: var(--bg-subtle);
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		padding: 10px 14px;
-		flex-wrap: wrap;
-	}
-
-	.location-icon {
-		font-size: 1rem;
-		flex-shrink: 0;
-	}
-
-	.location-name {
-		font-size: 0.9rem;
-		font-weight: 500;
 		color: var(--text);
-		flex: 1;
-	}
-
-	.location-coords {
-		font-size: 0.72rem;
-		color: var(--text-subtle);
-		font-family: monospace;
-	}
-
-	.location-clear {
-		background: none;
-		border: none;
-		font-size: 1.1rem;
-		color: var(--text-muted);
+		text-align: start;
 		cursor: pointer;
-		padding: 0;
-		line-height: 1;
-		margin-left: auto;
 	}
 
-	.location-clear:hover {
-		color: var(--text);
-	}
-
-	.location-search-row {
-		display: flex;
-		gap: 8px;
-	}
-
-	.location-search-row .input {
-		flex: 1;
-	}
-
-	.search-btn {
-		background: var(--text);
-		color: var(--bg);
-		border: none;
-		border-radius: 10px;
-		padding: 10px 16px;
-		font-family: inherit;
-		font-size: 0.88rem;
-		font-weight: 600;
-		cursor: pointer;
-		white-space: nowrap;
-		transition: opacity 0.15s;
-	}
-
-	.search-btn:hover:not(:disabled) {
-		opacity: 0.85;
-	}
-
-	.search-btn:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	/* Geo results */
-	.geo-results {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		overflow: hidden;
-	}
-
-	.geo-result {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 11px 14px;
-		cursor: pointer;
-		transition: background 0.12s;
-		border-bottom: 1px solid var(--bg-subtle);
-	}
-
-	.geo-result:last-child {
-		border-bottom: none;
-	}
-
-	.geo-result:hover,
-	.geo-result:focus {
-		background: var(--bg-subtle);
-		outline: none;
-	}
-
-	.geo-name {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: var(--text);
-	}
-
-	.geo-meta {
-		font-size: 0.8rem;
-		color: var(--text-muted);
-		flex: 1;
-	}
-
-	.geo-coords {
-		font-size: 0.72rem;
-		color: var(--text-subtle);
-		font-family: monospace;
-	}
-
-	/* Save row */
-	.save-row {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding-top: 4px;
-	}
-
-	.save-btn {
-		background: var(--text);
-		color: var(--bg);
-		border: none;
-		border-radius: 20px;
-		padding: 11px 32px;
-		font-family: inherit;
-		font-size: 0.92rem;
+	.result-name {
 		font-weight: 700;
-		cursor: pointer;
-		transition: opacity 0.15s;
 	}
 
-	.save-btn:hover:not(:disabled) {
-		opacity: 0.85;
-	}
-
-	.save-btn:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	.save-feedback {
-		font-size: 0.85rem;
-		font-weight: 600;
-	}
-
-	.save-feedback.success {
-		color: #16a34a;
-	}
-
-	.save-feedback.error {
-		color: #dc2626;
+	.result-meta {
+		font-size: var(--text-sm);
+		color: var(--text-muted);
 	}
 </style>

@@ -25,7 +25,8 @@ export function getEntry(id: string): Entry | null {
 				metricSchema: entryTypes.metricSchema,
 				category: entryTypes.category,
 				sortOrder: entryTypes.sortOrder,
-				isBuiltIn: entryTypes.isBuiltIn
+				isBuiltIn: entryTypes.isBuiltIn,
+				hidden: entryTypes.hidden
 			}
 		})
 		.from(entryTypeLogs)

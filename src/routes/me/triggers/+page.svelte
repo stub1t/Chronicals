@@ -1,141 +1,243 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Utensils from '@lucide/svelte/icons/utensils';
+	import CloudSun from '@lucide/svelte/icons/cloud-sun';
+	import Footprints from '@lucide/svelte/icons/footprints';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { api } from '$lib/api.js';
+	import SubPage from '$lib/me/SubPage.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Sheet from '$lib/ui/Sheet.svelte';
+	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { localizeBuiltInText, t } from '$lib/i18n';
 	import type { Trigger, TriggerCategory } from '$lib/types/index.js';
 
-	let { data } = $props();
+	let { data }: { data: { triggers: Trigger[] } } = $props();
 	// svelte-ignore state_referenced_locally
 	let triggers = $state<Trigger[]>([...data.triggers]);
-	let newName = $state('');
-	let newCategory = $state<TriggerCategory>('custom');
+
+	const CATEGORIES = [
+		{ value: 'food', icon: Utensils, color: '#d9822b', label: () => t('trigger_food') },
+		{ value: 'environment', icon: CloudSun, color: '#3aa6b9', label: () => t('trigger_environment') },
+		{ value: 'activity', icon: Footprints, color: '#7462e8', label: () => t('trigger_activity') },
+		{ value: 'custom', icon: Sparkles, color: '#e0679a', label: () => t('trigger_custom') }
+	] as const;
+
+	const byName = (a: Trigger, b: Trigger) => localizeBuiltInText(a.name).localeCompare(localizeBuiltInText(b.name));
+
+	let sheetOpen = $state(false);
+	let editing = $state<Trigger | null>(null);
+	let name = $state('');
+	let category = $state<TriggerCategory>('custom');
 	let saving = $state(false);
 
-	const categories: TriggerCategory[] = ['food', 'activity', 'custom'];
-	const categoryLabels: Record<TriggerCategory, string> = {
-		food: t('trigger_food'),
-		environment: t('analysis_environment'),
-		activity: t('trigger_activity'),
-		custom: t('trigger_custom')
-	};
-
-	function groupedTriggers() {
-		const map = new Map<string, Trigger[]>();
-		for (const cat of categories) map.set(cat, []);
-		for (const t of triggers) {
-			map.get(t.category)?.push(t);
-		}
-		return map;
+	function openNew(kind: TriggerCategory = 'custom') {
+		editing = null;
+		name = '';
+		category = kind;
+		sheetOpen = true;
 	}
 
-	async function addTrigger() {
-		if (!newName.trim()) return;
+	function openEdit(trigger: Trigger) {
+		editing = trigger;
+		name = trigger.name;
+		category = trigger.category;
+		sheetOpen = true;
+	}
+
+	async function save() {
+		if (!name.trim()) return;
 		saving = true;
-		const res = await api('/api/triggers', {
-			method: 'POST',
+		const res = await api(editing ? `/api/triggers/${editing.id}` : '/api/triggers', {
+			method: editing ? 'PUT' : 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name: newName.trim(), category: newCategory })
+			body: JSON.stringify({ name: name.trim(), category })
 		});
-		if (res.ok) {
-			triggers = [...triggers, await res.json()];
-			newName = '';
-		}
 		saving = false;
-	}
-
-	let editingId = $state<string | null>(null);
-	let editName = $state('');
-	let editCategory = $state<TriggerCategory>('custom');
-
-	function startEdit(trigger: Trigger) {
-		editingId = trigger.id;
-		editName = trigger.name;
-		editCategory = trigger.category;
-	}
-
-	async function saveEdit() {
-		if (!editingId || !editName.trim()) return;
-		const res = await api(`/api/triggers/${editingId}`, {
-			method: 'PUT',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name: editName.trim(), category: editCategory })
-		});
-		if (res.ok) {
-			const updated: Trigger = await res.json();
-			triggers = triggers.map((tr) => (tr.id === updated.id ? updated : tr));
-			editingId = null;
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			toasts.show(err.message ?? t('network_error'), 'error');
+			return;
 		}
+		const saved: Trigger = await res.json();
+		triggers = editing ? triggers.map((tr) => (tr.id === saved.id ? saved : tr)) : [...triggers, saved];
+		toasts.show(t('log_saved', { name: saved.name }), 'success');
+		sheetOpen = false;
 	}
 
-	async function deleteTrigger(id: string) {
-		await api(`/api/triggers/${id}`, { method: 'DELETE' });
-		triggers = triggers.filter((t) => t.id !== id);
+	async function remove() {
+		if (!editing || !confirm(t('triggers_delete_confirm', { name: editing.name }))) return;
+		await api(`/api/triggers/${editing.id}`, { method: 'DELETE' });
+		triggers = triggers.filter((tr) => tr.id !== editing?.id);
+		sheetOpen = false;
 	}
 </script>
 
-<div class="page">
-	<header class="page-header">
-		<a href="/me" class="back">‹ {t('settings_title')}</a>
-		<h1>{t('triggers_title')}</h1>
-	</header>
+<SubPage title={t('triggers_title')}>
+	{#snippet action()}
+		<Button size="sm" onclick={() => openNew()}><Plus size={18} />{t('entry_types_new_short')}</Button>
+	{/snippet}
 
-	{#each categories as cat}
-		{@const group = groupedTriggers().get(cat) ?? []}
-		<section class="category-section">
-			<h2 class="cat-title">{categoryLabels[cat]}</h2>
-			<div class="chip-grid">
-				{#each group as trigger}
-					{#if editingId === trigger.id}
-						<form class="edit-form" onsubmit={(e) => { e.preventDefault(); saveEdit(); }}>
-							<input bind:value={editName} class="input" aria-label={t('triggers_new_placeholder')} />
-							<select bind:value={editCategory} class="select" aria-label={t('triggers_category')}>
-								{#each categories as option}
-									<option value={option}>{categoryLabels[option]}</option>
-								{/each}
-							</select>
-							<button type="submit" class="add-btn" disabled={!editName.trim()}>{t('save')}</button>
-							<button type="button" class="cancel-btn" onclick={() => (editingId = null)}>{t('cancel')}</button>
-						</form>
+	<p class="ui-hint">{t('triggers_hint')}</p>
+
+	{#each CATEGORIES as group (group.value)}
+		{@const items = triggers.filter((tr) => tr.category === group.value).sort(byName)}
+		<Card>
+			<h2 class="group-title" style="--group: {group.color}">
+				<span class="bubble" aria-hidden="true"><group.icon size={18} /></span>
+				{group.label()}
+			</h2>
+			<div class="chips">
+				{#each items as trigger (trigger.id)}
+					{#if trigger.isBuiltIn}
+						<span class="chip">{localizeBuiltInText(trigger.name)}</span>
 					{:else}
-						<div class="chip">
-							{localizeBuiltInText(trigger.name)}
-							{#if !trigger.isBuiltIn}
-								<button onclick={() => startEdit(trigger)} class="chip-edit" aria-label={t('triggers_edit', { name: trigger.name })}>✎</button>
-								<button onclick={() => deleteTrigger(trigger.id)} class="chip-delete" aria-label={t('triggers_delete', { name: trigger.name })}>✕</button>
-							{/if}
-						</div>
+						<button type="button" class="chip own" onclick={() => openEdit(trigger)} aria-label={t('triggers_edit', { name: trigger.name })}>
+							{trigger.name}
+							<Pencil size={14} />
+						</button>
 					{/if}
 				{/each}
+				<button type="button" class="chip add" onclick={() => openNew(group.value)} aria-label={t('triggers_add_to', { group: group.label() })}>
+					<Plus size={16} />
+				</button>
 			</div>
-		</section>
+		</Card>
 	{/each}
+</SubPage>
 
-	<div class="add-form">
-		<input bind:value={newName} placeholder={t('triggers_new_placeholder')} class="input" onkeydown={(e) => e.key === 'Enter' && addTrigger()} />
-		<select bind:value={newCategory} class="select">
-			{#each categories as cat}
-				<option value={cat}>{categoryLabels[cat]}</option>
-			{/each}
-		</select>
-		<button onclick={addTrigger} disabled={saving || !newName.trim()} class="add-btn">{t('triggers_add')}</button>
-	</div>
-</div>
+<Sheet bind:open={sheetOpen} title={editing ? editing.name : t('triggers_new')} closeLabel={t('close')}>
+	<form class="form" onsubmit={(e) => { e.preventDefault(); save(); }}>
+		<div class="ui-field">
+			<label class="ui-label" for="trigger-name">{t('entry_types_name')}</label>
+			<input id="trigger-name" class="ui-input" bind:value={name} placeholder={t('triggers_new_placeholder')} maxlength="120" />
+		</div>
+		<div class="ui-field">
+			<span class="ui-label" id="trigger-category">{t('triggers_category')}</span>
+			<div class="categories" role="radiogroup" aria-labelledby="trigger-category">
+				{#each CATEGORIES as option (option.value)}
+					<button
+						type="button"
+						role="radio"
+						aria-checked={category === option.value}
+						class="category"
+						class:picked={category === option.value}
+						style="--group: {option.color}"
+						onclick={() => (category = option.value)}
+					>
+						<option.icon size={18} />
+						{option.label()}
+					</button>
+				{/each}
+			</div>
+		</div>
+	</form>
+
+	{#snippet footer()}
+		<div class="actions">
+			{#if editing}
+				<Button variant="danger" onclick={remove}>{t('delete')}</Button>
+			{/if}
+			<Button block loading={saving} disabled={!name.trim()} onclick={save}>{editing ? t('save') : t('triggers_add')}</Button>
+		</div>
+	{/snippet}
+</Sheet>
 
 <style>
-	.page { padding: 1rem; }
-	.page-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
-	.page-header h1 { margin: 0; font-size: 1.25rem; }
-	.back { color: var(--text-muted); text-decoration: none; font-size: 0.875rem; }
-	.category-section { margin-bottom: 1.25rem; }
-	.cat-title { font-size: 0.8rem; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.5rem; }
-	.chip-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-	.chip { display: flex; align-items: center; gap: 0.25rem; padding: 0.3rem 0.6rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; font-size: 0.8rem; }
-	.chip-delete { background: none; border: none; color: var(--text-subtle); cursor: pointer; padding: 0; font-size: 0.7rem; line-height: 1; }
-	.add-form { display: flex; gap: 0.5rem; margin-top: 1rem; }
-	.input { flex: 1; padding: 0.5rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text); font-size: 0.875rem; }
-	.select { padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text); font-size: 0.875rem; }
-	.add-btn { padding: 0.5rem 1rem; background: var(--text); color: var(--bg); border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; }
-	.add-btn:disabled { opacity: 0.5; }
-	.chip-edit { background: none; border: none; color: var(--text-subtle); cursor: pointer; padding: 0; font-size: 0.75rem; line-height: 1; }
-	.edit-form { display: flex; flex-wrap: wrap; gap: 0.4rem; width: 100%; }
-	.cancel-btn { padding: 0.5rem 0.75rem; background: none; border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text-muted); cursor: pointer; font-size: 0.875rem; }
+	.group-title {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-md);
+		font-weight: 800;
+	}
+
+	.bubble {
+		width: 32px;
+		height: 32px;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--group) 15%, var(--bg-card));
+		color: var(--group);
+	}
+
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 36px;
+		padding: 0 14px;
+		border-radius: var(--radius-pill);
+		border: 1.5px solid var(--border);
+		background: var(--bg-card);
+		color: var(--text);
+		font-size: var(--text-sm);
+		font-weight: 600;
+	}
+
+	.chip.own {
+		cursor: pointer;
+		border-color: var(--accent);
+		background: var(--accent-soft);
+	}
+
+	.chip.add {
+		padding: 0 10px;
+		border-style: dashed;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-5);
+	}
+
+	.categories {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-2);
+	}
+
+	.category {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		min-height: 48px;
+		padding: 0 var(--space-3);
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border);
+		background: var(--bg-card);
+		color: var(--text);
+		font-size: var(--text-sm);
+		font-weight: 700;
+		text-align: start;
+		cursor: pointer;
+	}
+
+	.category :global(svg) {
+		color: var(--group);
+		flex-shrink: 0;
+	}
+
+	.category.picked {
+		border-color: var(--group);
+		background: color-mix(in srgb, var(--group) 14%, var(--bg-card));
+	}
+
+	.actions {
+		display: flex;
+		gap: var(--space-2);
+	}
 </style>

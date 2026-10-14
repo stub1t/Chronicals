@@ -112,6 +112,55 @@ textarea {
 	outline-offset: 2px;
 }
 
+/* Form fields shared by the settings screens. */
+.ui-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.ui-label {
+	font-size: var(--text-sm);
+	font-weight: 800;
+	color: var(--text-muted);
+}
+
+.ui-input {
+	width: 100%;
+	min-height: 48px;
+	padding: 10px 14px;
+	border: 1.5px solid var(--border);
+	border-radius: var(--radius-md);
+	background: var(--bg-card);
+	color: var(--text);
+	font-size: var(--text-md);
+	box-sizing: border-box;
+}
+
+.ui-input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.ui-input::placeholder {
+	color: var(--text-subtle);
+}
+
+.ui-hint {
+	margin: 0;
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+	line-height: 1.45;
+}
+
+.ui-error {
+	margin: 0;
+	font-size: var(--text-sm);
+	font-weight: 700;
+	color: var(--danger);
+}
+
 /* Directional icons (chevrons, arrows) point the other way in right-to-left languages. */
 [dir='rtl'] .flip-rtl {
 	transform: scaleX(-1);

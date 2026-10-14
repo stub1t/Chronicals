@@ -243,13 +243,15 @@ const routes: Route[] = [
 				...(body.name !== undefined && { name: requiredText(body.name, 'name', 120) }),
 				...(body.icon !== undefined && { icon: optionalText(body.icon, 32) }),
 				...(body.color !== undefined && { color: optionalColor(body.color) ?? null }),
-				...(body.metricSchema !== undefined && { metricSchema: assertMetricSchema(body.metricSchema) })
+				...(body.metricSchema !== undefined && { metricSchema: assertMetricSchema(body.metricSchema) }),
+				...(body.hidden !== undefined && { hidden: assertBoolean(body.hidden, 'hidden') })
 			});
 			if (!type) return notFound();
 			return json(type);
 		},
 		DELETE: ({ params }) => {
-			deleteEntryType(assertIdentifier(params.id, 'id'));
+			const result = deleteEntryType(assertIdentifier(params.id, 'id'));
+			if (result === 'in-use') error(409, 'This entry type has entries. Hide it instead.');
 			return noContent();
 		}
 	}),

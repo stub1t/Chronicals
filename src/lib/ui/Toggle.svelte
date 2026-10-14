@@ -1,17 +1,33 @@
 <script lang="ts">
+	import type { Component } from 'svelte';
+
 	interface Props {
 		checked: boolean;
 		label: string;
-		description?: string;
+		description?: string | null;
 		disabled?: boolean;
+		/** Shows an icon bubble and row padding, to sit in a settings list. */
+		icon?: Component<{ size?: number }>;
+		color?: string;
 		onchange?: (checked: boolean) => void;
 	}
 
-	let { checked = $bindable(), label, description, disabled = false, onchange }: Props = $props();
+	let {
+		checked = $bindable(),
+		label,
+		description,
+		disabled = false,
+		icon: Icon,
+		color = 'var(--accent)',
+		onchange
+	}: Props = $props();
 	const id = `toggle-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
-<label class="row" for={id} class:disabled>
+<label class="row" for={id} class:disabled class:listed={!!Icon}>
+	{#if Icon}
+		<span class="bubble" style="--bubble: {color}" aria-hidden="true"><Icon size={20} /></span>
+	{/if}
 	<span class="text">
 		<span class="label">{label}</span>
 		{#if description}<span class="description">{description}</span>{/if}
@@ -35,6 +51,25 @@
 		gap: var(--space-4);
 		min-height: 52px;
 		cursor: pointer;
+		position: relative;
+	}
+
+	.row.listed {
+		justify-content: flex-start;
+		gap: var(--space-3);
+		min-height: 64px;
+		padding: var(--space-2) var(--space-4);
+	}
+
+	.bubble {
+		width: 40px;
+		height: 40px;
+		flex-shrink: 0;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--bubble) 15%, var(--bg-card));
+		color: var(--bubble);
 	}
 
 	.disabled {
@@ -43,13 +78,15 @@
 	}
 
 	.text {
+		flex: 1;
+		min-width: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
 	}
 
 	.label {
-		font-weight: 600;
+		font-weight: 700;
 	}
 
 	.description {

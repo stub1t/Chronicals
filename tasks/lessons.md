@@ -12,3 +12,9 @@ Correction: no em dashes and no AI-sounding text in the README, images or other 
 - Every claim must match the code. Check the behaviour before describing it (e.g. which
   offline changes are actually queued).
 - Reference used: https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing
+
+## Generic class names can collide with global CSS
+
+- A button with `class="collapse"` was laid out but invisible: a stylesheet outside `src`
+  sets `.collapse { visibility: collapse }`. Use specific names (`past-toggle`), and when
+  something takes space but does not show, check `getComputedStyle` before anything else.

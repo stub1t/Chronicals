@@ -1,6 +1,6 @@
 import { eq, asc } from 'drizzle-orm';
 import { db } from '../db.js';
-import { entryTypes } from '../../db/schema.js';
+import { entryTypeLogs, entryTypes } from '../../db/schema.js';
 import type { EntryType } from '../../types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -48,13 +48,16 @@ export function createEntryType(data: {
 
 export function updateEntryType(
 	id: string,
-	data: { name?: string; icon?: string | null; color?: string | null; metricSchema?: object }
+	data: { name?: string; icon?: string | null; color?: string | null; metricSchema?: object; hidden?: boolean }
 ): EntryType | null {
 	const existing = db.select().from(entryTypes).where(eq(entryTypes.id, id)).get();
-	if (!existing || existing.isBuiltIn) return null;
+	if (!existing) return null;
+	// Built-in types are refreshed from the seed on start; only hiding them sticks.
+	if (existing.isBuiltIn && Object.keys(data).some((key) => key !== 'hidden')) return null;
 
 	db.update(entryTypes)
 		.set({
+			...(data.hidden !== undefined && { hidden: data.hidden }),
 			...(data.name !== undefined && { name: data.name }),
 			...(data.icon !== undefined && { icon: data.icon }),
 			...(data.color !== undefined && { color: data.color }),
@@ -65,8 +68,12 @@ export function updateEntryType(
 	return getEntryType(id);
 }
 
-export function deleteEntryType(id: string): void {
+/** Deletes a custom type without logs. A type in use can only be hidden, so no entry loses its type. */
+export function deleteEntryType(id: string): 'deleted' | 'in-use' | 'not-found' {
 	const existing = db.select().from(entryTypes).where(eq(entryTypes.id, id)).get();
-	if (!existing || existing.isBuiltIn) return;
+	if (!existing || existing.isBuiltIn) return 'not-found';
+	const used = db.select({ id: entryTypeLogs.id }).from(entryTypeLogs).where(eq(entryTypeLogs.entryTypeId, id)).limit(1).get();
+	if (used) return 'in-use';
 	db.delete(entryTypes).where(eq(entryTypes.id, id)).run();
+	return 'deleted';
 }

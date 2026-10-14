@@ -87,7 +87,7 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] 3. Data: wellbeing column + API, weather range API, route moves + redirects (Today tab comes with 4)
 - [x] 4. Today screen + log sheet
 - [x] 5. Calendar: month grid + day summary, week agenda, day page (shared DayView), search; old calendar/entry components and the offline write queue removed
-- [ ] 6. Me section
+- [x] 6. Me: hub with profile header, Health and App groups, language sheet; entry types with icon picker and a show-on-Today switch (migration 0003 `hidden`); triggers incl. the environment group; profile; medications with a dose-change sheet that updates the dose; in-use entry types answer 409 instead of a foreign key error
 - [ ] 7. Insights engine + screen + printable report + CSV; remove old analysis + jsPDF
 - [ ] 8. 13 more languages + completeness tests
 - [ ] 9. Polish, a11y, dark/RTL passes, screenshots, README, AGENTS.md

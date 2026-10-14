@@ -41,9 +41,9 @@
 	let noteTimer: ReturnType<typeof setTimeout> | undefined;
 	let noteSaved = $state(false);
 
-	// Most used entry types first; unused ones keep the configured order.
+	// Most used entry types first; unused ones keep the configured order. Hidden types get no tile.
 	const quickTypes = $derived(
-		[...entryTypes].sort((a, b) => {
+		entryTypes.filter((type) => !type.hidden).sort((a, b) => {
 			const rank = (id: string) => {
 				const i = typeRanking.indexOf(id);
 				return i === -1 ? Infinity : i;

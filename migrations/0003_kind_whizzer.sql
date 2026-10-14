@@ -1,0 +1,1 @@
+ALTER TABLE `entry_types` ADD `hidden` integer DEFAULT false NOT NULL;
