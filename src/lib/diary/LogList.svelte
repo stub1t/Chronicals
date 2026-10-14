@@ -2,6 +2,7 @@
 	/** The logs of one day as tappable cards; ongoing ones get an "End now" button. */
 	import Pill from '@lucide/svelte/icons/pill';
 	import { hasDuration } from './categories.js';
+	import { loadReminderSettings } from '$lib/reminders.js';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import CircleStop from '@lucide/svelte/icons/circle-stop';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -36,6 +37,12 @@
 	}
 
 	const sorted = $derived([...logs].sort((a, b) => a.startTime.localeCompare(b.startTime)));
+
+	// After the "still going?" time from the reminder settings (3 hours unless changed), ask.
+	const askAfter = (loadReminderSettings().ongoingHours || 3) * 60;
+	const runningMinutes = (log: EntryTypeLog) => Math.max(0, Math.round((Date.now() - Date.parse(log.startTime)) / 60000));
+	const since = (minutes: number) =>
+		minutes < 60 ? t('duration_minutes', { count: minutes }) : t('duration_hours', { count: Math.floor(minutes / 30) / 2 });
 </script>
 
 <ul class="logs">
@@ -69,9 +76,13 @@
 				<ChevronRight size={18} class="flip-rtl chevron" />
 			</button>
 			{#if !log.endTime && hasDuration(log.entryType?.category)}
-				<button type="button" class="end" onclick={() => onend(log)}>
+				{@const minutes = runningMinutes(log)}
+				<button type="button" class="end" class:overdue={minutes >= askAfter} onclick={() => onend(log)}>
 					<CircleStop size={16} />
-					<span class="ongoing">{t('log_ongoing')}</span>
+					<span class="ongoing">
+						{t('log_ongoing')}{#if minutes >= 1} · {t('log_ongoing_since', { duration: since(minutes) })}{/if}
+						{#if minutes >= askAfter}<strong> · {t('log_still_there')}</strong>{/if}
+					</span>
 					<span class="end-label">{t('log_end_now')}</span>
 				</button>
 			{/if}
@@ -175,6 +186,15 @@
 		flex: 1;
 		text-align: start;
 		animation: pulse 2s ease-in-out infinite;
+	}
+
+	.end.overdue {
+		background: var(--warning-soft);
+		color: var(--warning);
+	}
+
+	.end.overdue .ongoing {
+		color: var(--warning);
 	}
 
 	.end-label {

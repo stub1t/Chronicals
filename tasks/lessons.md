@@ -18,3 +18,10 @@ Correction: no em dashes and no AI-sounding text in the README, images or other 
 - A button with `class="collapse"` was laid out but invisible: a stylesheet outside `src`
   sets `.collapse { visibility: collapse }`. Use specific names (`past-toggle`), and when
   something takes space but does not show, check `getComputedStyle` before anything else.
+
+## A new caller can expose an old API assumption
+
+- PUT /api/profile set every field it was not sent to null. The profile page always sent
+  all fields, so nobody noticed until the introduction saved the name and the place in
+  separate steps and the second call wiped the name. Before calling an existing route in a
+  new way, check whether it updates partially; make updates partial by default and test it.

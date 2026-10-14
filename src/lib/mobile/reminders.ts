@@ -5,9 +5,9 @@
  */
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { goto } from '$app/navigation';
-import { loadReminderSettings, planReminders } from '$lib/reminders.js';
-import { t } from '$lib/i18n';
-import type { Medication } from '$lib/types/index.js';
+import { loadReminderSettings, planOngoing, planReminders } from '$lib/reminders.js';
+import { localizeBuiltInText, t } from '$lib/i18n';
+import type { Entry, Medication } from '$lib/types/index.js';
 import { toDateString } from '$lib/utils/date';
 import { localFetch } from './local-api.js';
 
@@ -22,7 +22,17 @@ export function syncReminders(): Promise<void> {
 async function sync(): Promise<void> {
 	const res = await localFetch('/api/medications');
 	const medications: Medication[] = res.ok ? await res.json() : [];
-	const planned = planReminders(loadReminderSettings(), medications, {
+	const yesterday = new Date();
+	yesterday.setDate(yesterday.getDate() - 1);
+	const recent = await localFetch(`/api/entries?from=${toDateString(yesterday)}&to=${toDateString(new Date())}`);
+	const entries: Entry[] = recent.ok ? await recent.json() : [];
+	const settings = loadReminderSettings();
+	const ongoing = planOngoing(entries, settings, new Date(), {
+		title: (name) => t('reminder_ongoing_title', { name }),
+		body: (name) => t('reminder_ongoing_body', { name }),
+		name: localizeBuiltInText
+	});
+	const planned = planReminders(settings, medications, {
 		dailyTitle: t('reminder_daily_title'),
 		dailyBody: t('reminder_daily_body'),
 		medication: (name, dosage) => t('reminder_medication_body', { name: [name, dosage].filter(Boolean).join(' ') })
@@ -32,10 +42,20 @@ async function sync(): Promise<void> {
 	if (pending.notifications.length > 0) {
 		await LocalNotifications.cancel({ notifications: pending.notifications.map(({ id }) => ({ id })) });
 	}
-	if (planned.length === 0 || (await LocalNotifications.checkPermissions()).display !== 'granted') return;
+	if (planned.length + ongoing.length === 0 || (await LocalNotifications.checkPermissions()).display !== 'granted') return;
 
 	await LocalNotifications.schedule({
-		notifications: planned.map((r) => ({
+		notifications: [
+			...ongoing.map((r) => ({
+				id: r.id,
+				title: r.title,
+				body: r.body,
+				schedule: { at: r.at, allowWhileIdle: true },
+				isExactNotification: false,
+				smallIcon: 'ic_stat_chronicals',
+				extra: { kind: 'ongoing', date: r.date, logId: r.logId }
+			})),
+			...planned.map((r) => ({
 			id: r.id,
 			title: r.title,
 			body: r.body,
@@ -46,6 +66,7 @@ async function sync(): Promise<void> {
 			smallIcon: 'ic_stat_chronicals',
 			extra: { kind: r.kind }
 		}))
+		]
 	});
 }
 
@@ -59,6 +80,12 @@ export async function requestReminderPermission(): Promise<boolean> {
 /** Tapping the daily reminder opens today's day view. */
 export function listenForReminderTaps(): void {
 	LocalNotifications.addListener('localNotificationActionPerformed', ({ notification }) => {
-		if (notification.extra?.kind === 'daily') goto(`/calendar/day/${toDateString(new Date())}`);
+		const extra = notification.extra ?? {};
+		if (extra.kind === 'daily') goto(`/calendar/day/${toDateString(new Date())}`);
+		// "Still going?": open that day with the log's sheet, to enter the end.
+		if (extra.kind === 'ongoing') {
+			const base = extra.date === toDateString(new Date()) ? '/' : `/calendar/day/${extra.date}`;
+			goto(`${base}?log=${encodeURIComponent(extra.logId)}`);
+		}
 	});
 }

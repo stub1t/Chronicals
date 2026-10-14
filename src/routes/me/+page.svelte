@@ -23,8 +23,10 @@
 	import { themeStore } from '$lib/stores/theme.js';
 	import { LANGUAGES, localeStore, setLanguage, setTimeFormat, timeFormat, type LanguageCode, type TimeFormat, t } from '$lib/i18n';
 	import Clock from '@lucide/svelte/icons/clock';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { exportBackup, importBackup } from '$lib/backup.js';
-	import { loadReminderSettings, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
+	import { loadReminderSettings, ONGOING_HOURS, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
+	import Timer from '@lucide/svelte/icons/timer';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
 	import type { EntryType, Medication, Trigger, UserProfile } from '$lib/types';
 
@@ -66,7 +68,7 @@
 	}
 
 	// ── Reminders (Android app) ───────────────────────────────────────────────
-	let reminders = $state<ReminderSettings>({ daily: false, time: '20:00' });
+	let reminders = $state<ReminderSettings>({ daily: false, time: '20:00', ongoingHours: 3 });
 	let reminderDenied = $state(false);
 
 	async function updateReminders(next: ReminderSettings) {
@@ -200,6 +202,27 @@
 			</div>
 			<div>
 				<Toggle
+					icon={Timer}
+					color="#e3a13b"
+					label={t('settings_reminder_ongoing')}
+					description={reminders.ongoingHours ? t('settings_reminder_ongoing_after', { count: reminders.ongoingHours }) : null}
+					checked={reminders.ongoingHours > 0}
+					onchange={(on) => updateReminders({ ...reminders, ongoingHours: on ? 3 : 0 })}
+				/>
+				{#if reminders.ongoingHours > 0}
+					<div class="sub">
+						<Segmented
+							label={t('settings_reminder_ongoing')}
+							value={reminders.ongoingHours}
+							onchange={(hours: number) => updateReminders({ ...reminders, ongoingHours: hours })}
+							options={ONGOING_HOURS.map((hours) => ({ value: hours, label: t('settings_hours_short', { count: hours }) }))}
+						/>
+						<p class="ui-hint">{t('settings_reminder_ongoing_note')}</p>
+					</div>
+				{/if}
+			</div>
+			<div>
+				<Toggle
 					icon={Fingerprint}
 					color="#2f9e6e"
 					label={t('settings_app_lock')}
@@ -265,6 +288,7 @@
 	<MenuGroup title={t('settings_about')}>
 		<MenuRow icon={Info} color="var(--text-muted)" label="Chronicals {version}" detail={t('settings_license')} />
 		<MenuRow icon={CodeXml} color="var(--text-muted)" label={t('settings_source')} href="https://github.com/stub1t/Chronicals" external />
+		<MenuRow icon={Sparkles} color="var(--accent)" label={t('me_show_intro')} href="/welcome" />
 	</MenuGroup>
 </div>
 

@@ -107,6 +107,11 @@ const routes: Route[] = [
 		GET: () => json({ status: 'ok' })
 	}),
 
+	// How much is in the diary: decides whether a fresh device sees the introduction.
+	route('/api/stats', {
+		GET: () => json({ entries: countEntries() })
+	}),
+
 	// ─── Entries ──────────────────────────────────────────────────────────────
 
 	route('/api/entries', {
@@ -319,12 +324,13 @@ const routes: Route[] = [
 		GET: () => json(getProfile()),
 		PUT: async (event) => {
 			const body = await parseJsonRequest(event);
+			// Only the fields that are sent change.
 			const profile = updateProfile({
-				displayName: optionalText(body.displayName, 120),
-				bloodType: assertBloodType(body.bloodType),
-				locationLat: optionalNumber(body.locationLat, 'locationLat', -90, 90),
-				locationLon: optionalNumber(body.locationLon, 'locationLon', -180, 180),
-				locationName: optionalText(body.locationName, 160)
+				...(body.displayName !== undefined && { displayName: optionalText(body.displayName, 120) }),
+				...(body.bloodType !== undefined && { bloodType: assertBloodType(body.bloodType) }),
+				...(body.locationLat !== undefined && { locationLat: optionalNumber(body.locationLat, 'locationLat', -90, 90) }),
+				...(body.locationLon !== undefined && { locationLon: optionalNumber(body.locationLon, 'locationLon', -180, 180) }),
+				...(body.locationName !== undefined && { locationName: optionalText(body.locationName, 160) })
 			});
 			return json(profile);
 		}

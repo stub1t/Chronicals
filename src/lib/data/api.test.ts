@@ -230,6 +230,13 @@ describe('handleApiRequest', () => {
 		expect(sugar.metricSchema.fields[0]).toMatchObject({ key: 'direction', config: { options: ['too low', 'too high'] } });
 	});
 
+	it('updates only the profile fields that are sent', async () => {
+		await call('PUT', '/api/profile', { displayName: 'Sam', bloodType: 'O+' });
+		const profile = await (await call('PUT', '/api/profile', { locationLat: 48.2, locationLon: 16.37, locationName: 'Wien' })).json();
+		expect(profile).toMatchObject({ displayName: 'Sam', bloodType: 'O+', locationName: 'Wien' });
+		expect(await (await call('PUT', '/api/profile', { displayName: null })).json()).toMatchObject({ displayName: null, locationName: 'Wien' });
+	});
+
 	it('deletes only unused custom entry types', async () => {
 		const type = await (await call('POST', '/api/entry-types', { name: 'Tinnitus', metricSchema: { fields: [] } })).json();
 		const entry = await (await call('POST', '/api/entries', { date: '2026-03-01' })).json();

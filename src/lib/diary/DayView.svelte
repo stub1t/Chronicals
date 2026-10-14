@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	/**
 	 * Everything about one day: how you felt, quick logging, the day's entries,
 	 * triggers, weather and note. Used by Today and by the calendar's day page.
@@ -72,6 +74,13 @@
 		sheetLog = null;
 		sheetOpen = true;
 	}
+
+	// A tapped "still going?" notification opens that log (?log=<id>).
+	onMount(() => {
+		const id = page.url.searchParams.get('log');
+		const log = id ? day.entry?.logs?.find((item) => item.id === id) : null;
+		if (log) openLog(log);
+	});
 
 	function openLog(log: EntryTypeLog) {
 		sheetType = types.find((type) => type.id === log.entryTypeId) ?? null;

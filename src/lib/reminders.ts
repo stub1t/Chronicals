@@ -1,11 +1,17 @@
-import type { Medication } from '$lib/types/index.js';
+import type { Entry, Medication } from '$lib/types/index.js';
+import { hasDuration } from '$lib/diary/categories.js';
 
 /** Device-only reminder settings (Android app). Medication times live on each medication. */
 export interface ReminderSettings {
 	daily: boolean;
 	/** 'HH:MM' */
 	time: string;
+	/** Hours after the start of a log marked "still going" to ask whether it is over; 0 is off. */
+	ongoingHours: number;
 }
+
+export const ONGOING_HOURS = [1, 2, 3, 4, 6] as const;
+const DEFAULTS: ReminderSettings = { daily: false, time: '20:00', ongoingHours: 3 };
 
 export interface PlannedReminder {
 	id: number;
@@ -22,11 +28,14 @@ const DAILY_ID = 1;
 export function loadReminderSettings(): ReminderSettings {
 	try {
 		const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
-		if (stored && typeof stored.daily === 'boolean' && /^\d{2}:\d{2}$/.test(stored.time)) return stored;
+		if (stored && typeof stored.daily === 'boolean' && /^\d{2}:\d{2}$/.test(stored.time)) {
+			const hours = stored.ongoingHours;
+			return { ...stored, ongoingHours: hours === 0 || ONGOING_HOURS.includes(hours) ? hours : DEFAULTS.ongoingHours };
+		}
 	} catch {
 		// Fall through to the defaults.
 	}
-	return { daily: false, time: '20:00' };
+	return { ...DEFAULTS };
 }
 
 export function saveReminderSettings(settings: ReminderSettings): void {
@@ -73,6 +82,42 @@ export function planReminders(
 				body: text.medication(med.name, dosage),
 				...at(time)
 			});
+		}
+	}
+	return planned;
+}
+
+export interface PlannedOnce {
+	id: number;
+	title: string;
+	body: string;
+	at: Date;
+	/** Opens this log when the notification is tapped. */
+	date: string;
+	logId: string;
+}
+
+/**
+ * One reminder per log that is "still going", `ongoingHours` after it
+ * started, if that time is still ahead. Logs that started more than a day
+ * ago are left alone.
+ */
+export function planOngoing(
+	entries: Entry[],
+	settings: ReminderSettings,
+	now: Date,
+	text: { title: (name: string) => string; body: (name: string) => string; name: (stored: string) => string }
+): PlannedOnce[] {
+	if (!settings.ongoingHours) return [];
+	const planned: PlannedOnce[] = [];
+	for (const entry of entries) {
+		for (const log of entry.logs ?? []) {
+			if (log.endTime || !hasDuration(log.entryType?.category)) continue;
+			const start = Date.parse(log.startTime);
+			const at = new Date(start + settings.ongoingHours * 3_600_000);
+			if (at <= now || now.getTime() - start > 86_400_000) continue;
+			const name = text.name(log.entryType?.name ?? '');
+			planned.push({ id: reminderId(`ongoing|${log.id}`), title: text.title(name), body: text.body(name), at, date: entry.date, logId: log.id });
 		}
 	}
 	return planned;

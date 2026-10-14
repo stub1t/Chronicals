@@ -1,5 +1,7 @@
 <script lang="ts">
 	import '../app.css';
+	import { goto } from '$app/navigation';
+	import { needsOnboarding } from '$lib/onboarding.js';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
@@ -23,6 +25,15 @@
 
 	onMount(() => {
 		themeStore.init();
+
+		// A fresh install starts with the introduction.
+		if (page.url.pathname !== '/welcome') {
+			needsOnboarding()
+				.then((needed) => {
+					if (needed) goto('/welcome', { replaceState: true });
+				})
+				.catch(() => {});
+		}
 
 		if (__NATIVE_APP__) {
 			import('$lib/mobile/app-lock.js').then((m) => {
@@ -97,6 +108,7 @@
 				{@render children()}
 			</main>
 
+			{#if path() !== '/welcome'}
 			<nav class="bottom-nav" aria-label={t('nav_main')}>
 				{#each tabs as tab (tab.href)}
 					<a href={tab.href} class="nav-item" class:active={tab.active()} aria-current={tab.active() ? 'page' : undefined}>
@@ -105,6 +117,7 @@
 					</a>
 				{/each}
 			</nav>
+			{/if}
 		{/if}
 	{/key}
 </div>
