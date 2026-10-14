@@ -473,6 +473,7 @@ const de: Messages = {
 	entry_types_title: 'Eintragstypen',
 	entry_types_delete_confirm: 'Diesen Eintragstyp löschen?',
 	entry_types_in_use: 'Dieser Typ hat Einträge und kann nicht gelöscht werden. Schalte ihn stattdessen aus.',
+	entry_types_exists: 'Einen Typ mit diesem Namen gibt es schon.',
 	entry_types_builtin: 'Vordefiniert',
 	entry_types_name_placeholder: 'Typname',
 	entry_types_icon: 'Icon',

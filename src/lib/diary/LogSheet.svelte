@@ -84,6 +84,7 @@
 		if (log) {
 			time = localTime(log.startTime);
 			values = { ...log.metricValues };
+			endTime = time;
 			if (!log.endTime) duration = 'ongoing';
 			else {
 				const minutes = Math.round((Date.parse(log.endTime) - Date.parse(log.startTime)) / 60000);
@@ -103,6 +104,13 @@
 		}
 	}
 
+	/** 'HH:MM' some minutes later, wrapping past midnight. */
+	function addMinutes(hhmm: string, minutes: number): string {
+		const [h, m] = hhmm.split(':').map(Number);
+		const total = (h * 60 + m + minutes) % 1440;
+		return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+	}
+
 	function durationLabel(minutes: number): string {
 		return minutes < 60 ? t('duration_minutes', { count: minutes }) : t('duration_hours', { count: minutes / 60 });
 	}
@@ -113,13 +121,13 @@
 		if (duration === 'custom') {
 			const end = localDateTime(day.date, endTime);
 			// An end before the start means the symptom went on past midnight.
-			return end > start ? end : new Date(Date.parse(end) + 86_400_000).toISOString();
+			return end >= start ? end : new Date(Date.parse(end) + 86_400_000).toISOString();
 		}
 		return new Date(Date.parse(start) + duration * 60_000).toISOString();
 	}
 
 	async function save() {
-		if (!entryType) return;
+		if (!entryType || !time || (duration === 'custom' && !endTime)) return;
 		saving = true;
 		const cleaned = Object.fromEntries(
 			Object.entries(values).filter(([, v]) => v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))
@@ -204,7 +212,11 @@
 							class="option"
 							class:picked={duration === 'custom'}
 							aria-pressed={duration === 'custom'}
-							onclick={() => (duration = 'custom')}>{t('log_until')}</button
+							onclick={() => {
+								// Start from the chosen duration (or an hour) after the start, not the start itself.
+								if (time && duration !== 'custom') endTime = addMinutes(time, typeof duration === 'number' ? duration : 60);
+								duration = 'custom';
+							}}>{t('log_until')}</button
 						>
 					</div>
 					{#if duration === 'custom'}
@@ -253,7 +265,7 @@
 				{#if log}
 					<Button variant="danger" onclick={remove}>{t('delete')}</Button>
 				{/if}
-				<Button block loading={saving} onclick={save} style="--accent: {entryType.color ?? 'var(--accent)'}">
+				<Button block loading={saving} disabled={!time || (duration === 'custom' && !endTime)} onclick={save} style="--accent: {entryType.color ?? 'var(--accent)'}">
 					{log ? t('save') : t('log_add', { name: localizeBuiltInText(entryType.name) })}
 				</Button>
 			</div>

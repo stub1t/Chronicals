@@ -19,19 +19,20 @@ import {
 	removeEntryTrigger,
 	countEntries
 } from './queries/entries.js';
-import { createEntryTypeLog, updateEntryTypeLog, deleteEntryTypeLog } from './queries/entryTypeLogs.js';
-import { getAllEntryTypes, createEntryType, updateEntryType, deleteEntryType } from './queries/entryTypes.js';
+import { createEntryTypeLog, getEntryTypeLog, updateEntryTypeLog, deleteEntryTypeLog } from './queries/entryTypeLogs.js';
+import { getAllEntryTypes, getEntryType, createEntryType, updateEntryType, deleteEntryType } from './queries/entryTypes.js';
 import {
 	getProfile,
 	updateProfile,
 	getMedications,
+	getMedication,
 	createMedication,
 	updateMedication,
 	deleteMedication,
 	getMedicationChanges,
 	createMedicationChange
 } from './queries/profile.js';
-import { getAllTriggers, getTriggersByCategory, createTrigger, updateTrigger, deleteTrigger } from './queries/triggers.js';
+import { getAllTriggers, getTrigger, getTriggersByCategory, createTrigger, updateTrigger, deleteTrigger } from './queries/triggers.js';
 import { datesBetween, ensureEnvData, getEnvDataForDate, getEnvDataInRange } from './weather.js';
 import { backup } from './db.js';
 import { BACKUP_CONTENT_TYPE, MAX_BACKUP_BYTES, assertSqliteFile, backupFilename } from './backup.js';
@@ -42,6 +43,7 @@ import {
 	assertDayLocation,
 	assertExtraOptions,
 	assertDate,
+	assertEndAfterStart,
 	assertIdentifier,
 	assertIsoDatetime,
 	assertMedicationChangeType,
@@ -172,9 +174,12 @@ const routes: Route[] = [
 			const body = await parseJsonRequest(event);
 			const entryId = assertIdentifier(event.params.id, 'id');
 			const action = requiredText(body.action, 'action', 32);
+			if (!getEntry(entryId)) return notFound();
 
 			if (action === 'add_trigger') {
-				addEntryTrigger(entryId, assertIdentifier(body.triggerId, 'triggerId'), optionalText(body.note) ?? undefined);
+				const triggerId = assertIdentifier(body.triggerId, 'triggerId');
+				if (!getTrigger(triggerId)) return notFound();
+				addEntryTrigger(entryId, triggerId, optionalText(body.note) ?? undefined);
 			} else if (action === 'remove_trigger') {
 				removeEntryTrigger(entryId, assertIdentifier(body.triggerId, 'triggerId'));
 			} else {
@@ -190,13 +195,13 @@ const routes: Route[] = [
 	route('/api/entry-type-logs', {
 		POST: async (event) => {
 			const body = await parseJsonRequest(event);
-			const log = createEntryTypeLog({
-				entryId: assertIdentifier(body.entryId, 'entryId'),
-				entryTypeId: assertIdentifier(body.entryTypeId, 'entryTypeId'),
-				startTime: assertIsoDatetime(body.startTime, 'startTime'),
-				endTime: body.endTime == null ? null : assertIsoDatetime(body.endTime, 'endTime'),
-				metricValues: optionalMetricValues(body.metricValues) ?? {}
-			});
+			const entryId = assertIdentifier(body.entryId, 'entryId');
+			const entryTypeId = assertIdentifier(body.entryTypeId, 'entryTypeId');
+			if (!getEntry(entryId) || !getEntryType(entryTypeId)) return notFound();
+			const startTime = assertIsoDatetime(body.startTime, 'startTime');
+			const endTime = body.endTime == null ? null : assertIsoDatetime(body.endTime, 'endTime');
+			assertEndAfterStart(startTime, endTime);
+			const log = createEntryTypeLog({ entryId, entryTypeId, startTime, endTime, metricValues: optionalMetricValues(body.metricValues) ?? {} });
 			return json(log, { status: 201 });
 		}
 	}),
@@ -204,11 +209,15 @@ const routes: Route[] = [
 	route('/api/entry-type-logs/:id', {
 		PUT: async (event) => {
 			const body = await parseJsonRequest(event);
-			const log = updateEntryTypeLog(assertIdentifier(event.params.id, 'id'), {
-				...(body.startTime !== undefined && { startTime: assertIsoDatetime(body.startTime, 'startTime') }),
-				...(body.endTime !== undefined && {
-					endTime: body.endTime === null ? null : assertIsoDatetime(body.endTime, 'endTime')
-				}),
+			const id = assertIdentifier(event.params.id, 'id');
+			const existing = getEntryTypeLog(id);
+			if (!existing) return notFound();
+			const startTime = body.startTime !== undefined ? assertIsoDatetime(body.startTime, 'startTime') : undefined;
+			const endTime = body.endTime === undefined ? undefined : body.endTime === null ? null : assertIsoDatetime(body.endTime, 'endTime');
+			assertEndAfterStart(startTime ?? existing.startTime, endTime === undefined ? existing.endTime : endTime);
+			const log = updateEntryTypeLog(id, {
+				...(startTime !== undefined && { startTime }),
+				...(endTime !== undefined && { endTime }),
 				...(body.metricValues !== undefined && { metricValues: optionalMetricValues(body.metricValues) ?? {} })
 			});
 			if (!log) return notFound();
@@ -233,6 +242,7 @@ const routes: Route[] = [
 				metricSchema: assertMetricSchema(body.metricSchema),
 				category: optionalEntryCategory(body.category)
 			});
+			if (type === 'exists') error(409, 'An entry type with this name exists already.');
 			return json(type, { status: 201 });
 		}
 	}),
@@ -248,6 +258,7 @@ const routes: Route[] = [
 				...(body.hidden !== undefined && { hidden: assertBoolean(body.hidden, 'hidden') }),
 				...(body.extraOptions !== undefined && { extraOptions: assertExtraOptions(body.extraOptions) })
 			});
+			if (type === 'exists') error(409, 'An entry type with this name exists already.');
 			if (!type) return notFound();
 			return json(type);
 		},
@@ -406,8 +417,10 @@ const routes: Route[] = [
 		},
 		POST: async (event) => {
 			const body = await parseJsonRequest(event);
+			const medicationId = body.medicationId == null ? undefined : assertIdentifier(body.medicationId, 'medicationId');
+			if (medicationId && !getMedication(medicationId)) return notFound();
 			const change = createMedicationChange({
-				medicationId: body.medicationId == null ? undefined : assertIdentifier(body.medicationId, 'medicationId'),
+				medicationId,
 				changeType: assertMedicationChangeType(body.changeType),
 				oldDosage: optionalText(body.oldDosage, 64) ?? undefined,
 				newDosage: optionalText(body.newDosage, 64) ?? undefined,

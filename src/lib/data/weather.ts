@@ -239,8 +239,11 @@ export async function ensureEnvData(dates: string[]): Promise<void> {
 				lon: place.lon,
 				fetchedAt: new Date().toISOString()
 			};
-			if (stored.has(date)) db.update(environmentalData).set(values).where(eq(environmentalData.date, date)).run();
-			else db.insert(environmentalData).values({ id: uuidv4(), date, ...values }).run();
+			// Upsert: another request may have stored the day while this one was fetching.
+			db.insert(environmentalData)
+				.values({ id: uuidv4(), date, ...values })
+				.onConflictDoUpdate({ target: environmentalData.date, set: values })
+				.run();
 		}
 	}
 }

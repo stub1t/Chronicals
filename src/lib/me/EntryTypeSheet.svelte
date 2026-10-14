@@ -75,7 +75,7 @@
 		saving = false;
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
-			toasts.show(err.message ?? t('network_error'), 'error');
+			toasts.show(res.status === 409 ? t('entry_types_exists') : (err.message ?? t('network_error')), 'error');
 			return;
 		}
 		const saved: EntryType = await res.json();

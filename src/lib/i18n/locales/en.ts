@@ -476,6 +476,7 @@ const en = {
 	entry_types_title: 'Entry types',
 	entry_types_delete_confirm: 'Delete this entry type?',
 	entry_types_in_use: 'This type has entries, so it can\'t be deleted. Switch it off to hide it instead.',
+	entry_types_exists: 'An entry type with this name exists already.',
 	entry_types_builtin: 'Built-in',
 	entry_types_name_placeholder: 'Type name',
 	entry_types_icon: 'Icon',

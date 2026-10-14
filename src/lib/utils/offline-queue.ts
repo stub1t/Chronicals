@@ -68,6 +68,12 @@ async function incrementRetry(mutation: QueuedMutation): Promise<void> {
 	});
 }
 
+/** Keeps a failed change for the next flush, but gives up after 10 tries (server errors included). */
+async function retryLater(mutation: QueuedMutation): Promise<void> {
+	if (mutation.retries >= 10) await remove(mutation.id);
+	else await incrementRetry(mutation);
+}
+
 export async function flush(): Promise<{ succeeded: number; failed: number }> {
 	const pending = await getPending();
 	let succeeded = 0;
@@ -88,18 +94,13 @@ export async function flush(): Promise<{ succeeded: number; failed: number }> {
 				await remove(mutation.id);
 				failed++;
 			} else {
-				await incrementRetry(mutation);
+				await retryLater(mutation);
 				failed++;
 			}
 		} catch {
-			// Network error: increment retry count, keep in queue
-			if (mutation.retries >= 10) {
-				await remove(mutation.id); // Give up after 10 retries
-				failed++;
-			} else {
-				await incrementRetry(mutation);
-				failed++;
-			}
+			// Network error: keep it for a later try
+			await retryLater(mutation);
+			failed++;
 		}
 	}
 

@@ -89,9 +89,11 @@ export class DiaryDay {
 		await this.load();
 	}
 
-	/** Mark an ongoing symptom as over, now. */
+	/** Mark an ongoing symptom as over, now (or at its start, if that is still ahead). */
 	endLog(id: string): Promise<void> {
-		return this.updateLog(id, { endTime: new Date().toISOString() });
+		const start = this.entry?.logs?.find((l) => l.id === id)?.startTime;
+		const now = new Date().toISOString();
+		return this.updateLog(id, { endTime: start && Date.parse(start) > Date.parse(now) ? start : now });
 	}
 
 	async deleteLog(id: string): Promise<void> {
@@ -103,10 +105,19 @@ export class DiaryDay {
 		return this.entry?.triggers?.some((t) => t.triggerId === triggerId) ?? false;
 	}
 
+	/** Triggers with a change on the way; a second tap meanwhile is ignored, so it can't undo or repeat the first. */
+	private toggling = new Set<string>();
+
 	async toggleTrigger(triggerId: string): Promise<void> {
-		const entry = this.entry ?? (await this.upsert());
-		const action = this.hasTrigger(triggerId) ? 'remove_trigger' : 'add_trigger';
-		this.entry = await send<Entry>(`/api/entries/${entry.id}`, 'PATCH', { action, triggerId });
+		if (this.toggling.has(triggerId)) return;
+		this.toggling.add(triggerId);
+		try {
+			const entry = this.entry ?? (await this.upsert());
+			const action = this.hasTrigger(triggerId) ? 'remove_trigger' : 'add_trigger';
+			this.entry = await send<Entry>(`/api/entries/${entry.id}`, 'PATCH', { action, triggerId });
+		} finally {
+			this.toggling.delete(triggerId);
+		}
 	}
 }
 

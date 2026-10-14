@@ -18,6 +18,11 @@ function parseLog(row: typeof entryTypeLogs.$inferSelect & { entryType?: typeof 
 	};
 }
 
+export function getEntryTypeLog(id: string): EntryTypeLog | null {
+	const row = db.select().from(entryTypeLogs).where(eq(entryTypeLogs.id, id)).get();
+	return row ? parseLog(row) : null;
+}
+
 export function createEntryTypeLog(data: {
 	entryId: string;
 	entryTypeId: string;

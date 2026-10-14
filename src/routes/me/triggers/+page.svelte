@@ -66,13 +66,23 @@
 
 	async function save() {
 		if (!name.trim()) return;
-		saving = true;
 		// A built-in name shown in translation counts as unchanged.
 		const unchanged = editing && name.trim() === localizeBuiltInText(editing.name);
+		// Another trigger with this name, also under its translated name ("Koffein" for "Caffeine").
+		const lower = name.trim().toLowerCase();
+		const same = unchanged
+			? undefined
+			: triggers.find((tr) => tr.id !== editing?.id && (tr.name.toLowerCase() === lower || localizeBuiltInText(tr.name).toLowerCase() === lower));
+		// A deleted one is brought back by adding it again; anything else is a clash.
+		if (same && (editing || !same.hidden)) {
+			toasts.show(t('triggers_exists'), 'error');
+			return;
+		}
+		saving = true;
 		const res = await api(editing ? `/api/triggers/${editing.id}` : '/api/triggers', {
 			method: editing ? 'PUT' : 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(unchanged ? { category } : { name: name.trim(), category })
+			body: JSON.stringify(unchanged ? { category } : { name: same?.name ?? name.trim(), category })
 		});
 		saving = false;
 		if (!res.ok) {
@@ -81,7 +91,8 @@
 			return;
 		}
 		const saved: Trigger = await res.json();
-		triggers = editing ? triggers.map((tr) => (tr.id === saved.id ? saved : tr)) : [...triggers, saved];
+		// A restored trigger is already in the list (as a deleted one): replace it.
+		triggers = triggers.some((tr) => tr.id === saved.id) ? triggers.map((tr) => (tr.id === saved.id ? saved : tr)) : [...triggers, saved];
 		toasts.show(t('log_saved', { name: localizeBuiltInText(saved.name) }), 'success');
 		sheetOpen = false;
 	}

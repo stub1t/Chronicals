@@ -102,3 +102,13 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] R6. Analysis rework from the two reviews (statistics fixes, exact period, one timeline, "Alle" view, foods/pollen/medication as exposures)
 - [x] R7. Report export: structure, columns, x/5, day grouping, type selection, CSV
 - [ ] Then phase 8 (languages) and phase 9 (polish)
+
+## Bug hunt (2026-10-14)
+
+- [x] API: impossible dates (2026-02-31) refused; duplicate type names give 409; adding a trigger twice is harmless; unknown ids give 404 instead of 500; a log can't end before it starts
+- [x] Weather: two requests storing the same day no longer fail on the unique date (upsert)
+- [x] Triggers: typing a translated built-in name ("Koffein") picks the built-in one; a restored trigger is listed once; a double tap can't undo or repeat itself
+- [x] Log form: "Until" starts after the start instead of at it (an equal end used to save 24 hours); an empty time can't be saved
+- [x] Calendar months with fewer than 31 days, broken dates in day and week URLs
+- [x] Offline queue gives up on server errors after 10 tries; unused date helpers removed
+- [x] Checks: 95 unit tests, all browser suites plus a new regression suite (16 checks) on web and app

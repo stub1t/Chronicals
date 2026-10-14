@@ -77,6 +77,16 @@ describe('ensureEnvData', () => {
 		expect(calls.filter((u) => !u.hostname.startsWith('air-quality')).map((u) => [u.searchParams.get('latitude'), u.searchParams.get('start_date')])).toEqual([['48.2', '2026-03-04']]);
 	});
 
+	it('copes with two requests fetching the same day at once', async () => {
+		const { db } = useTestDatabase();
+		const { userProfile } = await import('../db/schema.js');
+		db.update(userProfile).set({ locationLat: 48.2, locationLon: 16.37 }).run();
+		fakeOpenMeteo();
+		// Today's screen and the analysis both ask before either has stored the day.
+		await expect(Promise.all([ensureEnvData(['2026-03-10']), ensureEnvData(days('2026-03-01', 14))])).resolves.toBeDefined();
+		expect(getEnvDataInRange('2026-03-01', '2026-03-14')).toHaveLength(14);
+	});
+
 	it('takes old days from the archive and recent ones from the forecast', async () => {
 		const { db } = useTestDatabase();
 		const { userProfile } = await import('../db/schema.js');

@@ -34,13 +34,20 @@ export function getEntryType(id: string): EntryType | null {
 	return row ? parseType(row) : null;
 }
 
+/** Names are unique: a type can't take the name of another one. */
+const nameTaken = (name: string, except?: string) => {
+	const same = db.select({ id: entryTypes.id }).from(entryTypes).where(eq(entryTypes.name, name)).get();
+	return !!same && same.id !== except;
+};
+
 export function createEntryType(data: {
 	name: string;
 	icon?: string;
 	color?: string;
 	metricSchema: object;
 	category?: string;
-}): EntryType {
+}): EntryType | 'exists' {
+	if (nameTaken(data.name)) return 'exists';
 	const id = uuidv4();
 	const allTypes = db.select({ sortOrder: entryTypes.sortOrder }).from(entryTypes).all();
 	const maxOrder = allTypes.reduce((m, t) => Math.max(m, t.sortOrder), -1);
@@ -69,11 +76,12 @@ export function updateEntryType(
 		hidden?: boolean;
 		extraOptions?: Record<string, string[]>;
 	}
-): EntryType | null {
+): EntryType | 'exists' | null {
 	const existing = db.select().from(entryTypes).where(eq(entryTypes.id, id)).get();
 	if (!existing) return null;
 	// Built-in types are refreshed from the seed on start; only hiding them and own options stick.
 	if (existing.isBuiltIn && Object.keys(data).some((key) => key !== 'hidden' && key !== 'extraOptions')) return null;
+	if (data.name !== undefined && nameTaken(data.name, id)) return 'exists';
 
 	db.update(entryTypes)
 		.set({

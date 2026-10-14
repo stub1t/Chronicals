@@ -140,9 +140,11 @@ export function deleteEntry(id: string): void {
 }
 
 // Entry triggers
+
+/** Adds a trigger to a day; adding one the day already has changes nothing (a double tap, say). */
 export function addEntryTrigger(entryId: string, triggerId: string, note?: string): void {
 	const id = uuidv4();
-	db.insert(entryTriggers).values({ id, entryId, triggerId, note: note ?? null }).run();
+	db.insert(entryTriggers).values({ id, entryId, triggerId, note: note ?? null }).onConflictDoNothing().run();
 }
 
 export function removeEntryTrigger(entryId: string, triggerId: string): void {

@@ -254,6 +254,41 @@ describe('handleApiRequest', () => {
 		expect(await status(call('GET', '/api/entries?month=2026-3'))).toBe(400);
 		expect(await status(call('POST', '/api/entries', { date: '29.03.2026' }))).toBe(400);
 		expect(await status(call('GET', '/api/entries/not%20an%20id'))).toBe(400);
+		expect(await status(call('POST', '/api/entries', { date: '2026-02-31' }))).toBe(400);
+		expect(await status(call('POST', '/api/entries', { date: '2028-02-29' }))).toBe(201);
+	});
+
+	it('answers clashes and unknown ids with 409 and 404 instead of a server error', async () => {
+		const schema = { fields: [] };
+		expect(await status(call('POST', '/api/entry-types', { name: 'Headache', metricSchema: schema }))).toBe(409);
+		const own = await (await call('POST', '/api/entry-types', { name: 'Back pain', metricSchema: schema })).json();
+		expect(await status(call('PUT', `/api/entry-types/${own.id}`, { name: 'Headache' }))).toBe(409);
+		expect(await status(call('PUT', `/api/entry-types/${own.id}`, { name: 'Back pain' }))).toBe(200);
+
+		const entry = await (await call('POST', '/api/entries', { date: '2026-03-29' })).json();
+		const add = { action: 'add_trigger', triggerId: 'trig-caffeine' };
+		expect(await status(call('PATCH', `/api/entries/${entry.id}`, add))).toBe(200);
+		// A double tap adds it once.
+		const twice = await (await call('PATCH', `/api/entries/${entry.id}`, add)).json();
+		expect(twice.triggers.filter((t: { triggerId: string }) => t.triggerId === 'trig-caffeine')).toHaveLength(1);
+		expect(await status(call('PATCH', '/api/entries/nope', add))).toBe(404);
+		expect(await status(call('PATCH', `/api/entries/${entry.id}`, { action: 'add_trigger', triggerId: 'nope' }))).toBe(404);
+
+		const log = { entryId: entry.id, entryTypeId: 'builtin-headache', startTime: '2026-03-29T10:00:00Z' };
+		expect(await status(call('POST', '/api/entry-type-logs', { ...log, entryTypeId: 'nope' }))).toBe(404);
+		expect(await status(call('POST', '/api/entry-type-logs', { ...log, entryId: 'nope' }))).toBe(404);
+		expect(await status(call('POST', '/api/medication-changes', { medicationId: 'nope', changeType: 'started', changeDate: '2026-03-29' }))).toBe(404);
+	});
+
+	it('refuses a log that ends before it starts', async () => {
+		const entry = await (await call('POST', '/api/entries', { date: '2026-03-29' })).json();
+		const log = { entryId: entry.id, entryTypeId: 'builtin-headache', startTime: '2026-03-29T10:00:00Z' };
+		expect(await status(call('POST', '/api/entry-type-logs', { ...log, endTime: '2026-03-29T09:00:00Z' }))).toBe(400);
+		const created = await (await call('POST', '/api/entry-type-logs', { ...log, endTime: '2026-03-29T10:00:00Z' })).json();
+		expect(await status(call('PUT', `/api/entry-type-logs/${created.id}`, { endTime: '2026-03-29T09:59:00Z' }))).toBe(400);
+		expect(await status(call('PUT', `/api/entry-type-logs/${created.id}`, { startTime: '2026-03-29T11:00:00Z' }))).toBe(400);
+		expect(await status(call('PUT', `/api/entry-type-logs/${created.id}`, { startTime: '2026-03-29T08:00:00Z' }))).toBe(200);
+		expect(await status(call('PUT', '/api/entry-type-logs/nope', { endTime: null }))).toBe(404);
 	});
 
 	it('answers unknown paths with 404 and wrong methods with 405', async () => {

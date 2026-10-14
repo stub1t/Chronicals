@@ -13,7 +13,8 @@ function mondayOf(date: string): Date {
 export const load: PageLoad = async ({ fetch, url }) => {
 	const today = toDateString(new Date());
 	const param = url.searchParams.get('week');
-	const monday = mondayOf(param && /^\d{4}-\d{2}-\d{2}$/.test(param) ? param : today);
+	const valid = param && /^\d{4}-\d{2}-\d{2}$/.test(param) && !Number.isNaN(Date.parse(`${param}T12:00:00`));
+	const monday = mondayOf(valid ? param : today);
 	const days = Array.from({ length: 7 }, (_, i) => {
 		const d = new Date(monday);
 		d.setDate(monday.getDate() + i);

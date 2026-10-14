@@ -10,6 +10,7 @@
 	import { DiaryDay } from './day.svelte.js';
 	import { localizeBuiltInText, t } from '$lib/i18n';
 	import { hapticTap } from '$lib/haptics.js';
+	import { toasts } from '$lib/ui/toast.svelte.js';
 	import type { Trigger, TriggerCategory } from '$lib/types';
 
 	interface Props {
@@ -51,25 +52,34 @@
 
 	async function toggle(id: string) {
 		hapticTap();
-		await day.toggleTrigger(id);
+		try {
+			await day.toggleTrigger(id);
+		} catch {
+			toasts.show(t('network_error'), 'error');
+		}
 	}
 
 	async function addTrigger() {
 		const name = newName.trim();
 		if (!name) return;
-		const res = await api('/api/triggers', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name, category: 'custom' })
-		});
-		// A trigger with that name exists already: pick it instead.
+		// A trigger with that name exists already, also under its translated name
+		// ("Koffein" for the built-in "Caffeine"): pick it instead of adding a second one.
 		const existing = triggers.find((tr) => tr.name.toLowerCase() === name.toLowerCase() || localizeBuiltInText(tr.name).toLowerCase() === name.toLowerCase());
-		if (res.status === 409 && existing) {
+		if (existing && !existing.hidden) {
 			newName = '';
 			if (!day.hasTrigger(existing.id)) await toggle(existing.id);
 			return;
 		}
-		if (!res.ok) return;
+		// A deleted one comes back (the server restores it by its stored name).
+		const res = await api('/api/triggers', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: existing?.name ?? name, category: existing?.category ?? 'custom' })
+		});
+		if (!res.ok) {
+			toasts.show(t('network_error'), 'error');
+			return;
+		}
 		const created: Trigger = await res.json();
 		triggers = [...triggers.filter((tr) => tr.id !== created.id), created];
 		newName = '';

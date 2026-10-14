@@ -1,5 +1,5 @@
 import { getJson } from '$lib/api.js';
-import { toDateString, toYearMonth } from '$lib/utils/date';
+import { getDaysInMonth, toDateString, toYearMonth } from '$lib/utils/date';
 import type { Entry } from '$lib/types/index.js';
 import type { PageLoad } from './$types';
 
@@ -8,9 +8,10 @@ import type { PageLoad } from './$types';
 export const load: PageLoad = async ({ fetch, url }) => {
 	const today = toDateString(new Date());
 	const param = url.searchParams.get('month');
-	const yearMonth = param && /^\d{4}-\d{2}$/.test(param) ? param : toYearMonth(new Date());
+	const yearMonth = param && /^\d{4}-(0[1-9]|1[0-2])$/.test(param) ? param : toYearMonth(new Date());
 	const day = url.searchParams.get('day');
-	const entries = await getJson<Entry[]>(fetch, `/api/entries?from=${yearMonth}-01&to=${yearMonth}-31`);
+	const last = String(getDaysInMonth(yearMonth)).padStart(2, '0');
+	const entries = await getJson<Entry[]>(fetch, `/api/entries?from=${yearMonth}-01&to=${yearMonth}-${last}`);
 	return {
 		today,
 		yearMonth,

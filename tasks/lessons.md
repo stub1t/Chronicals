@@ -25,3 +25,10 @@ Correction: no em dashes and no AI-sounding text in the README, images or other 
   all fields, so nobody noticed until the introduction saved the name and the place in
   separate steps and the second call wiped the name. Before calling an existing route in a
   new way, check whether it updates partially; make updates partial by default and test it.
+
+## Stricter validation needs a search for lenient callers
+
+- Rejecting impossible dates in the API would have broken the calendar: it asked for
+  `${month}-01` to `${month}-31` for every month and relied on 2026-09-31 being accepted.
+  Before tightening a check, grep for the values callers build (here `-31`) and fix them
+  in the same change.

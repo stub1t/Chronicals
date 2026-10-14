@@ -18,9 +18,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Rejects dates that don't exist, such as 2026-02-31 (Date would roll it over to March). */
 function validateDateString(value: string): void {
 	const date = new Date(`${value}T00:00:00Z`);
-	if (Number.isNaN(date.getTime())) {
+	if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
 		throw error(400, 'Invalid date');
 	}
 }
@@ -90,6 +91,13 @@ export function assertIsoDatetime(value: unknown, fieldName: string): string {
 		throw error(400, `${fieldName} must be a valid ISO datetime`);
 	}
 	return value;
+}
+
+/** A log can't end before it starts. */
+export function assertEndAfterStart(startTime: string, endTime: string | null): void {
+	if (endTime !== null && Date.parse(endTime) < Date.parse(startTime)) {
+		throw error(400, 'endTime must not be before startTime');
+	}
 }
 
 export function optionalText(value: unknown, maxLength = MAX_TEXT_LENGTH): string | null {
