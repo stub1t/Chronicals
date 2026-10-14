@@ -1,10 +1,11 @@
 <script lang="ts">
-	import Pill from '@lucide/svelte/icons/pill';
 	/** The logs of one day as tappable cards; ongoing ones get an "End now" button. */
+	import Pill from '@lucide/svelte/icons/pill';
+	import { hasDuration } from './categories.js';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import CircleStop from '@lucide/svelte/icons/circle-stop';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
-	import { dateLocale, formatTime, localizeBuiltInText, t } from '$lib/i18n';
+	import { formatTime, localizeBuiltInText, t } from '$lib/i18n';
 	import type { EntryTypeLog } from '$lib/types';
 
 	interface Props {
@@ -15,8 +16,16 @@
 
 	let { logs, onopen, onend }: Props = $props();
 
-	const time = (iso: string) =>
-		formatTime(iso);
+	const time = (iso: string) => formatTime(iso);
+
+	// A meal shows its kind ("Lunch") as the name and its foods below.
+	const nameOf = (log: EntryTypeLog) =>
+		localizeBuiltInText((log.entryType?.category === 'meal' && (log.metricValues?.meal as string)) || log.entryType?.name || '');
+	const foodsOf = (log: EntryTypeLog) =>
+		[...(Array.isArray(log.metricValues?.foods) ? (log.metricValues.foods as string[]) : []), (log.metricValues?.what as string) ?? '']
+			.filter(Boolean)
+			.map((food) => localizeBuiltInText(food))
+			.join(', ');
 
 	function duration(log: EntryTypeLog): string {
 		if (!log.endTime) return '';
@@ -36,10 +45,13 @@
 			<button type="button" class="main" onclick={() => onopen(log)}>
 				<EntryTypeIcon entryType={log.entryType} size={42} badge />
 				<span class="text">
-					<span class="name">{localizeBuiltInText(log.entryType?.name ?? '')}</span>
+					<span class="name">{nameOf(log)}</span>
 					<span class="meta">
 						{time(log.startTime)}{#if log.endTime}&nbsp;–&nbsp;{time(log.endTime)} · {duration(log)}{/if}
 					</span>
+					{#if log.entryType?.category === 'meal' && foodsOf(log)}
+						<span class="taken">{foodsOf(log)}</span>
+					{/if}
 					{#if Array.isArray(log.metricValues?.relief) && log.metricValues.relief.length}
 						<span class="taken">
 							<Pill size={13} />
@@ -56,7 +68,7 @@
 				{/if}
 				<ChevronRight size={18} class="flip-rtl chevron" />
 			</button>
-			{#if !log.endTime && log.entryType?.category !== 'note'}
+			{#if !log.endTime && hasDuration(log.entryType?.category)}
 				<button type="button" class="end" onclick={() => onend(log)}>
 					<CircleStop size={16} />
 					<span class="ongoing">{t('log_ongoing')}</span>

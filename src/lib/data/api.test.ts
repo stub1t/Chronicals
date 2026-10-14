@@ -105,10 +105,10 @@ describe('handleApiRequest', () => {
 
 		db.update(entryTypes).set({ name: 'Hypo' }).where(eq(entryTypes.id, 'builtin-hypo')).run();
 		seedBuiltIns(db);
-		expect(name('builtin-hypo')).toBe('Low blood sugar');
+		expect(name('builtin-hypo')).toBe('Blood sugar');
 
 		db.update(entryTypes).set({ name: 'Hypo' }).where(eq(entryTypes.id, 'builtin-hypo')).run();
-		await call('POST', '/api/entry-types', { name: 'Low blood sugar', metricSchema: { fields: [] } });
+		await call('POST', '/api/entry-types', { name: 'Blood sugar', metricSchema: { fields: [] } });
 		expect(() => seedBuiltIns(db)).not.toThrow();
 		expect(name('builtin-hypo')).toBe('Hypo');
 	});
@@ -132,8 +132,8 @@ describe('handleApiRequest', () => {
 		const rows = Object.fromEntries(db.select().from(entryTypeLogs).all().map((r) => [r.id, r]));
 		expect(JSON.parse(rows.a.metricValues)).toEqual({ intensity: 4, symptoms: ['sneezing'] });
 		expect(rows.a.intensityCache).toBe(4);
-		expect(JSON.parse(rows.b.metricValues)).toEqual({ intensity: 3, blood_glucose: '58' });
-		expect(JSON.parse(rows.c.metricValues)).toEqual({});
+		expect(JSON.parse(rows.b.metricValues)).toEqual({ direction: 'too low', intensity: 3, blood_glucose: '58' });
+		expect(JSON.parse(rows.c.metricValues)).toEqual({ direction: 'too low' });
 		expect(rows.c.intensityCache).toBeNull();
 	});
 
@@ -204,6 +204,30 @@ describe('handleApiRequest', () => {
 		await call('DELETE', '/api/triggers/trig-medication-change');
 		await call('POST', '/api/medications', { name: 'Other', startDate: '2026-03-20' });
 		expect(await (await call('GET', '/api/entries?date=2026-03-20')).json()).toBeNull();
+	});
+
+	it('keeps own options on built-in types across restarts', async () => {
+		const { db } = useTestDatabase();
+		const { seedBuiltIns } = await import('./seed.js');
+		const saved = await (await call('PUT', '/api/entry-types/builtin-headache', { extraOptions: { location: ['jaw', ' jaw '] } })).json();
+		expect(saved.extraOptions).toEqual({ location: ['jaw'] });
+		seedBuiltIns(db);
+		const types = await (await call('GET', '/api/entry-types')).json();
+		expect(types.find((t: { id: string }) => t.id === 'builtin-headache').extraOptions).toEqual({ location: ['jaw'] });
+		expect(await status(call('PUT', '/api/entry-types/builtin-headache', { extraOptions: { location: 'jaw' } }))).toBe(400);
+		expect(await status(call('PUT', '/api/entry-types/builtin-headache', { extraOptions: { 'bad key!': ['x'] } }))).toBe(400);
+		// Built-in types still refuse other changes.
+		expect(await status(call('PUT', '/api/entry-types/builtin-headache', { extraOptions: {}, name: 'Migraine' }))).toBe(404);
+	});
+
+	it('offers a meal type and blood sugar with a direction', async () => {
+		const types = await (await call('GET', '/api/entry-types')).json();
+		const meal = types.find((t: { id: string }) => t.id === 'builtin-meal');
+		expect(meal).toMatchObject({ name: 'Meal', category: 'meal' });
+		expect(meal.metricSchema.fields.map((f: { key: string }) => f.key)).toEqual(['meal', 'foods', 'what']);
+		const sugar = types.find((t: { id: string }) => t.id === 'builtin-hypo');
+		expect(sugar.name).toBe('Blood sugar');
+		expect(sugar.metricSchema.fields[0]).toMatchObject({ key: 'direction', config: { options: ['too low', 'too high'] } });
 	});
 
 	it('deletes only unused custom entry types', async () => {

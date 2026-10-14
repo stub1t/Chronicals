@@ -9,6 +9,8 @@
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import Sprout from '@lucide/svelte/icons/sprout';
 	import LogSheet from './LogSheet.svelte';
+	import EntryTypeSheet from '$lib/me/EntryTypeSheet.svelte';
+	import Plus from '@lucide/svelte/icons/plus';
 	import LogList from './LogList.svelte';
 	import TriggerChips from './TriggerChips.svelte';
 	import WeatherCard from './WeatherCard.svelte';
@@ -33,6 +35,16 @@
 
 	let { day, entryTypes, triggers = $bindable(), typeRanking, triggerRanking, hasLocation, isToday, medications = [] }: Props = $props();
 
+	// Own copy: new types ("+ New") and own options change it while the page stays.
+	// svelte-ignore state_referenced_locally
+	let types = $state<EntryType[]>([...entryTypes]);
+	let newTypeOpen = $state(false);
+
+	function replaceType(type: EntryType) {
+		types = types.some((item) => item.id === type.id) ? types.map((item) => (item.id === type.id ? type : item)) : [...types, type];
+		if (sheetType?.id === type.id) sheetType = type;
+	}
+
 	let sheetOpen = $state(false);
 	let sheetType = $state<EntryType | null>(null);
 	let sheetLog = $state<EntryTypeLog | null>(null);
@@ -45,7 +57,7 @@
 
 	// Most used entry types first; unused ones keep the configured order. Hidden types get no tile.
 	const quickTypes = $derived(
-		entryTypes.filter((type) => !type.hidden).sort((a, b) => {
+		types.filter((type) => !type.hidden).sort((a, b) => {
 			const rank = (id: string) => {
 				const i = typeRanking.indexOf(id);
 				return i === -1 ? Infinity : i;
@@ -62,7 +74,7 @@
 	}
 
 	function openLog(log: EntryTypeLog) {
-		sheetType = entryTypes.find((type) => type.id === log.entryTypeId) ?? null;
+		sheetType = types.find((type) => type.id === log.entryTypeId) ?? null;
 		sheetLog = log;
 		sheetOpen = true;
 	}
@@ -113,6 +125,10 @@
 					<span class="tile-name">{localizeBuiltInText(type.name)}</span>
 				</button>
 			{/each}
+			<button type="button" class="tile new" style="--type: var(--text-muted)" onclick={() => (newTypeOpen = true)}>
+				<span class="new-icon" aria-hidden="true"><Plus size={22} /></span>
+				<span class="tile-name">{t('day_new_type')}</span>
+			</button>
 		</div>
 	</section>
 
@@ -154,7 +170,16 @@
 	</section>
 </div>
 
-<LogSheet bind:open={sheetOpen} {day} entryType={sheetType} log={sheetLog} {medications} />
+<LogSheet bind:open={sheetOpen} {day} entryType={sheetType} log={sheetLog} {medications} ontypechange={replaceType} />
+<EntryTypeSheet
+	bind:open={newTypeOpen}
+	editing={null}
+	colorIndex={types.length}
+	onsaved={(type) => {
+		replaceType(type);
+		openNew(type);
+	}}
+/>
 
 <style>
 	.day-view {
@@ -212,6 +237,21 @@
 
 	.tile:active {
 		transform: scale(0.93);
+	}
+
+	.tile.new {
+		border-style: dashed;
+		background: transparent;
+		color: var(--text-muted);
+	}
+
+	.new-icon {
+		width: 40px;
+		height: 40px;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		background: var(--bg-subtle);
 	}
 
 	.tile-name {

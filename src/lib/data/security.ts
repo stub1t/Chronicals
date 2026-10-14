@@ -10,7 +10,7 @@ const IDENTIFIER_RE = /^[A-Za-z0-9_-]{1,128}$/;
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 const BLOOD_TYPES = new Set<BloodType>(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']);
-const ENTRY_CATEGORIES = new Set<EntryCategory>(['symptom', 'event', 'note']);
+const ENTRY_CATEGORIES = new Set<EntryCategory>(['symptom', 'event', 'note', 'meal']);
 const TRIGGER_CATEGORIES = new Set<TriggerCategory>(['food', 'environment', 'activity', 'medication', 'custom']);
 const MEDICATION_CHANGE_TYPES = new Set<MedicationChangeType>(['started', 'dosage_change', 'stopped']);
 
@@ -191,6 +191,20 @@ export function optionalColor(value: unknown): string | null | undefined {
 		throw error(400, 'color must be a hex value');
 	}
 	return value;
+}
+
+/** Own options per field key: up to 60 short texts each. */
+export function assertExtraOptions(value: unknown): Record<string, string[]> {
+	if (!isPlainObject(value)) throw error(400, 'extraOptions must be an object');
+	const result: Record<string, string[]> = {};
+	for (const [key, options] of Object.entries(value)) {
+		if (!/^[a-z0-9_]{1,40}$/i.test(key)) throw error(400, 'extraOptions has an invalid field key');
+		if (!Array.isArray(options) || options.length > 60 || !options.every((o) => typeof o === 'string' && o.trim() && o.length <= 80)) {
+			throw error(400, 'extraOptions must list up to 60 texts of at most 80 characters');
+		}
+		result[key] = [...new Set(options.map((o: string) => o.trim()))];
+	}
+	return result;
 }
 
 /** Daily well-being: an integer 1 to 5, or null to clear it. */

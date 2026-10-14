@@ -30,7 +30,8 @@
 			const logs = entry?.logs ?? [];
 			const symptoms = logs.filter((l) => l.entryType?.category === 'symptom');
 			const worst = [...symptoms].sort((a, b) => (b.intensityCache ?? 3) - (a.intensityCache ?? 3))[0];
-			const colors = [...new Set(logs.map((l) => l.entryType?.color).filter((c): c is string => !!c))].slice(0, 3);
+			// Meals would put a dot on nearly every day.
+			const colors = [...new Set(logs.filter((l) => l.entryType?.category !== 'meal').map((l) => l.entryType?.color).filter((c): c is string => !!c))].slice(0, 3);
 			return {
 				date,
 				day: i + 1,

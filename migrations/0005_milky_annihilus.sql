@@ -1,0 +1,1 @@
+ALTER TABLE `entry_types` ADD `extra_options` text;

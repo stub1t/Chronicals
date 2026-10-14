@@ -13,9 +13,56 @@
 		values: Record<string, unknown>;
 		color: string;
 		onchange: (key: string, value: unknown) => void;
+		/** Options the user added, by field key. */
+		extra?: Record<string, string[]>;
+		/** Called with a new option for an extendable field; the caller saves it on the type. */
+		onaddoption?: (key: string, option: string) => void;
 	}
 
-	let { schema, values, color, onchange }: Props = $props();
+	let { schema, values, color, onchange, extra = {}, onaddoption }: Props = $props();
+
+	const optionsOf = (f: MetricField) => [...new Set([...(f.config.options ?? []), ...(extra[f.key] ?? [])])];
+
+	// The "+ Own" field that is open, and what is typed in it.
+	let adding = $state<string | null>(null);
+	let draft = $state('');
+
+	function addOption(field: MetricField) {
+		const option = draft.trim();
+		adding = null;
+		draft = '';
+		if (!option) return;
+		const known = optionsOf(field).find((o) => o.toLowerCase() === option.toLowerCase() || localizeBuiltInText(o).toLowerCase() === option.toLowerCase());
+		if (!known) onaddoption?.(field.key, option);
+		const pick = known ?? option;
+		if (field.type === 'checklist') {
+			const current = Array.isArray(values[field.key]) ? (values[field.key] as string[]) : [];
+			if (!current.includes(pick)) onchange(field.key, [...current, pick]);
+		} else {
+			onchange(field.key, pick);
+		}
+		hapticTap();
+	}
+
+	// Number fields remember the last unit per field.
+	function unitOf(field: MetricField): string | undefined {
+		const stored = values[`${field.key}_unit`];
+		if (typeof stored === 'string') return stored;
+		try {
+			return localStorage.getItem(`unit:${field.key}`) ?? field.config.units?.[0];
+		} catch {
+			return field.config.units?.[0];
+		}
+	}
+
+	function setUnit(field: MetricField, unit: string) {
+		onchange(`${field.key}_unit`, unit);
+		try {
+			localStorage.setItem(`unit:${field.key}`, unit);
+		} catch {
+			// Not remembered without storage.
+		}
+	}
 
 	const isScale = (f: MetricField) => f.type === 'slider' && (f.config.min ?? 0) === 1 && (f.config.max ?? 10) === 5;
 	const scaleLabels = () => [t('intensity_1'), t('intensity_2'), t('intensity_3'), t('intensity_4'), t('intensity_5')];
@@ -77,9 +124,9 @@
 					/>
 					<span class="range-value">{value}</span>
 				</div>
-			{:else if field.type === 'select' && (field.config.options?.length ?? 0) <= 10}
+			{:else if field.type === 'select' && optionsOf(field).length <= 12}
 				<div class="chips" role="radiogroup" aria-labelledby="label-{field.key}">
-					{#each field.config.options ?? [] as option (option)}
+					{#each optionsOf(field) as option (option)}
 						<button
 							type="button"
 							role="radio"
@@ -94,6 +141,16 @@
 							{localizeBuiltInText(option)}
 						</button>
 					{/each}
+					{#if field.config.extendable && onaddoption}
+						{#if adding === field.key}
+							<form class="add" onsubmit={(e) => { e.preventDefault(); addOption(field); }}>
+								<!-- svelte-ignore a11y_autofocus -->
+								<input class="add-input" bind:value={draft} aria-label={t('log_own_option')} placeholder={t('log_own_option')} maxlength="80" autofocus onblur={() => addOption(field)} />
+							</form>
+						{:else}
+							<button type="button" class="option own" onclick={() => (adding = field.key)}>+ {t('log_own_option')}</button>
+						{/if}
+					{/if}
 				</div>
 			{:else if field.type === 'select'}
 				<select
@@ -103,18 +160,50 @@
 					onchange={(e) => onchange(field.key, e.currentTarget.value || undefined)}
 				>
 					<option value="">{t('metric_choose')}</option>
-					{#each field.config.options ?? [] as option (option)}
+					{#each optionsOf(field) as option (option)}
 						<option value={option}>{localizeBuiltInText(option)}</option>
 					{/each}
 				</select>
 			{:else if field.type === 'checklist'}
 				<div class="chips" role="group" aria-labelledby="label-{field.key}">
-					{#each field.config.options ?? [] as option (option)}
+					{#each optionsOf(field) as option (option)}
 						{@const on = Array.isArray(selected(field.key)) && (selected(field.key) as string[]).includes(option)}
 						<button type="button" aria-pressed={on} class="option" class:picked={on} onclick={() => toggleOption(field.key, option)}>
 							{localizeBuiltInText(option)}
 						</button>
 					{/each}
+					{#if field.config.extendable && onaddoption}
+						{#if adding === field.key}
+							<form class="add" onsubmit={(e) => { e.preventDefault(); addOption(field); }}>
+								<!-- svelte-ignore a11y_autofocus -->
+								<input class="add-input" bind:value={draft} aria-label={t('log_own_option')} placeholder={t('log_own_option')} maxlength="80" autofocus onblur={() => addOption(field)} />
+							</form>
+						{:else}
+							<button type="button" class="option own" onclick={() => (adding = field.key)}>+ {t('log_own_option')}</button>
+						{/if}
+					{/if}
+				</div>
+			{:else if field.type === 'number'}
+				<div class="number">
+					<input
+						class="input"
+						type="number"
+						inputmode="decimal"
+						step="any"
+						aria-labelledby="label-{field.key}"
+						value={selected(field.key) ?? ''}
+						oninput={(e) => onchange(field.key, e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value))}
+					/>
+					{#if field.config.units?.length}
+						{@const unit = unitOf(field)}
+						<div class="units" role="radiogroup" aria-label={t('log_unit')}>
+							{#each field.config.units as option (option)}
+								<button type="button" role="radio" aria-checked={unit === option} class="option unit" class:picked={unit === option} onclick={() => setUnit(field, option)}>
+									{option}
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			{:else if field.type === 'textarea'}
 				<textarea
@@ -243,13 +332,46 @@
 	}
 
 	/* Built-in options are stored in lower case ("temples"); start them with a capital. */
-	.option::first-letter {
+	.option:not(.unit)::first-letter {
 		text-transform: uppercase;
 	}
 
 	.option.picked {
 		background: color-mix(in srgb, var(--type) 18%, var(--bg-card));
 		border-color: var(--type);
+	}
+
+	.option.own {
+		border-style: dashed;
+		color: var(--text-muted);
+	}
+
+	.add-input {
+		min-height: 40px;
+		width: 160px;
+		padding: 0 14px;
+		border: 1.5px solid var(--type);
+		border-radius: var(--radius-pill);
+		background: var(--bg-card);
+		color: var(--text);
+		font-size: var(--text-sm);
+	}
+
+	.number {
+		display: flex;
+		gap: var(--space-2);
+		align-items: center;
+	}
+
+	.number .input {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.units {
+		display: flex;
+		gap: 6px;
+		flex-shrink: 0;
 	}
 
 	.input {

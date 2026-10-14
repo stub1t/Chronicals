@@ -4,11 +4,24 @@ import { entryTypeLogs, entryTypes } from '../../db/schema.js';
 import type { EntryType } from '../../types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 
-function parseType(row: typeof entryTypes.$inferSelect): EntryType {
+type TypeRow = Pick<
+	typeof entryTypes.$inferSelect,
+	'id' | 'name' | 'icon' | 'color' | 'metricSchema' | 'category' | 'sortOrder' | 'isBuiltIn' | 'hidden' | 'extraOptions'
+>;
+
+/** A database row as an EntryType (JSON columns parsed). */
+export function parseType(row: TypeRow): EntryType {
 	return {
-		...row,
+		id: row.id,
+		name: row.name,
+		icon: row.icon,
+		color: row.color,
 		metricSchema: JSON.parse(row.metricSchema),
-		category: row.category as EntryType['category']
+		category: row.category as EntryType['category'],
+		sortOrder: row.sortOrder,
+		isBuiltIn: row.isBuiltIn,
+		hidden: row.hidden,
+		extraOptions: row.extraOptions ? JSON.parse(row.extraOptions) : {}
 	};
 }
 
@@ -48,16 +61,24 @@ export function createEntryType(data: {
 
 export function updateEntryType(
 	id: string,
-	data: { name?: string; icon?: string | null; color?: string | null; metricSchema?: object; hidden?: boolean }
+	data: {
+		name?: string;
+		icon?: string | null;
+		color?: string | null;
+		metricSchema?: object;
+		hidden?: boolean;
+		extraOptions?: Record<string, string[]>;
+	}
 ): EntryType | null {
 	const existing = db.select().from(entryTypes).where(eq(entryTypes.id, id)).get();
 	if (!existing) return null;
-	// Built-in types are refreshed from the seed on start; only hiding them sticks.
-	if (existing.isBuiltIn && Object.keys(data).some((key) => key !== 'hidden')) return null;
+	// Built-in types are refreshed from the seed on start; only hiding them and own options stick.
+	if (existing.isBuiltIn && Object.keys(data).some((key) => key !== 'hidden' && key !== 'extraOptions')) return null;
 
 	db.update(entryTypes)
 		.set({
 			...(data.hidden !== undefined && { hidden: data.hidden }),
+			...(data.extraOptions !== undefined && { extraOptions: JSON.stringify(data.extraOptions) }),
 			...(data.name !== undefined && { name: data.name }),
 			...(data.icon !== undefined && { icon: data.icon }),
 			...(data.color !== undefined && { color: data.color }),

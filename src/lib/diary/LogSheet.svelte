@@ -1,13 +1,16 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	/**
 	 * Add or edit one log (e.g. a headache) on a day. Two taps for the common
 	 * case: the start is "now" (or noon on past days), the duration is "still
 	 * going" and 1–5 scales start in the middle.
 	 */
+	import { api } from '$lib/api.js';
 	import Sheet from '$lib/ui/Sheet.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import LogFields from './LogFields.svelte';
+	import { hasDuration } from './categories.js';
 	import { DiaryDay, localDateTime, localTime } from './day.svelte.js';
 	import { localizeBuiltInText, t } from '$lib/i18n';
 	import { toasts } from '$lib/ui/toast.svelte.js';
@@ -23,9 +26,22 @@
 		log?: EntryTypeLog | null;
 		/** Active ones are offered under "Taken anything for it?". */
 		medications?: Medication[];
+		/** The type changed (an own option was added). */
+		ontypechange?: (type: EntryType) => void;
 	}
 
-	let { open = $bindable(), day, entryType, log = null, medications = [] }: Props = $props();
+	let { open = $bindable(), day, entryType, log = null, medications = [], ontypechange }: Props = $props();
+
+	async function addOption(key: string, option: string) {
+		if (!entryType) return;
+		const extraOptions = { ...entryType.extraOptions, [key]: [...(entryType.extraOptions?.[key] ?? []), option] };
+		const res = await api(`/api/entry-types/${entryType.id}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ extraOptions })
+		});
+		if (res.ok) ontypechange?.(await res.json());
+	}
 
 	const DURATIONS = [15, 30, 60, 120, 240];
 
@@ -56,9 +72,15 @@
 		addingRelief = false;
 	}
 
-	// Reset the form whenever the sheet opens.
+	// Reset the form whenever the sheet opens, and only then: the type also
+	// changes while open when an own option is added, and that must keep the input.
 	$effect(() => {
-		if (!open || !entryType) return;
+		if (!open) return;
+		untrack(() => reset());
+	});
+
+	function reset() {
+		if (!entryType) return;
 		if (log) {
 			time = localTime(log.startTime);
 			values = { ...log.metricValues };
@@ -79,7 +101,7 @@
 					.map((f) => [f.key, Math.round(((f.config.min ?? 0) + (f.config.max ?? 10)) / 2)])
 			);
 		}
-	});
+	}
 
 	function durationLabel(minutes: number): string {
 		return minutes < 60 ? t('duration_minutes', { count: minutes }) : t('duration_hours', { count: minutes / 60 });
@@ -144,7 +166,7 @@
 			</div>
 
 			<section class="when">
-				<label class="label" for="log-time">{t('log_started')}</label>
+				<label class="label" for="log-time">{hasDuration(entryType.category) ? t('log_started') : t('log_time')}</label>
 				<div class="time-row">
 					<input id="log-time" class="time" type="time" bind:value={time} />
 					{#if day.date === toDateString(new Date())}
@@ -152,7 +174,7 @@
 					{/if}
 				</div>
 
-				{#if entryType.category !== 'note'}
+				{#if hasDuration(entryType.category)}
 					<span class="label">{t('log_how_long')}</span>
 					<div class="chips">
 						<button
@@ -191,7 +213,14 @@
 				{/if}
 			</section>
 
-			<LogFields schema={entryType.metricSchema} {values} color={entryType.color ?? 'var(--accent)'} onchange={(key, value) => (values = { ...values, [key]: value })} />
+			<LogFields
+				schema={entryType.metricSchema}
+				{values}
+				color={entryType.color ?? 'var(--accent)'}
+				extra={entryType.extraOptions}
+				onaddoption={addOption}
+				onchange={(key, value) => (values = { ...values, [key]: value })}
+			/>
 
 			{#if entryType.category === 'symptom'}
 				<section class="when">

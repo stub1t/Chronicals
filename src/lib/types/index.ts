@@ -1,6 +1,6 @@
 // ─── Metric Schema Types ───────────────────────────────────────────────────────
 
-export type MetricFieldType = 'slider' | 'select' | 'checklist' | 'textarea' | 'text';
+export type MetricFieldType = 'slider' | 'select' | 'checklist' | 'textarea' | 'text' | 'number';
 
 export interface MetricFieldConfig {
 	min?: number;
@@ -8,6 +8,10 @@ export interface MetricFieldConfig {
 	step?: number;
 	options?: string[];
 	placeholder?: string;
+	/** Number fields: units to pick from; the choice is stored under `<key>_unit`. */
+	units?: string[];
+	/** Select and checklist fields: whether "+ Own" may add options. */
+	extendable?: boolean;
 }
 
 export interface MetricField {
@@ -24,7 +28,8 @@ export interface MetricSchema {
 
 // ─── Entry Types ──────────────────────────────────────────────────────────────
 
-export type EntryCategory = 'symptom' | 'event' | 'note';
+/** Symptoms and events have a duration; notes and meals are a moment. */
+export type EntryCategory = 'symptom' | 'event' | 'note' | 'meal';
 
 export interface EntryType {
 	id: string;
@@ -37,6 +42,8 @@ export interface EntryType {
 	isBuiltIn: boolean;
 	/** No tile on the day screens; past logs stay. */
 	hidden: boolean;
+	/** Options the user added to select and checklist fields, by field key. */
+	extraOptions: Record<string, string[]>;
 }
 
 // ─── Entry Type Logs ──────────────────────────────────────────────────────────
@@ -72,23 +79,6 @@ export interface TriggerRef {
 	triggerName: string;
 	triggerCategory: string;
 	note: string | null;
-}
-
-// ─── Calendar Dot Data ────────────────────────────────────────────────────────
-
-export interface DayDot {
-	color: string;
-	intensity: number; // 1-5
-	entryTypeId: string;
-	entryTypeName: string;
-	category: EntryCategory;
-}
-
-export interface CalendarDayData {
-	date: string;
-	dots: DayDot[];
-	hasHypo: boolean;
-	hasMedChange: boolean;
 }
 
 // ─── Triggers ─────────────────────────────────────────────────────────────────

@@ -24,11 +24,13 @@ export const entryTypes = sqliteTable('entry_types', {
 	icon: text('icon'), // emoji or 'lucide:<key>'
 	color: text('color'), // hex, e.g. '#3b82f6'
 	metricSchema: text('metric_schema').notNull(), // JSON
-	category: text('category').notNull().default('symptom'), // 'symptom' | 'event' | 'note'
+	category: text('category').notNull().default('symptom'), // 'symptom' | 'event' | 'note' | 'meal'
 	sortOrder: integer('sort_order').notNull().default(0),
 	isBuiltIn: integer('is_built_in', { mode: 'boolean' }).notNull().default(false),
 	/** Hidden types get no tile on the day screens; their past logs stay. */
 	hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),
+	/** JSON { fieldKey: string[] }: options the user added; the seed never touches it. */
+	extraOptions: text('extra_options'),
 	createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
 });
 

@@ -1,7 +1,8 @@
 import { eq, and, gte, lte, sql, count } from 'drizzle-orm';
 import { db } from '../db.js';
 import { entries, entryTypeLogs, entryTypes, entryTriggers, triggers } from '../../db/schema.js';
-import type { Entry, CalendarDayData } from '../../types/index.js';
+import type { Entry } from '../../types/index.js';
+import { parseType } from './entryTypes.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export function getEntry(id: string): Entry | null {
@@ -26,7 +27,8 @@ export function getEntry(id: string): Entry | null {
 				category: entryTypes.category,
 				sortOrder: entryTypes.sortOrder,
 				isBuiltIn: entryTypes.isBuiltIn,
-				hidden: entryTypes.hidden
+				hidden: entryTypes.hidden,
+				extraOptions: entryTypes.extraOptions
 			}
 		})
 		.from(entryTypeLogs)
@@ -52,13 +54,7 @@ export function getEntry(id: string): Entry | null {
 		logs: logs.map((l) => ({
 			...l,
 			metricValues: JSON.parse(l.metricValues),
-			entryType: l.entryType
-				? {
-						...l.entryType,
-						metricSchema: JSON.parse(l.entryType.metricSchema as string),
-						category: l.entryType.category as import('../../types/index.js').EntryCategory
-					}
-				: undefined
+			entryType: l.entryType?.id ? parseType(l.entryType as Parameters<typeof parseType>[0]) : undefined
 		})),
 		triggers: triggerRows.map((t) => ({
 			id: t.id,
@@ -94,51 +90,6 @@ export function getEntriesInRange(from: string, to: string): Entry[] {
 export function getMonthEntries(yearMonth: string): Entry[] {
 	// yearMonth: 'YYYY-MM'
 	return getEntriesInRange(`${yearMonth}-01`, `${yearMonth}-31`);
-}
-
-export function getMonthDotData(yearMonth: string): CalendarDayData[] {
-	const start = `${yearMonth}-01`;
-	const end = `${yearMonth}-31`;
-
-	const logs = db
-		.select({
-			date: entries.date,
-			color: entryTypes.color,
-			intensity: entryTypeLogs.intensityCache,
-			entryTypeId: entryTypeLogs.entryTypeId,
-			entryTypeName: entryTypes.name,
-			category: entryTypes.category
-		})
-		.from(entries)
-		.leftJoin(entryTypeLogs, eq(entryTypeLogs.entryId, entries.id))
-		.leftJoin(entryTypes, eq(entryTypeLogs.entryTypeId, entryTypes.id))
-		.where(and(gte(entries.date, start), lte(entries.date, end)))
-		.all();
-
-	const dayMap = new Map<string, CalendarDayData>();
-	for (const log of logs) {
-		if (!log.date) continue;
-		if (!dayMap.has(log.date)) {
-			dayMap.set(log.date, { date: log.date, dots: [], hasHypo: false, hasMedChange: false });
-		}
-		const day = dayMap.get(log.date)!;
-		if (log.entryTypeId && log.color) {
-			if (log.category === 'event' && log.entryTypeId === 'builtin-hypo') {
-				day.hasHypo = true;
-			} else if (log.category === 'event' && log.entryTypeId === 'builtin-medication-change') {
-				day.hasMedChange = true;
-			} else {
-				day.dots.push({
-					color: log.color,
-					intensity: log.intensity ?? 3,
-					entryTypeId: log.entryTypeId,
-					entryTypeName: log.entryTypeName ?? '',
-					category: (log.category as 'symptom' | 'event' | 'note') ?? 'note'
-				});
-			}
-		}
-	}
-	return Array.from(dayMap.values());
 }
 
 export interface EntryFields {

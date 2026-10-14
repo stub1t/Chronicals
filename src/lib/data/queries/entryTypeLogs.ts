@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db.js';
 import { entryTypeLogs, entryTypes } from '../../db/schema.js';
-import type { EntryTypeLog, EntryCategory } from '../../types/index.js';
+import type { EntryTypeLog } from '../../types/index.js';
+import { parseType } from './entryTypes.js';
 import { v4 as uuidv4 } from 'uuid';
 
 function parseLog(row: typeof entryTypeLogs.$inferSelect & { entryType?: typeof entryTypes.$inferSelect | null }): EntryTypeLog {
@@ -13,16 +14,7 @@ function parseLog(row: typeof entryTypeLogs.$inferSelect & { entryType?: typeof 
 		endTime: row.endTime,
 		metricValues: JSON.parse(row.metricValues),
 		intensityCache: row.intensityCache,
-		entryType: (row as { entryType?: typeof entryTypes.$inferSelect | null }).entryType
-			? {
-					...(row as { entryType: typeof entryTypes.$inferSelect }).entryType,
-					metricSchema: JSON.parse(
-						(row as { entryType: typeof entryTypes.$inferSelect }).entryType.metricSchema
-					),
-					category: (row as { entryType: typeof entryTypes.$inferSelect }).entryType
-						.category as EntryCategory
-				}
-			: undefined
+		entryType: row.entryType ? parseType(row.entryType) : undefined
 	};
 }
 

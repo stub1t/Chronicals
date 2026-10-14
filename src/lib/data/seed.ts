@@ -25,6 +25,7 @@ const BUILT_IN_ENTRY_TYPES = [
 					type: 'select',
 					required: false,
 					config: {
+						extendable: true,
 						options: [
 							'temples',
 							'forehead',
@@ -43,6 +44,7 @@ const BUILT_IN_ENTRY_TYPES = [
 					type: 'checklist',
 					required: false,
 					config: {
+						extendable: true,
 						options: [
 							'aura',
 							'light sensitivity',
@@ -98,6 +100,7 @@ const BUILT_IN_ENTRY_TYPES = [
 					type: 'checklist',
 					required: false,
 					config: {
+						extendable: true,
 						options: [
 							'nausea',
 							'cramps',
@@ -144,6 +147,7 @@ const BUILT_IN_ENTRY_TYPES = [
 					type: 'checklist',
 					required: false,
 					config: {
+						extendable: true,
 						options: [
 							'sneezing',
 							'itchy eyes',
@@ -170,14 +174,29 @@ const BUILT_IN_ENTRY_TYPES = [
 		})
 	},
 	{
+		// The id stays from the time this type was "Low blood sugar", so history is kept.
 		id: 'builtin-hypo',
-		name: 'Low blood sugar',
+		name: 'Blood sugar',
 		icon: '!',
 		color: '#f59e0b',
 		category: 'event',
 		sortOrder: 3,
 		metricSchema: JSON.stringify({
 			fields: [
+				{
+					key: 'direction',
+					label: 'Blood sugar',
+					type: 'select',
+					required: true,
+					config: { options: ['too low', 'too high'] }
+				},
+				{
+					key: 'blood_glucose',
+					label: 'Blood sugar reading',
+					type: 'number',
+					required: false,
+					config: { units: ['mg/dL', 'mmol/L'] }
+				},
 				{
 					key: 'intensity',
 					label: 'Intensity',
@@ -191,6 +210,7 @@ const BUILT_IN_ENTRY_TYPES = [
 					type: 'checklist',
 					required: false,
 					config: {
+						extendable: true,
 						options: [
 							'shaking',
 							'sweating',
@@ -200,18 +220,14 @@ const BUILT_IN_ENTRY_TYPES = [
 							'palpitations',
 							'irritability',
 							'hunger',
+							'thirst',
+							'frequent urination',
+							'dry mouth',
 							'blurred vision',
 							'pale skin',
 							'headache'
 						]
 					}
-				},
-				{
-					key: 'blood_glucose',
-					label: 'Blood sugar reading',
-					type: 'text',
-					required: false,
-					config: { placeholder: 'e.g. 3.2 mmol/L' }
 				},
 				{
 					key: 'notes',
@@ -275,12 +291,62 @@ const BUILT_IN_ENTRY_TYPES = [
 		})
 	},
 	{
+		id: 'builtin-meal',
+		name: 'Meal',
+		icon: 'M',
+		color: '#e07a5f',
+		category: 'meal',
+		sortOrder: 6,
+		metricSchema: JSON.stringify({
+			fields: [
+				{
+					key: 'meal',
+					label: 'Meal',
+					type: 'select',
+					required: false,
+					config: { options: ['breakfast', 'lunch', 'dinner', 'snack', 'drink'] }
+				},
+				{
+					key: 'foods',
+					label: 'Foods',
+					type: 'checklist',
+					required: false,
+					config: {
+						extendable: true,
+						options: [
+							'bread',
+							'pasta',
+							'dairy',
+							'cheese',
+							'meat',
+							'fish',
+							'fruit',
+							'vegetables',
+							'sweets',
+							'chocolate',
+							'coffee',
+							'alcohol',
+							'fast food'
+						]
+					}
+				},
+				{
+					key: 'what',
+					label: 'What exactly?',
+					type: 'text',
+					required: false,
+					config: { placeholder: 'e.g. pasta with tomato sauce' }
+				}
+			]
+		})
+	},
+	{
 		id: 'builtin-note',
 		name: 'Note',
 		icon: 'N',
 		color: '#94a3b8',
 		category: 'note',
-		sortOrder: 6,
+		sortOrder: 7,
 		metricSchema: JSON.stringify({
 			fields: [
 				{
@@ -359,6 +425,7 @@ export function seedBuiltIns(db: AppDatabase) {
 	}
 
 	upgradeLogValues(db);
+	addBloodSugarDirection(db);
 
 	// Merge accidental custom period duplicates into the built-in type so old logs survive.
 	const duplicatePeriods = db
@@ -408,6 +475,23 @@ export function seedBuiltIns(db: AppDatabase) {
 
 /** Older 'severity' values (allergy 1 to 5, low blood sugar mild/moderate/severe) become 'intensity' 1 to 5. */
 const SEVERITY_WORDS: Record<string, number> = { mild: 2, moderate: 3, severe: 4 };
+
+/** Low blood sugar became Blood sugar with a direction; older logs were all "too low". */
+function addBloodSugarDirection(db: AppDatabase) {
+	const rows = db
+		.select({ id: schema.entryTypeLogs.id, metricValues: schema.entryTypeLogs.metricValues })
+		.from(schema.entryTypeLogs)
+		.where(eq(schema.entryTypeLogs.entryTypeId, 'builtin-hypo'))
+		.all();
+	for (const row of rows) {
+		const values = JSON.parse(row.metricValues) as Record<string, unknown>;
+		if ('direction' in values) continue;
+		db.update(schema.entryTypeLogs)
+			.set({ metricValues: JSON.stringify({ direction: 'too low', ...values }) })
+			.where(eq(schema.entryTypeLogs.id, row.id))
+			.run();
+	}
+}
 
 function upgradeLogValues(db: AppDatabase) {
 	const rows = db

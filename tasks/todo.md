@@ -96,7 +96,7 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 
 - [x] R1. Names (Eintragen, Trigger heute, Wo es weh tut, Auswertung, Bericht exportieren, Alle Schmerztypen, Stärke), time format setting, word scale for well-being, intensity 1-5 everywhere with data upgrade, "x/5"
 - [x] R2. Built-in triggers editable and deletable, Medikamente group, medication change becomes a trigger, dose changes count, "Etwas dagegen genommen?"
-- [ ] R3. Own options in forms (extra_options), "+ Neu" tile, Blutzucker, meal type with foods
+- [x] R3. Own options in forms (extra_options), "+ Neu" tile, Blutzucker, meal type with foods
 - [ ] R4. Reminder for ongoing logs (Android) and web banner, onboarding
 - [ ] R5. Place per day, automatic location (Android), weather backfill, pollen
 - [ ] R6. Analysis rework from the two reviews (statistics fixes, exact period, one timeline, "Alle" view, foods/pollen/medication as exposures)

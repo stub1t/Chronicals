@@ -12,7 +12,6 @@ import {
 	getEntryByDate,
 	getEntriesInRange,
 	getMonthEntries,
-	getMonthDotData,
 	createEntry,
 	updateEntry,
 	deleteEntry,
@@ -39,6 +38,7 @@ import { BACKUP_CONTENT_TYPE, MAX_BACKUP_BYTES, assertSqliteFile, backupFilename
 import {
 	assertBloodType,
 	assertBoolean,
+	assertExtraOptions,
 	assertDate,
 	assertIdentifier,
 	assertIsoDatetime,
@@ -124,12 +124,11 @@ const routes: Route[] = [
 			}
 
 			const month = url.searchParams.get('month');
-			const dotOnly = url.searchParams.get('dots') === '1';
 
 			if (!month) return json({ error: 'month param required' }, { status: 400 });
 
 			const safeMonth = assertYearMonth(month, 'month');
-			return json(dotOnly ? getMonthDotData(safeMonth) : getMonthEntries(safeMonth));
+			return json(getMonthEntries(safeMonth));
 		},
 		POST: async (event) => {
 			const body = await parseJsonRequest(event);
@@ -237,7 +236,8 @@ const routes: Route[] = [
 				...(body.icon !== undefined && { icon: optionalText(body.icon, 32) }),
 				...(body.color !== undefined && { color: optionalColor(body.color) ?? null }),
 				...(body.metricSchema !== undefined && { metricSchema: assertMetricSchema(body.metricSchema) }),
-				...(body.hidden !== undefined && { hidden: assertBoolean(body.hidden, 'hidden') })
+				...(body.hidden !== undefined && { hidden: assertBoolean(body.hidden, 'hidden') }),
+				...(body.extraOptions !== undefined && { extraOptions: assertExtraOptions(body.extraOptions) })
 			});
 			if (!type) return notFound();
 			return json(type);
@@ -274,7 +274,8 @@ const routes: Route[] = [
 			const trigger = updateTrigger(assertIdentifier(event.params.id, 'id'), {
 				...(body.name !== undefined && { name: requiredText(body.name, 'name', 120) }),
 				...(body.category !== undefined && { category: optionalTriggerCategory(body.category) }),
-				...(body.hidden !== undefined && { hidden: assertBoolean(body.hidden, 'hidden') })
+				...(body.hidden !== undefined && { hidden: assertBoolean(body.hidden, 'hidden') }),
+				...(body.extraOptions !== undefined && { extraOptions: assertExtraOptions(body.extraOptions) })
 			});
 			if (trigger === 'exists') error(409, 'A trigger with this name exists already.');
 			if (!trigger) return notFound();
