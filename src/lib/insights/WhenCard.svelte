@@ -1,45 +1,47 @@
 <script lang="ts">
-	/** When does it happen: weekdays, time of day, and around the period when there is one. */
+	/** When does it happen: a weekday or time of day only when one stands out, and the cycle when there is one. */
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
+	import Clock from '@lucide/svelte/icons/clock';
 	import Card from '$lib/ui/Card.svelte';
 	import RateBars from './charts/RateBars.svelte';
-	import { dateLocale, t } from '$lib/i18n';
+	import { dateLocale, formatNumber, t } from '$lib/i18n';
 	import { addDays } from './dates.js';
 	import type { CycleResult, DayPart, Share } from './engine.js';
 
 	interface Props {
+		typeName: string;
 		color: string;
-		weekdays: Share[];
-		dayParts: Record<DayPart, number>;
+		weekday: { weekday: number; rate: number; otherRate: number } | null;
+		time: { part: DayPart; count: number; total: number } | null;
 		cycle: CycleResult | null;
 	}
 
-	let { color, weekdays, dayParts, cycle }: Props = $props();
+	let { typeName, color, weekday, time, cycle }: Props = $props();
 
 	// 2026-10-12 is a Monday.
-	const weekdayName = (i: number) => new Date(`${addDays('2026-10-12', i)}T12:00:00`).toLocaleDateString(dateLocale(), { weekday: 'short' });
-	const top = $derived(Math.max(...weekdays.map((w) => w.rate)));
+	const weekdayName = (i: number) => new Date(`${addDays('2026-10-12', i)}T12:00:00`).toLocaleDateString(dateLocale(), { weekday: 'long' });
+	const percent = (v: number) => formatNumber(v, { style: 'percent', maximumFractionDigits: 0 });
 	const detail = (s: Share) => t('insights_days_of', { count: s.symptomDays, total: s.trackedDays });
-	const partsTotal = $derived(Object.values(dayParts).reduce((a, b) => a + b, 0));
 </script>
 
 <Card>
-	<h3 class="sub first">{t('insights_weekdays')}</h3>
-	<RateBars
-		{color}
-		rows={weekdays.map((w, i) => ({ label: weekdayName(i), value: w.rate, detail: detail(w), highlight: w.rate === top && top > 0, faint: w.trackedDays < 3 }))}
-	/>
-
-	{#if partsTotal > 0}
-		<h3 class="sub">{t('insights_day_parts')}</h3>
-		<RateBars
-			{color}
-			count
-			rows={(['night', 'morning', 'afternoon', 'evening'] as const).map((part) => ({
-				label: t(`insights_part_${part}`),
-				value: dayParts[part],
-				highlight: dayParts[part] === Math.max(...Object.values(dayParts))
-			}))}
-		/>
+	{#if weekday || time}
+		<ul class="sentences">
+			{#if weekday}
+				<li>
+					<CalendarDays size={18} />
+					<span>{t('insights_weekday_sentence', { type: typeName, weekday: weekdayName(weekday.weekday), rate: percent(weekday.rate), other: percent(weekday.otherRate) })}</span>
+				</li>
+			{/if}
+			{#if time}
+				<li>
+					<Clock size={18} />
+					<span>{t('insights_time_sentence', { part: t(`insights_at_${time.part}`), count: time.count, total: time.total })}</span>
+				</li>
+			{/if}
+		</ul>
+	{:else}
+		<p class="muted">{t('insights_when_nothing')}</p>
 	{/if}
 
 	{#if cycle}
@@ -50,7 +52,7 @@
 				label: t(`insights_phase_${p.phase}`),
 				value: p.rate,
 				detail: detail(p),
-				highlight: p.label === 'likely' || p.label === 'possible',
+				highlight: p.label === 'likely' || p.label === 'watch',
 				faint: p.trackedDays < 5
 			}))}
 		/>
@@ -59,15 +61,38 @@
 </Card>
 
 <style>
+	.sentences {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.sentences li {
+		display: flex;
+		gap: var(--space-2);
+		align-items: flex-start;
+		line-height: 1.45;
+	}
+
+	.sentences :global(svg) {
+		flex-shrink: 0;
+		margin-top: 2px;
+		color: var(--text-muted);
+	}
+
+	.muted {
+		margin: 0;
+		color: var(--text-muted);
+	}
+
 	.sub {
 		margin: var(--space-5) 0 var(--space-3);
 		font-size: var(--text-sm);
 		font-weight: 800;
 		color: var(--text-muted);
-	}
-
-	.sub.first {
-		margin-top: 0;
 	}
 
 	.note {

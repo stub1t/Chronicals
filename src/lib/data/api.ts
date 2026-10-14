@@ -38,6 +38,7 @@ import { BACKUP_CONTENT_TYPE, MAX_BACKUP_BYTES, assertSqliteFile, backupFilename
 import {
 	assertBloodType,
 	assertBoolean,
+	optionalIdList,
 	assertDayLocation,
 	assertExtraOptions,
 	assertDate,
@@ -366,7 +367,8 @@ const routes: Route[] = [
 				unit: optionalText(body.unit, 32) ?? undefined,
 				startDate: assertDate(body.startDate, 'startDate'),
 				notes: optionalText(body.notes, 1000) ?? undefined,
-				reminderTimes: optionalReminderTimes(body.reminderTimes)
+				reminderTimes: optionalReminderTimes(body.reminderTimes),
+				forTypes: optionalIdList(body.forTypes, 'forTypes')
 			});
 			return json(med, { status: 201 });
 		}
@@ -385,7 +387,8 @@ const routes: Route[] = [
 				}),
 				...(body.notes !== undefined && { notes: optionalText(body.notes, 1000) }),
 				...(body.isActive !== undefined && { isActive: assertBoolean(body.isActive, 'isActive') }),
-				...(body.reminderTimes !== undefined && { reminderTimes: optionalReminderTimes(body.reminderTimes) })
+				...(body.reminderTimes !== undefined && { reminderTimes: optionalReminderTimes(body.reminderTimes) }),
+				...(body.forTypes !== undefined && { forTypes: optionalIdList(body.forTypes, 'forTypes') })
 			});
 			if (!med) return notFound();
 			return json(med);

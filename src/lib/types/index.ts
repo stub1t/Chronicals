@@ -159,6 +159,8 @@ export interface Medication {
 	isActive: boolean;
 	/** 'HH:MM' times for reminders in the Android app. */
 	reminderTimes: string[];
+	/** Entry types it is taken for, so the analysis compares it only there; empty: not said. */
+	forTypes: string[];
 }
 
 export type MedicationChangeType = 'started' | 'dosage_change' | 'stopped';

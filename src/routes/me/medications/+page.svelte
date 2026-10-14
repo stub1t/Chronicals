@@ -14,11 +14,12 @@
 	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { hapticSuccess } from '$lib/haptics.js';
 	import { toDateString } from '$lib/utils/date';
-	import { dateLocale, t } from '$lib/i18n';
-	import type { Medication, MedicationChange } from '$lib/types';
+	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
+	import type { EntryType, Medication, MedicationChange } from '$lib/types';
+	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 
 	interface Props {
-		data: { medications: Medication[]; changes: MedicationChange[] };
+		data: { medications: Medication[]; changes: MedicationChange[]; entryTypes: EntryType[] };
 	}
 
 	let { data }: Props = $props();
@@ -68,6 +69,8 @@
 	let medUnit = $state('');
 	let medStart = $state(toDateString(new Date()));
 	let medReminders = $state<string[]>([]);
+	let medFor = $state<string[]>([]);
+	const symptomTypes = $derived(data.entryTypes.filter((type) => type.category === 'symptom' || type.category === 'event'));
 	let saving = $state(false);
 
 	function openAdd() {
@@ -77,6 +80,7 @@
 		medUnit = 'mg';
 		medStart = toDateString(new Date());
 		medReminders = [];
+		medFor = [];
 		editOpen = true;
 	}
 
@@ -87,6 +91,7 @@
 		medUnit = med.unit ?? '';
 		medStart = med.startDate;
 		medReminders = [...(med.reminderTimes ?? [])];
+		medFor = [...(med.forTypes ?? [])];
 		editOpen = true;
 	}
 
@@ -101,6 +106,7 @@
 			dosage: medDosage.trim() || null,
 			unit: medUnit.trim() || null,
 			startDate: medStart,
+			forTypes: medFor,
 			// Reminder times can only be edited in the Android app, where they ring.
 			...(__NATIVE_APP__ && { reminderTimes: medReminders.filter(Boolean) })
 		});
@@ -115,7 +121,7 @@
 			const { requestReminderPermission } = await import('$lib/mobile/reminders.js');
 			await requestReminderPermission();
 		}
-		if (!editing) await reload(); // picks up the "started" change
+		if (!editing) await reload()
 	}
 
 	async function deleteMed(med: Medication) {
@@ -304,6 +310,27 @@
 				<input id="new-med-unit" class="ui-input" bind:value={medUnit} placeholder={t('medications_unit_placeholder')} maxlength="32" />
 			</div>
 		</div>
+		{#if symptomTypes.length}
+			<div class="ui-field">
+				<span class="ui-label" id="med-for">{t('medications_for')}</span>
+				<div class="for" role="group" aria-labelledby="med-for">
+					{#each symptomTypes as type (type.id)}
+						<button
+							type="button"
+							class="for-chip"
+							class:picked={medFor.includes(type.id)}
+							aria-pressed={medFor.includes(type.id)}
+							style="--type: {type.color ?? 'var(--accent)'}"
+							onclick={() => (medFor = medFor.includes(type.id) ? medFor.filter((id) => id !== type.id) : [...medFor, type.id])}
+						>
+							<EntryTypeIcon entryType={type} size={18} />
+							{localizeBuiltInText(type.name)}
+						</button>
+					{/each}
+				</div>
+				<p class="ui-hint">{t('medications_for_hint')}</p>
+			</div>
+		{/if}
 		<div class="ui-field">
 			<label class="ui-label" for="new-med-start">{t('medications_start_date')}</label>
 			<input id="new-med-start" class="ui-input" type="date" bind:value={medStart} />
@@ -609,6 +636,32 @@
 		background: var(--bg-subtle);
 		color: var(--text-muted);
 		cursor: pointer;
+	}
+
+	.for {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.for-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 36px;
+		padding: 0 12px 0 6px;
+		border: 1.5px solid var(--border);
+		border-radius: var(--radius-pill);
+		background: var(--bg-card);
+		color: var(--text);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.for-chip.picked {
+		border-color: var(--type);
+		background: color-mix(in srgb, var(--type) 14%, var(--bg-card));
 	}
 
 	.current {

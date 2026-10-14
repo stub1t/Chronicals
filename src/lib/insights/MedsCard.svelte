@@ -14,6 +14,7 @@
 	let { typeName, color, effects }: Props = $props();
 
 	const one = (n: number | null) => (n === null ? '–' : formatNumber(n, { maximumFractionDigits: 1 }));
+	const short = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' });
 	const date = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 	const title = (e: MedicationEffect) =>
 		e.event.kind === 'started'
@@ -34,6 +35,14 @@
 						<span class="date">{date(effect.event.date)}</span>
 					</span>
 				</div>
+				<p class="windows">
+					{t('insights_meds_windows', {
+						beforeFrom: short(effect.before.from),
+						beforeTo: short(effect.before.to),
+						afterFrom: short(effect.after.from),
+						afterTo: short(effect.after.to)
+					})}
+				</p>
 				{#if effect.result === null}
 					<p class="muted">{t('insights_med_unknown')}</p>
 				{:else}
@@ -49,6 +58,12 @@
 					</div>
 					<p class="result {effect.result}">{t(`insights_med_${effect.result}`, { type: typeName })}</p>
 				{/if}
+				{#if effect.alsoChanged.length}
+					<p class="muted small">{t('insights_meds_also', { names: effect.alsoChanged.join(', ') })}</p>
+				{/if}
+				{#if !effect.linked}
+					<p class="muted small">{t('insights_meds_unlinked')}</p>
+				{/if}
 			</li>
 		{/each}
 	</ul>
@@ -56,11 +71,22 @@
 </Card>
 
 <style>
+	.windows {
+		margin: 0 0 var(--space-2);
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+	}
+
 	.intro,
 	.muted {
 		margin: 0;
 		color: var(--text-muted);
 		font-size: var(--text-sm);
+	}
+
+	.muted.small {
+		margin-top: var(--space-2);
+		font-size: var(--text-xs);
 	}
 
 	.effects {

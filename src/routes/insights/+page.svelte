@@ -7,10 +7,11 @@
 	import Chip from '$lib/ui/Chip.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import Segmented from '$lib/ui/Segmented.svelte';
-	import DoingCard from '$lib/insights/DoingCard.svelte';
+	import SummaryCard from '$lib/insights/SummaryCard.svelte';
 	import LinksCard from '$lib/insights/LinksCard.svelte';
 	import WhenCard from '$lib/insights/WhenCard.svelte';
 	import MedsCard from '$lib/insights/MedsCard.svelte';
+	import AllTypes from '$lib/insights/AllTypes.svelte';
 	import {
 		analysableTypes,
 		byCyclePhase,
@@ -21,12 +22,15 @@
 		links,
 		medicationEffects,
 		medicationEvents,
+		months,
 		overview,
+		timePattern,
 		trackedDays,
+		weekdayPattern,
 		weeks
 	} from '$lib/insights/engine.js';
-	import { addDays } from '$lib/insights/dates.js';
-	import { localizeBuiltInText, t } from '$lib/i18n';
+	import { daysBetween } from '$lib/insights/dates.js';
+	import { dateLocale, localizeBuiltInText, t } from '$lib/i18n';
 	import type { Entry, EntryType, EnvironmentalData, Medication, MedicationChange, Trigger } from '$lib/types';
 	import type { Period } from './+page.js';
 
@@ -49,33 +53,47 @@
 
 	const diary = $derived(indexDiary(data.entries));
 	const tracked = $derived(trackedDays(diary, data.from, data.to).length);
+	const length = $derived(daysBetween(data.from, data.to) + 1);
 	const types = $derived(analysableTypes(diary, data.entryTypes, data.from, data.to));
-	const selected = $derived(types.find((item) => item.type.id === data.type)?.type ?? types[0]?.type ?? null);
+	// "All" first when there is more than one type.
+	const showAll = $derived(types.length > 1 && (data.type === 'all' || !types.some((item) => item.type.id === data.type)));
+	const selected = $derived(showAll ? null : (types.find((item) => item.type.id === data.type)?.type ?? types[0]?.type ?? null));
 	const color = $derived(selected?.color ?? 'var(--accent)');
 	const typeName = $derived(selected ? localizeBuiltInText(selected.name) : '');
 	const names = $derived(new Map(data.triggers.map((tr) => [tr.id, tr.name])));
-
-	// The heatmap shows at most the last 53 weeks.
-	const heatFrom = $derived([data.from, addDays(data.to, -370)].sort().at(-1)!);
+	// Up to half a year as single days; longer as months.
+	const daily = $derived(length <= 190);
+	const date = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
 	const result = $derived.by(() => {
 		if (!selected) return null;
 		const id = selected.id;
+		const parts = byTimeOfDay(diary, id, data.from, data.to);
 		return {
 			overview: overview(diary, id, data.from, data.to),
-			weeks: weeks(diary, id, data.from, data.to),
-			days: dailyLevels(diary, id, heatFrom, data.to),
+			days: daily ? dailyLevels(diary, id, data.from, data.to) : null,
+			months: months(diary, id, data.from, data.to),
 			links: links(diary, id, data.from, data.to, data.weather),
-			weekdays: byWeekday(diary, id, data.from, data.to),
-			dayParts: byTimeOfDay(diary, id, data.from, data.to),
+			weekday: weekdayPattern(byWeekday(diary, id, data.from, data.to)),
+			time: timePattern(parts),
 			cycle: byCyclePhase(diary, id, 'builtin-period', data.from, data.to),
 			meds: medicationEffects(diary, id, medicationEvents(data.medications, data.changes), data.from, data.to, data.to)
 		};
 	});
 
+	const all = $derived.by(() => {
+		if (!showAll) return null;
+		const strip = (id: string) => (daily ? weeks(diary, id, data.from, data.to) : months(diary, id, data.from, data.to));
+		const first = types[0]?.type.id ?? '';
+		return {
+			rows: types.map(({ type }) => ({ type, overview: overview(diary, type.id, data.from, data.to), strip: strip(type.id) })),
+			wellbeing: strip(first).map((b) => b.avgWellbeing)
+		};
+	});
+
 	function go(params: { period?: Period; type?: string }) {
 		const query = new URLSearchParams({ period: params.period ?? data.period });
-		const type = params.type ?? selected?.id;
+		const type = params.type ?? (showAll ? 'all' : selected?.id);
 		if (type) query.set('type', type);
 		goto(`/insights?${query}`, { replaceState: true, noScroll: true, keepFocus: true });
 	}
@@ -95,15 +113,17 @@
 				{ value: 'all', label: t('insights_period_all') }
 			]}
 		/>
+		<p class="range">{t('insights_range', { from: date(data.from), to: date(data.to), tracked, days: length })}</p>
 	</header>
 
-	{#if !selected || !result}
+	{#if types.length === 0}
 		<EmptyState icon={ChartNoAxesColumn} title={t('insights_empty_title')} text={t('insights_empty_text')} />
 	{:else}
 		{#if types.length > 1}
 			<div class="types" role="group" aria-label={t('insights_symptom')}>
+				<Chip selected={showAll} onclick={() => go({ type: 'all' })}>{t('insights_all')}</Chip>
 				{#each types as item (item.type.id)}
-					<Chip selected={item.type.id === selected.id} color={item.type.color} onclick={() => go({ type: item.type.id })}>
+					<Chip selected={item.type.id === selected?.id} color={item.type.color} onclick={() => go({ type: item.type.id })}>
 						<EntryTypeIcon entryType={item.type} size={18} />
 						{localizeBuiltInText(item.type.name)}
 					</Chip>
@@ -115,26 +135,30 @@
 			<p class="hint">{t('insights_few_days', { count: tracked })}</p>
 		{/if}
 
-		<section class="section">
-			<h2 class="section-title">{t('insights_doing')}</h2>
-			<DoingCard {typeName} {color} overview={result.overview} weeks={result.weeks} days={result.days} />
-		</section>
-
-		<section class="section">
-			<h2 class="section-title">{t('insights_links')}</h2>
-			<LinksCard {typeName} {color} links={result.links} {names} />
-		</section>
-
-		<section class="section">
-			<h2 class="section-title">{t('insights_when')}</h2>
-			<WhenCard {color} weekdays={result.weekdays} dayParts={result.dayParts} cycle={result.cycle} />
-		</section>
-
-		{#if result.meds.length}
+		{#if all}
+			<AllTypes rows={all.rows} trackedDays={tracked} wellbeing={all.wellbeing} onpick={(id) => go({ type: id })} />
+		{:else if selected && result}
 			<section class="section">
-				<h2 class="section-title">{t('insights_meds')}</h2>
-				<MedsCard {typeName} {color} effects={result.meds} />
+				<h2 class="section-title">{t('insights_doing')}</h2>
+				<SummaryCard {typeName} {color} overview={result.overview} days={result.days} months={result.months} />
 			</section>
+
+			<section class="section">
+				<h2 class="section-title">{t('insights_links')}</h2>
+				<LinksCard {typeName} {color} links={result.links} {names} />
+			</section>
+
+			<section class="section">
+				<h2 class="section-title">{t('insights_when')}</h2>
+				<WhenCard {typeName} {color} weekday={result.weekday} time={result.time} cycle={result.cycle} />
+			</section>
+
+			{#if result.meds.length}
+				<section class="section">
+					<h2 class="section-title">{t('insights_meds')}</h2>
+					<MedsCard {typeName} {color} effects={result.meds} />
+				</section>
+			{/if}
 		{/if}
 	{/if}
 
@@ -168,6 +192,13 @@
 		margin: 0;
 		font-size: var(--text-2xl);
 		font-weight: 800;
+	}
+
+	.range {
+		margin: 0;
+		font-size: var(--text-sm);
+		font-weight: 700;
+		color: var(--text-muted);
 	}
 
 	.types {

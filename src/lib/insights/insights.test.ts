@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Entry, EnvironmentalData, Medication, MedicationChange } from '$lib/types';
-import { addDays, daysBetween, eachDay, weekStart, weekdayIndex } from './dates.js';
+import { addDays, daysBetween, eachDay, monthsBefore, weekStart, weekdayIndex } from './dates.js';
 import { fisherOneSided } from './fisher.js';
 import {
 	byCyclePhase,
 	byTimeOfDay,
 	byWeekday,
-	compare,
+	benjaminiHochberg,
 	dailyLevels,
 	indexDiary,
 	links,
@@ -63,6 +63,14 @@ describe('dates', () => {
 		expect(weekStart('2026-10-18')).toBe('2026-10-12');
 		expect(eachDay('2026-10-30', '2026-11-02')).toEqual(['2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02']);
 	});
+
+	it('counts months back without running over short months', () => {
+		expect(monthsBefore('2026-10-14', 3)).toBe('2026-07-15');
+		expect(monthsBefore('2026-05-31', 3)).toBe('2026-03-01');
+		expect(monthsBefore('2026-08-31', 6)).toBe('2026-03-01');
+		expect(monthsBefore('2026-12-31', 3)).toBe('2026-10-01');
+		expect(monthsBefore('2026-03-15', 12)).toBe('2025-03-16');
+	});
 });
 
 describe('fisherOneSided', () => {
@@ -81,13 +89,12 @@ describe('fisherOneSided', () => {
 	});
 });
 
-describe('compare', () => {
-	it('labels by p-value and ratio', () => {
-		expect(compare(8, 2, 5, 25).label).toBe('likely');
-		expect(compare(2, 2, 5, 25).label).toBe('not-enough');
-		expect(compare(1, 9, 15, 15).label).toBe('fewer');
-		expect(compare(3, 7, 9, 21).label).toBe('none');
-		expect(compare(5, 5, 0, 10).ratio).toBe(Infinity);
+describe('benjaminiHochberg', () => {
+	it('keeps the smallest p-values that hold at q', () => {
+		expect(benjaminiHochberg([0.001, 0.04, 0.3, 0.5], 0.1)).toEqual([true, true, false, false]);
+		expect(benjaminiHochberg([0.04, 0.2], 0.1)).toEqual([true, false]);
+		expect(benjaminiHochberg([0.06, 0.07, 0.08], 0.1)).toEqual([true, true, true]);
+		expect(benjaminiHochberg([])).toEqual([]);
 	});
 });
 
@@ -137,7 +144,7 @@ describe('overview and series', () => {
 
 	it('compares with the previous period', () => {
 		const o = overview(diary, HEADACHE, from, to);
-		expect(o).toMatchObject({ trackedDays: 30, symptomDays: 5, per30: 5, trend: 'better', avgIntensity: 4, hours: 10 });
+		expect(o).toMatchObject({ trackedDays: 30, symptomDays: 5, per30: 5, trend: 'better', avgIntensity: 4, reliefDays: 0 });
 		expect(o.previous).toMatchObject({ trackedDays: 30, symptomDays: 10 });
 	});
 
@@ -218,5 +225,121 @@ describe('medications', () => {
 	it('says nothing with too few tracked days', () => {
 		const diary = indexDiary(diaryOf({ '2026-03-01': {}, '2026-03-03': {} }));
 		expect(medicationEffects(diary, HEADACHE, medicationEvents([med], changes), '2026-02-01', '2026-04-30', '2026-04-30')[0].result).toBeNull();
+	});
+});
+
+/** A small deterministic random generator for simulated diaries. */
+function random(seed: number) {
+	return () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+}
+
+describe('findings of the review', () => {
+	it('rarely calls unrelated triggers a likely link', () => {
+		let likely = 0;
+		let tested = 0;
+		for (let seed = 1; seed <= 40; seed++) {
+			const rand = random(seed);
+			const days: Record<string, DaySpec> = {};
+			for (let i = 0; i < 90; i++) {
+				days[addDays('2026-01-01', i)] = {
+					types: rand() < 0.25 ? [HEADACHE] : [],
+					triggers: Array.from({ length: 10 }, (_, k) => `t${k}`).filter(() => rand() < 0.2)
+				};
+			}
+			const result = links(indexDiary(diaryOf(days)), HEADACHE, '2026-01-01', addDays('2026-01-01', 89), []);
+			likely += result.filter((l) => l.label === 'likely').length;
+			tested += result.length;
+		}
+		// Without the corrections about one in twenty was "likely" by chance; now it is 4 in 400.
+		expect(likely / tested).toBeLessThanOrEqual(0.015);
+	});
+
+	it('doubles the p-value for picking the better of the two days', () => {
+		const days: Record<string, DaySpec> = {};
+		for (let i = 0; i < 30; i++) days[addDays('2026-01-01', i)] = { types: i % 3 === 0 ? [HEADACHE] : [], triggers: i % 3 === 0 ? ['x'] : [] };
+		const [link] = links(indexDiary(diaryOf(days)), HEADACHE, '2026-01-01', '2026-01-30', []);
+		expect(link.lag).toBe(0);
+		expect(link.p).toBeCloseTo(2 * fisherOneSided(10, 0, 0, 20).greater, 10);
+	});
+
+	it('does not call a trend on one day of difference', () => {
+		const days: Record<string, DaySpec> = {};
+		// 14 tracked days each side: 3 headache days before, 2 after.
+		for (let i = 0; i < 14; i++) {
+			days[addDays('2026-01-01', i)] = { types: i < 3 ? [HEADACHE] : [] };
+			days[addDays('2026-01-15', i)] = { types: i < 2 ? [HEADACHE] : [] };
+		}
+		expect(overview(indexDiary(diaryOf(days)), HEADACHE, '2026-01-15', '2026-01-28').trend).toBe('same');
+		// With too few days there is no trend at all.
+		expect(overview(indexDiary(diaryOf(days)), HEADACHE, '2026-01-22', '2026-01-28').trend).toBeNull();
+	});
+
+	it('does not see two periods in one period with a gap', () => {
+		const days: Record<string, DaySpec> = {};
+		for (let i = 0; i < 60; i++) days[addDays('2026-01-01', i)] = {};
+		for (const d of ['2026-01-10', '2026-01-11', '2026-01-13', '2026-01-14']) days[d] = { types: [PERIOD] };
+		delete days['2026-01-12'];
+		const diary = indexDiary(diaryOf(days));
+		expect(byCyclePhase(diary, HEADACHE, PERIOD, '2026-01-01', '2026-03-01')).toBeNull();
+	});
+
+	it('ends the comparison after a medication when it was stopped', () => {
+		const med = { id: 'm', name: 'Magnesium', dosage: '400', unit: 'mg', startDate: '2026-03-01', endDate: '2026-03-10', isActive: false } as Medication;
+		const stop = [{ id: 's', medicationId: 'm', changeType: 'stopped', changeDate: '2026-03-10' }] as MedicationChange[];
+		const [event] = medicationEvents([med], stop);
+		expect(event.stopDate).toBe('2026-03-10');
+		const days: Record<string, DaySpec> = {};
+		for (let i = -30; i < 30; i++) days[addDays('2026-03-01', i)] = {};
+		const [effect] = medicationEffects(indexDiary(diaryOf(days)), HEADACHE, [event], '2026-02-01', '2026-04-30', '2026-04-30');
+		expect(effect.after).toMatchObject({ from: '2026-03-01', to: '2026-03-09', trackedDays: 9 });
+		expect(effect.result).toBeNull();
+	});
+
+	it('shows only medications meant for the type, and notes other changes', () => {
+		const a = { id: 'a', name: 'Cetirizine', startDate: '2026-03-01', forTypes: ['builtin-allergy'] } as unknown as Medication;
+		const b = { id: 'b', name: 'Magnesium', startDate: '2026-03-05', forTypes: [] } as unknown as Medication;
+		const events = medicationEvents([a, b], []);
+		const effects = medicationEffects(indexDiary([]), HEADACHE, events, '2026-02-01', '2026-04-30', '2026-04-30');
+		expect(effects.map((e) => e.event.name)).toEqual(['Magnesium']);
+		expect(effects[0].alsoChanged).toEqual(['Cetirizine']);
+	});
+
+	it('shows no starting dose when it is unknown', () => {
+		const med = { id: 'm', name: 'X', dosage: '20', unit: 'mg', startDate: '2026-03-01' } as Medication;
+		const change = [{ id: 'c', medicationId: 'm', changeType: 'dosage_change', oldDosage: null, newDosage: '20 mg', changeDate: '2026-03-10' }] as MedicationChange[];
+		expect(medicationEvents([med], change).find((e) => e.kind === 'started')!.newDosage).toBeNull();
+	});
+
+	it('lists "fewer symptoms" strongest first and tests foods from meals', () => {
+		const days: Record<string, DaySpec> = {};
+		for (let i = 0; i < 60; i++) {
+			const date = addDays('2026-01-01', i);
+			const run = i % 2 === 0;
+			// Running days: never a headache. Walking days: rarely. Pasta: always with a headache.
+			days[date] = { types: !run && i % 3 !== 0 ? [HEADACHE] : [], triggers: [run ? 'run' : '', i % 5 === 0 ? 'walk' : ''].filter(Boolean) };
+		}
+		const entries = diaryOf(days).map((e) => {
+			const pasta = e.logs!.some((l) => l.entryTypeId === HEADACHE) && e.date < '2026-01-20';
+			return pasta
+				? { ...e, logs: [...e.logs!, { id: `${e.date}-meal`, entryId: e.id, entryTypeId: 'builtin-meal', startTime: `${e.date}T10:00:00.000Z`, endTime: null, metricValues: { foods: ['pasta'] }, intensityCache: null, entryType: { id: 'builtin-meal', category: 'meal' } as never }] }
+				: e;
+		});
+		const result = links(indexDiary(entries), HEADACHE, '2026-01-01', '2026-03-01', []);
+		const fewer = result.filter((l) => l.label === 'fewer');
+		expect(fewer[0].key).toBe('run');
+		expect(result.some((l) => l.kind === 'food' && l.key === 'pasta')).toBe(true);
+	});
+
+	it('treats pollen as an exposure and asks more of it', () => {
+		const days: Record<string, DaySpec> = {};
+		const weather: EnvironmentalData[] = [];
+		for (let i = 0; i < 40; i++) {
+			const date = addDays('2026-04-01', i);
+			const high = i % 4 === 0;
+			days[date] = { types: high ? [HEADACHE] : [] };
+			weather.push({ date, pollenBirch: high ? 200 : 5 } as EnvironmentalData);
+		}
+		const birch = links(indexDiary(diaryOf(days)), HEADACHE, '2026-04-01', '2026-05-10', weather).find((l) => l.kind === 'pollen')!;
+		expect(birch).toMatchObject({ key: 'birch', label: 'likely', lag: 0 });
 	});
 });

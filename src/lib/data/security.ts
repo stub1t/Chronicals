@@ -218,6 +218,13 @@ export function assertDayLocation(value: unknown): { lat: number; lon: number; n
 	return { lat, lon, name: optionalText(value.name, 160), source };
 }
 
+/** Up to 50 ids; null or missing gives an empty list. */
+export function optionalIdList(value: unknown, field: string): string[] {
+	if (value === undefined || value === null) return [];
+	if (!Array.isArray(value) || value.length > 50) throw error(400, `${field} must be a list of ids`);
+	return [...new Set(value.map((id) => assertIdentifier(id, field)))];
+}
+
 /** Daily well-being: an integer 1 to 5, or null to clear it. */
 export function optionalWellbeing(value: unknown): number | null | undefined {
 	if (value === undefined) return undefined;

@@ -132,6 +132,8 @@ export const medications = sqliteTable('medications', {
 	notes: text('notes'),
 	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
 	reminderTimes: text('reminder_times'), // JSON array of 'HH:MM', used by the Android app's reminders
+	/** JSON list of entry type ids this medication is taken for; empty: not said. */
+	forTypes: text('for_types'),
 	createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
 });
 

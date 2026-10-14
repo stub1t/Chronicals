@@ -99,6 +99,6 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] R3. Own options in forms (extra_options), "+ Neu" tile, Blutzucker, meal type with foods
 - [x] R4. Reminder for ongoing logs (Android) and web banner, onboarding
 - [x] R5. Place per day, automatic location (Android), weather backfill, pollen
-- [ ] R6. Analysis rework from the two reviews (statistics fixes, exact period, one timeline, "Alle" view, foods/pollen/medication as exposures)
+- [x] R6. Analysis rework from the two reviews (statistics fixes, exact period, one timeline, "Alle" view, foods/pollen/medication as exposures)
 - [ ] R7. Report export: structure, columns, x/5, day grouping, type selection, CSV
 - [ ] Then phase 8 (languages) and phase 9 (polish)

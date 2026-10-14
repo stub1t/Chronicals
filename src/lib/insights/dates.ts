@@ -30,3 +30,17 @@ export function eachDay(from: string, to: string): string[] {
 	for (let date = from; date <= to; date = addDays(date, 1)) days.push(date);
 	return days;
 }
+
+/**
+ * The first day of a period of `months` months ending on `today`:
+ * the same day of the month `months` earlier, plus one. A day that the
+ * earlier month does not have (31 May, 3 months back) becomes its last day.
+ */
+export function monthsBefore(today: string, months: number): string {
+	const year = +today.slice(0, 4);
+	const month = +today.slice(5, 7) - 1 - months;
+	const target = new Date(Date.UTC(year, month, 1));
+	const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+	const day = Math.min(+today.slice(8, 10), lastDay);
+	return addDays(`${target.toISOString().slice(0, 8)}${String(day).padStart(2, '0')}`, 1);
+}

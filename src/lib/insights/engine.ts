@@ -1,13 +1,14 @@
 /**
- * The statistics behind Insights. Everything here is pure and works on the
- * diary as loaded from the API, so it runs the same in the browser and on the
- * phone.
+ * The statistics behind the analysis. Everything here is pure and works on
+ * the diary as loaded from the API, so it runs the same in the browser and on
+ * the phone.
  *
  * - A tracked day has any record: a log, a trigger, a note or a well-being rating.
  * - A symptom day is a tracked day with a log of the chosen entry type.
  * Untracked days are left out everywhere: no entry does not mean no symptom.
  */
 import type { Entry, EntryType, EntryTypeLog, EnvironmentalData, Medication, MedicationChange } from '$lib/types';
+import { POLLEN, POLLEN_FIELD, pollenLevel } from '$lib/weather/pollen.js';
 import { addDays, daysBetween, eachDay, weekStart, weekdayIndex } from './dates.js';
 import { fisherOneSided } from './fisher.js';
 
@@ -18,6 +19,8 @@ export interface DayRecord {
 	/** Entry types logged on the day. */
 	types: Set<string>;
 	triggers: Set<string>;
+	/** Foods from the day's meals. */
+	foods: Set<string>;
 	wellbeing: number | null;
 }
 
@@ -28,12 +31,18 @@ export function indexDiary(entries: Entry[]): Diary {
 	for (const entry of entries) {
 		const logs = entry.logs ?? [];
 		const triggers = new Set((entry.triggers ?? []).map((tr) => tr.triggerId));
+		const foods = new Set(
+			logs
+				.filter((log) => log.entryType?.category === 'meal' && Array.isArray(log.metricValues?.foods))
+				.flatMap((log) => log.metricValues.foods as string[])
+		);
 		diary.set(entry.date, {
 			date: entry.date,
 			tracked: logs.length > 0 || triggers.size > 0 || !!entry.note?.trim() || entry.wellbeing != null,
 			logs,
 			types: new Set(logs.map((log) => log.entryTypeId)),
 			triggers,
+			foods,
 			wellbeing: entry.wellbeing ?? null
 		});
 	}
@@ -42,6 +51,11 @@ export function indexDiary(entries: Entry[]): Diary {
 
 export function trackedDays(diary: Diary, from: string, to: string): string[] {
 	return eachDay(from, to).filter((date) => diary.get(date)?.tracked);
+}
+
+/** The first tracked day, for "all time". */
+export function firstTrackedDay(diary: Diary): string | null {
+	return [...diary.values()].filter((d) => d.tracked).map((d) => d.date).sort()[0] ?? null;
 }
 
 const mean = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);
@@ -54,9 +68,13 @@ function avgIntensity(logs: EntryTypeLog[]): number | null {
 	return mean(logs.map((log) => log.intensityCache).filter((v): v is number => v != null));
 }
 
+const tookSomething = (log: EntryTypeLog) => Array.isArray(log.metricValues?.relief) && (log.metricValues.relief as unknown[]).length > 0;
+
 // ─── How am I doing ───────────────────────────────────────────────────────────
 
 export interface PeriodCounts {
+	from: string;
+	to: string;
 	trackedDays: number;
 	symptomDays: number;
 	/** Symptom days per 30 tracked days; null without tracked days. */
@@ -65,66 +83,90 @@ export interface PeriodCounts {
 
 export interface Overview extends PeriodCounts {
 	avgIntensity: number | null;
-	/** Hours with the symptom, from logs that have an end. */
-	hours: number;
+	/** Symptom days on which something was taken against it. */
+	reliefDays: number;
+	/** The period of the same length just before. */
 	previous: PeriodCounts;
-	/** Compared with the period of the same length just before; null with too little data. */
+	/** null with too little data on either side. */
 	trend: 'better' | 'worse' | 'same' | null;
 }
 
-/** Below this, rates and comparisons are not shown as findings. */
-export const MIN_TRACKED_DAYS = 10;
+/** Below this on either side there is no trend. */
+export const MIN_TREND_DAYS = 14;
 
 function counts(diary: Diary, typeId: string, from: string, to: string): PeriodCounts {
 	const days = trackedDays(diary, from, to);
 	const symptomDays = days.filter((date) => diary.get(date)!.types.has(typeId)).length;
-	return { trackedDays: days.length, symptomDays, per30: days.length ? (symptomDays / days.length) * 30 : null };
+	return { from, to, trackedDays: days.length, symptomDays, per30: days.length ? (symptomDays / days.length) * 30 : null };
 }
 
 export function overview(diary: Diary, typeId: string, from: string, to: string): Overview {
 	const current = counts(diary, typeId, from, to);
 	const length = daysBetween(from, to) + 1;
 	const previous = counts(diary, typeId, addDays(from, -length), addDays(from, -1));
-	const logs = logsOf(diary, trackedDays(diary, from, to), typeId);
-	const hours = logs.reduce((sum, log) => {
-		if (!log.endTime) return sum;
-		const h = (Date.parse(log.endTime) - Date.parse(log.startTime)) / 3_600_000;
-		return h > 0 ? sum + h : sum;
-	}, 0);
+	const days = trackedDays(diary, from, to);
+	const logs = logsOf(diary, days, typeId);
+	const reliefDays = days.filter((date) => diary.get(date)!.logs.some((log) => log.entryTypeId === typeId && tookSomething(log))).length;
 
 	let trend: Overview['trend'] = null;
-	if (current.trackedDays >= MIN_TRACKED_DAYS && previous.trackedDays >= MIN_TRACKED_DAYS) {
+	if (current.trackedDays >= MIN_TREND_DAYS && previous.trackedDays >= MIN_TREND_DAYS) {
 		const now = current.per30!;
 		const before = previous.per30!;
-		// At least a fifth fewer (or more) days and one day per month apart.
-		if (now <= before * 0.8 && before - now >= 1) trend = 'better';
-		else if (now >= before * 1.25 && now - before >= 1) trend = 'worse';
+		const { greater, less } = fisherOneSided(
+			current.symptomDays,
+			current.trackedDays - current.symptomDays,
+			previous.symptomDays,
+			previous.trackedDays - previous.symptomDays
+		);
+		// A fifth fewer (or more), at least one day a month apart, and unlikely to be chance.
+		if (now <= before * 0.8 && before - now >= 1 && less < 0.2) trend = 'better';
+		else if (now >= before * 1.25 && now - before >= 1 && greater < 0.2) trend = 'worse';
 		else trend = 'same';
 	}
-	return { ...current, avgIntensity: avgIntensity(logs), hours, previous, trend };
+	return { ...current, avgIntensity: avgIntensity(logs), reliefDays, previous, trend };
 }
 
-export interface Week {
+export interface Bucket {
+	/** First day of the week or month. */
 	start: string;
 	trackedDays: number;
 	symptomDays: number;
-	avgIntensity: number | null;
+	/** Share of tracked days with the symptom, 0 to 1; null without tracked days. */
+	rate: number | null;
 	avgWellbeing: number | null;
 }
 
-export function weeks(diary: Diary, typeId: string, from: string, to: string): Week[] {
-	const result: Week[] = [];
+function bucket(diary: Diary, typeId: string, start: string, from: string, to: string): Bucket {
+	const days = trackedDays(diary, from, to);
+	const records = days.map((date) => diary.get(date)!);
+	const symptomDays = records.filter((r) => r.types.has(typeId)).length;
+	return {
+		start,
+		trackedDays: days.length,
+		symptomDays,
+		rate: days.length ? symptomDays / days.length : null,
+		avgWellbeing: mean(records.map((r) => r.wellbeing).filter((v): v is number => v != null))
+	};
+}
+
+/** One bucket per week (Monday start), clipped to the period. */
+export function weeks(diary: Diary, typeId: string, from: string, to: string): Bucket[] {
+	const result: Bucket[] = [];
 	for (let start = weekStart(from); start <= to; start = addDays(start, 7)) {
 		const end = addDays(start, 6);
-		const days = trackedDays(diary, start < from ? from : start, end > to ? to : end);
-		const records = days.map((date) => diary.get(date)!);
-		result.push({
-			start,
-			trackedDays: days.length,
-			symptomDays: records.filter((r) => r.types.has(typeId)).length,
-			avgIntensity: avgIntensity(logsOf(diary, days, typeId)),
-			avgWellbeing: mean(records.map((r) => r.wellbeing).filter((v): v is number => v != null))
-		});
+		result.push(bucket(diary, typeId, start, start < from ? from : start, end > to ? to : end));
+	}
+	return result;
+}
+
+/** One bucket per calendar month, clipped to the period. */
+export function months(diary: Diary, typeId: string, from: string, to: string): Bucket[] {
+	const result: Bucket[] = [];
+	for (let start = `${from.slice(0, 7)}-01`; start <= to; ) {
+		const next = new Date(Date.UTC(+start.slice(0, 4), +start.slice(5, 7), 1)).toISOString().slice(0, 10);
+		const end = addDays(next, -1);
+		result.push(bucket(diary, typeId, start, start < from ? from : start, end > to ? to : end));
+		start = next;
 	}
 	return result;
 }
@@ -142,40 +184,33 @@ export function dailyLevels(diary: Diary, typeId: string, from: string, to: stri
 
 // ─── What goes along with it ──────────────────────────────────────────────────
 
-export type LinkLabel = 'likely' | 'possible' | 'fewer' | 'none' | 'not-enough';
+/** 'watch': worth keeping an eye on, not strong enough to call a link. */
+export type LinkLabel = 'likely' | 'watch' | 'fewer' | 'none' | 'not-enough';
 
 export interface Rates {
-	/** Days with the exposure / without it, among tracked days. */
+	/** Tracked days with the exposure / without it. */
 	exposedDays: number;
 	unexposedDays: number;
+	/** Days with both the exposure and the symptom. */
+	exposedSymptomDays: number;
 	/** Share of those days with the symptom, 0 to 1. */
 	withRate: number;
 	withoutRate: number;
 	/** withRate / withoutRate (Infinity when the symptom never came without it). */
 	ratio: number;
-	/** One-sided Fisher p-value in the direction of the label. */
-	p: number;
-	label: LinkLabel;
 }
 
-/** Fewer than this many days on either side give "not enough data yet". */
+/** Fewer than this many days on either side give "not enough days yet". */
 export const MIN_EXPOSED_DAYS = 5;
 
-/** Turns a 2×2 count into rates and a label. */
-export function compare(a: number, b: number, c: number, d: number): Rates {
+function rates(a: number, b: number, c: number, d: number): Rates & { greater: number; less: number } {
 	const exposedDays = a + b;
 	const unexposedDays = c + d;
 	const withRate = exposedDays ? a / exposedDays : 0;
 	const withoutRate = unexposedDays ? c / unexposedDays : 0;
 	const ratio = withoutRate ? withRate / withoutRate : withRate ? Infinity : 1;
-	const base = { exposedDays, unexposedDays, withRate, withoutRate, ratio };
-	if (exposedDays < MIN_EXPOSED_DAYS || unexposedDays < MIN_EXPOSED_DAYS) return { ...base, p: 1, label: 'not-enough' };
-
 	const { greater, less } = fisherOneSided(a, b, c, d);
-	if (greater < 0.05 && ratio >= 1.5) return { ...base, p: greater, label: 'likely' };
-	if (greater < 0.2 && ratio >= 1.25) return { ...base, p: greater, label: 'possible' };
-	if (less < 0.05 && ratio <= 0.67) return { ...base, p: less, label: 'fewer' };
-	return { ...base, p: Math.min(greater, less), label: 'none' };
+	return { exposedDays, unexposedDays, exposedSymptomDays: a, withRate, withoutRate, ratio, greater, less };
 }
 
 /**
@@ -183,14 +218,7 @@ export function compare(a: number, b: number, c: number, d: number): Rates {
  * when unknown (that day is then left out). With `lag` 1 the exposure is read
  * from the day before each tracked day.
  */
-export function exposureRates(
-	diary: Diary,
-	typeId: string,
-	from: string,
-	to: string,
-	exposure: (date: string) => boolean | null,
-	lag: 0 | 1
-): Rates {
+function exposureRates(diary: Diary, typeId: string, from: string, to: string, exposure: (date: string) => boolean | null, lag: 0 | 1) {
 	let a = 0, b = 0, c = 0, d = 0;
 	for (const date of trackedDays(diary, from, to)) {
 		const exposed = exposure(lag ? addDays(date, -1) : date);
@@ -199,7 +227,7 @@ export function exposureRates(
 		if (exposed) symptom ? a++ : b++;
 		else symptom ? c++ : d++;
 	}
-	return compare(a, b, c, d);
+	return rates(a, b, c, d);
 }
 
 export type WeatherKey = 'pressure-drop' | 'hot-day' | 'high-uv';
@@ -210,51 +238,104 @@ export const WEATHER_EXPOSURES: Record<WeatherKey, (w: EnvironmentalData) => boo
 	'high-uv': (w) => (w.uvIndex == null ? null : w.uvIndex >= 6)
 };
 
+export type LinkKind = 'trigger' | 'weather' | 'pollen' | 'food';
+
 export interface Link extends Rates {
-	/** Trigger id, or the weather key. */
+	/** Trigger id, weather key ('pressure-drop'), pollen species ('birch') or food ('pasta'). */
 	key: string;
-	kind: 'trigger' | 'weather';
+	kind: LinkKind;
 	/** 0: the same day, 1: the day before. */
 	lag: 0 | 1;
+	/** One-sided p-value in the direction of the effect, doubled for picking the better of two days. */
+	p: number;
+	label: LinkLabel;
 }
 
-const LABEL_RANK: Record<LinkLabel, number> = { likely: 4, possible: 3, fewer: 2, none: 1, 'not-enough': 0 };
-
-function better(x: Link, y: Link): Link {
-	if (LABEL_RANK[x.label] !== LABEL_RANK[y.label]) return LABEL_RANK[x.label] > LABEL_RANK[y.label] ? x : y;
-	return y.p < x.p ? y : x;
+/** Benjamini-Hochberg: which of the p-values hold at false discovery rate q. */
+export function benjaminiHochberg(ps: number[], q = 0.1): boolean[] {
+	const order = ps.map((p, i) => ({ p, i })).sort((x, y) => x.p - y.p);
+	let cutoff = -1;
+	order.forEach(({ p }, rank) => {
+		if (p <= ((rank + 1) / order.length) * q) cutoff = rank;
+	});
+	const pass = ps.map(() => false);
+	order.forEach(({ i }, rank) => (pass[i] = rank <= cutoff));
+	return pass;
 }
+
+const LABEL_ORDER: Record<LinkLabel, number> = { likely: 0, fewer: 1, watch: 2, none: 3, 'not-enough': 4 };
+/** Weather and pollen come in seasonal streaks, which makes chance links more likely; they need stronger evidence. */
+const SEASONAL: ReadonlySet<LinkKind> = new Set(['weather', 'pollen']);
 
 /**
- * Every trigger used in the period and the weather conditions, each with the
- * stronger of "same day" and "day before", strongest links first.
+ * Every trigger used in the period, foods eaten on at least 5 days, the
+ * weather and pollen, each with the stronger of "same day" and "day before".
+ * Clear links first.
  */
 export function links(diary: Diary, typeId: string, from: string, to: string, weather: EnvironmentalData[]): Link[] {
-	const used = new Set<string>();
-	for (const date of eachDay(addDays(from, -1), to)) diary.get(date)?.triggers.forEach((id) => used.add(id));
+	const known = (date: string) => !!diary.get(date)?.tracked;
+	const sources: Array<{ key: string; kind: LinkKind; exposure: (date: string) => boolean | null }> = [];
 
-	const result: Link[] = [];
-	const best = (key: string, kind: Link['kind'], exposure: (date: string) => boolean | null) => {
-		const [same, before] = ([0, 1] as const).map((lag) => ({ key, kind, lag, ...exposureRates(diary, typeId, from, to, exposure, lag) }));
-		result.push(better(same, before));
-	};
-
-	for (const id of used) {
-		// A trigger counts as "not there" only on tracked days.
-		best(id, 'trigger', (date) => (diary.get(date)?.tracked ? diary.get(date)!.triggers.has(id) : null));
+	const window = eachDay(addDays(from, -1), to);
+	const usedTriggers = new Set<string>();
+	const foodDays = new Map<string, number>();
+	for (const date of window) {
+		const day = diary.get(date);
+		day?.triggers.forEach((id) => usedTriggers.add(id));
+		day?.foods.forEach((food) => foodDays.set(food, (foodDays.get(food) ?? 0) + 1));
+	}
+	for (const id of usedTriggers) sources.push({ key: id, kind: 'trigger', exposure: (date) => (known(date) ? diary.get(date)!.triggers.has(id) : null) });
+	for (const [food, n] of foodDays) {
+		if (n >= MIN_EXPOSED_DAYS) sources.push({ key: food, kind: 'food', exposure: (date) => (known(date) ? diary.get(date)!.foods.has(food) : null) });
 	}
 
 	const byDate = new Map(weather.map((w) => [w.date, w]));
 	for (const [key, test] of Object.entries(WEATHER_EXPOSURES)) {
-		best(key, 'weather', (date) => {
-			const w = byDate.get(date);
-			return w ? test(w) : null;
-		});
+		sources.push({ key, kind: 'weather', exposure: (date) => (byDate.has(date) ? test(byDate.get(date)!) : null) });
 	}
+	for (const species of POLLEN) {
+		const high = (w: EnvironmentalData | undefined) => {
+			const level = pollenLevel(species, w?.[POLLEN_FIELD[species]]);
+			return level === null ? null : level === 'high';
+		};
+		// Only species that reached "high" at all are worth testing.
+		if (!weather.some((w) => high(w))) continue;
+		sources.push({ key: species, kind: 'pollen', exposure: (date) => high(byDate.get(date)) });
+	}
+
+	const candidates = sources.map(({ key, kind, exposure }) => {
+		const [same, before] = ([0, 1] as const).map((lag) => ({ lag, ...exposureRates(diary, typeId, from, to, exposure, lag) }));
+		const best = Math.min(same.greater, same.less) <= Math.min(before.greater, before.less) ? same : before;
+		const up = best.ratio >= 1;
+		const p = Math.min(1, 2 * (up ? best.greater : best.less));
+		const enough = best.exposedDays >= MIN_EXPOSED_DAYS && best.unexposedDays >= MIN_EXPOSED_DAYS;
+		const { lag, exposedDays, unexposedDays, exposedSymptomDays, withRate, withoutRate, ratio } = best;
+		return { key, kind, up, enough, lag, exposedDays, unexposedDays, exposedSymptomDays, withRate, withoutRate, ratio, p };
+	});
+
+	// Benjamini-Hochberg over everything tested for this type.
+	const testable = candidates.filter((c) => c.enough);
+	const passed = new Set(benjaminiHochberg(testable.map((c) => c.p)).flatMap((ok, i) => (ok ? [testable[i]] : [])));
+
+	const result: Link[] = candidates.map((candidate) => {
+		const { up, enough, ...c } = candidate;
+		const significant = passed.has(candidate);
+		let label: LinkLabel = 'none';
+		if (!enough) label = 'not-enough';
+		else if (up && significant && c.p < (SEASONAL.has(c.kind) ? 0.01 : 0.05) && c.ratio >= 1.5 && c.exposedSymptomDays >= 3) label = 'likely';
+		else if (!up && significant && c.p < 0.05 && c.ratio <= 0.67) label = 'fewer';
+		else if (up && c.p < 0.2 && c.ratio >= 1.25 && c.exposedSymptomDays >= 2) label = 'watch';
+		return { ...c, label };
+	});
 
 	return result
 		.filter((link) => link.exposedDays > 0)
-		.sort((x, y) => LABEL_RANK[y.label] - LABEL_RANK[x.label] || (y.ratio === x.ratio ? x.p - y.p : y.ratio - x.ratio));
+		.sort((x, y) => {
+			if (x.label !== y.label) return LABEL_ORDER[x.label] - LABEL_ORDER[y.label];
+			// Strongest first: highest ratio for links, lowest for "fewer".
+			if (x.label === 'fewer') return x.ratio - y.ratio;
+			return y.ratio === x.ratio ? x.p - y.p : y.ratio - x.ratio;
+		});
 }
 
 // ─── When does it happen ──────────────────────────────────────────────────────
@@ -277,6 +358,17 @@ export function byWeekday(diary: Diary, typeId: string, from: string, to: string
 	return result;
 }
 
+/** The weekday that stands out, if one clearly does (one-sided Fisher, corrected for picking 1 of 7). */
+export function weekdayPattern(shares: Share[]): { weekday: number; rate: number; otherRate: number } | null {
+	const weekday = shares.reduce((best, s, i) => (s.rate > shares[best].rate ? i : best), 0);
+	const s = shares[weekday];
+	const other = shares.filter((_, i) => i !== weekday).reduce((sum, o) => ({ tracked: sum.tracked + o.trackedDays, symptom: sum.symptom + o.symptomDays }), { tracked: 0, symptom: 0 });
+	if (s.trackedDays < MIN_EXPOSED_DAYS || other.tracked < MIN_EXPOSED_DAYS) return null;
+	const { greater } = fisherOneSided(s.symptomDays, s.trackedDays - s.symptomDays, other.symptom, other.tracked - other.symptom);
+	const otherRate = other.symptom / other.tracked;
+	return greater * 7 < 0.05 && s.rate >= otherRate * 1.5 ? { weekday, rate: s.rate, otherRate } : null;
+}
+
 export type DayPart = 'night' | 'morning' | 'afternoon' | 'evening';
 
 /** How many logs started at night (0-6 h), in the morning (6-12), afternoon (12-18) and evening (18-24), local time. */
@@ -289,25 +381,36 @@ export function byTimeOfDay(diary: Diary, typeId: string, from: string, to: stri
 	return result;
 }
 
+/** The part of the day when most logs start, if it is at least half of 5 or more. */
+export function timePattern(parts: Record<DayPart, number>): { part: DayPart; count: number; total: number } | null {
+	const total = Object.values(parts).reduce((a, b) => a + b, 0);
+	const [part, count] = (Object.entries(parts) as Array<[DayPart, number]>).sort((a, b) => b[1] - a[1])[0];
+	return total >= 5 && count / total >= 0.5 ? { part, count, total } : null;
+}
+
 export type CyclePhase = 'before' | 'early' | 'late' | 'rest';
 
 export interface CycleResult {
-	/** Period starts found around the period. */
+	/** Period starts inside the period. */
 	cycles: number;
 	phases: Array<{ phase: CyclePhase } & Share & { label: LinkLabel }>;
 }
 
 /**
  * Symptom rate by cycle phase: the 3 days before a period, period days 1 to 3,
- * later period days, and the rest. Needs at least two period starts.
+ * later period days, and the rest. A start needs 10 period-free days before it,
+ * so a gap in logging does not create a second period. Needs two starts in the period.
  */
 export function byCyclePhase(diary: Diary, typeId: string, periodTypeId: string, from: string, to: string): CycleResult | null {
 	if (typeId === periodTypeId) return null;
 	const hasPeriod = (date: string) => !!diary.get(date)?.types.has(periodTypeId);
-	const starts = eachDay(addDays(from, -45), addDays(to, 3)).filter((date) => hasPeriod(date) && !hasPeriod(addDays(date, -1)));
-	if (starts.length < 2) return null;
+	const starts = eachDay(addDays(from, -45), addDays(to, 3)).filter(
+		(date) => hasPeriod(date) && !Array.from({ length: 10 }, (_, i) => addDays(date, -1 - i)).some(hasPeriod)
+	);
+	const cycles = starts.filter((s) => s >= from && s <= to).length;
+	if (cycles < 2) return null;
 
-	const phaseOf = (date: string): CyclePhase => {
+	const phaseOf = (date: string): CyclePhase | null => {
 		const next = starts.find((s) => s > date);
 		if (next && daysBetween(date, next) <= 3) return 'before';
 		const last = starts.filter((s) => s <= date).at(-1);
@@ -316,24 +419,26 @@ export function byCyclePhase(diary: Diary, typeId: string, periodTypeId: string,
 			if (offset <= 2) return 'early';
 			if (hasPeriod(date)) return 'late';
 		}
+		// The last days of the period may be "before" a period that is not logged yet.
+		if (!next && daysBetween(date, to) < 3) return null;
 		return 'rest';
 	};
 
-	const days = trackedDays(diary, from, to).map((date) => ({ phase: phaseOf(date), symptom: diary.get(date)!.types.has(typeId) }));
+	const days = trackedDays(diary, from, to)
+		.map((date) => ({ phase: phaseOf(date), symptom: diary.get(date)!.types.has(typeId) }))
+		.filter((d): d is { phase: CyclePhase; symptom: boolean } => d.phase !== null);
 	const phases = (['before', 'early', 'late', 'rest'] as const).map((phase) => {
 		const inside = days.filter((d) => d.phase === phase);
 		const outside = days.filter((d) => d.phase !== phase);
 		const a = inside.filter((d) => d.symptom).length;
 		const c = outside.filter((d) => d.symptom).length;
-		return {
-			phase,
-			trackedDays: inside.length,
-			symptomDays: a,
-			rate: inside.length ? a / inside.length : 0,
-			label: phase === 'rest' ? ('none' as const) : compare(a, inside.length - a, c, outside.length - c).label
-		};
+		const r = rates(a, inside.length - a, c, outside.length - c);
+		const enough = inside.length >= MIN_EXPOSED_DAYS && outside.length >= MIN_EXPOSED_DAYS;
+		// Three phases are tested, so the bar is p < 0.05 / 3.
+		const label: LinkLabel = phase === 'rest' ? 'none' : !enough ? 'not-enough' : r.greater * 3 < 0.05 && r.ratio >= 1.5 ? 'likely' : r.greater < 0.2 && r.ratio >= 1.25 ? 'watch' : 'none';
+		return { phase, trackedDays: inside.length, symptomDays: a, rate: inside.length ? a / inside.length : 0, label };
 	});
-	return { cycles: starts.length, phases };
+	return { cycles, phases };
 }
 
 // ─── Do my medications help ───────────────────────────────────────────────────
@@ -345,6 +450,10 @@ export interface MedicationEvent {
 	kind: 'started' | 'dosage_change';
 	oldDosage: string | null;
 	newDosage: string | null;
+	/** When this medication was stopped after the event, if it was. */
+	stopDate: string | null;
+	/** Entry types it is taken for; empty: not said. */
+	forTypes: string[];
 }
 
 /** Starts and dose changes of every medication, newest first. */
@@ -353,13 +462,16 @@ export function medicationEvents(medications: Medication[], changes: MedicationC
 	const dose = (m: Medication) => (m.dosage ? `${m.dosage}${m.unit ? ` ${m.unit}` : ''}` : null);
 	for (const med of medications) {
 		const own = changes.filter((c) => c.medicationId === med.id).sort((a, b) => a.changeDate.localeCompare(b.changeDate));
+		const stops = own.filter((c) => c.changeType === 'stopped').map((c) => c.changeDate);
+		const stopAfter = (date: string) => stops.find((s) => s >= date) ?? (med.endDate && med.endDate >= date ? med.endDate : null);
 		// The first dose change tells which dose the medication was started with.
 		const firstChange = own.find((c) => c.changeType === 'dosage_change');
-		events.push({ medicationId: med.id, name: med.name, date: med.startDate, kind: 'started', oldDosage: null, newDosage: firstChange?.oldDosage ?? dose(med) });
+		const base = { medicationId: med.id, name: med.name, forTypes: med.forTypes ?? [] };
+		events.push({ ...base, date: med.startDate, kind: 'started', oldDosage: null, newDosage: firstChange ? firstChange.oldDosage : dose(med), stopDate: stopAfter(med.startDate) });
 		for (const change of own) {
 			if (change.changeType === 'stopped') continue;
 			if (change.changeType === 'started' && change.changeDate === med.startDate) continue;
-			events.push({ medicationId: med.id, name: med.name, date: change.changeDate, kind: change.changeType, oldDosage: change.oldDosage, newDosage: change.newDosage });
+			events.push({ ...base, date: change.changeDate, kind: change.changeType, oldDosage: change.oldDosage, newDosage: change.newDosage, stopDate: stopAfter(change.changeDate) });
 		}
 	}
 	return events.sort((a, b) => b.date.localeCompare(a.date));
@@ -369,42 +481,49 @@ export interface MedicationEffect {
 	event: MedicationEvent;
 	before: PeriodCounts & { avgIntensity: number | null };
 	after: PeriodCounts & { avgIntensity: number | null };
-	/** null when either side has fewer than MIN_TRACKED_DAYS tracked days. */
+	/** null when either side has fewer than MIN_MEDICATION_DAYS tracked days. */
 	result: 'fewer' | 'more' | 'similar' | null;
+	/** Other medications started or changed within the compared days. */
+	alsoChanged: string[];
+	/** The medication is linked to this type (or not linked to any). */
+	linked: boolean;
 }
 
 export const MEDICATION_WINDOW = 30;
+export const MIN_MEDICATION_DAYS = 10;
 
-/** The 30 days before each event against the 30 days from it on (up to `today`). */
+/** The 30 days before each event against the days from it on (up to 30, today, or the stop). */
 export function medicationEffects(diary: Diary, typeId: string, events: MedicationEvent[], from: string, to: string, today: string): MedicationEffect[] {
 	return events
 		.filter((event) => event.date >= from && event.date <= to)
+		.filter((event) => event.forTypes.length === 0 || event.forTypes.includes(typeId))
 		.map((event) => {
 			const beforeFrom = addDays(event.date, -MEDICATION_WINDOW);
 			const beforeTo = addDays(event.date, -1);
-			const afterTo = [addDays(event.date, MEDICATION_WINDOW - 1), today].sort()[0];
+			const ends = [addDays(event.date, MEDICATION_WINDOW - 1), today, ...(event.stopDate ? [addDays(event.stopDate, -1)] : [])];
+			const afterTo = ends.sort()[0];
 			const side = (start: string, end: string) => ({
-				...counts(diary, typeId, start, end),
+				...counts(diary, typeId, start, end < start ? start : end),
 				avgIntensity: avgIntensity(logsOf(diary, trackedDays(diary, start, end), typeId))
 			});
 			const before = side(beforeFrom, beforeTo);
 			const after = side(event.date, afterTo);
 
 			let result: MedicationEffect['result'] = null;
-			if (before.trackedDays >= MIN_TRACKED_DAYS && after.trackedDays >= MIN_TRACKED_DAYS) {
-				const { greater, less } = fisherOneSided(
-					after.symptomDays,
-					after.trackedDays - after.symptomDays,
-					before.symptomDays,
-					before.trackedDays - before.symptomDays
-				);
-				result = less < 0.1 ? 'fewer' : greater < 0.1 ? 'more' : 'similar';
+			if (before.trackedDays >= MIN_MEDICATION_DAYS && after.trackedDays >= MIN_MEDICATION_DAYS) {
+				const r = rates(after.symptomDays, after.trackedDays - after.symptomDays, before.symptomDays, before.trackedDays - before.symptomDays);
+				result = r.less < 0.1 && r.ratio <= 0.67 ? 'fewer' : r.greater < 0.1 && r.ratio >= 1.5 ? 'more' : 'similar';
 			}
-			return { event, before, after, result };
+			const alsoChanged = [
+				...new Set(
+					events.filter((e) => e.medicationId !== event.medicationId && e.date >= beforeFrom && e.date <= afterTo).map((e) => e.name)
+				)
+			];
+			return { event, before, after, result, alsoChanged, linked: event.forTypes.includes(typeId) };
 		});
 }
 
-// ─── Which types to offer ─────────────────────────────────────────────────────
+// ─── Which types to offer, and all of them at once ────────────────────────────
 
 /** Entry types worth analysing (symptoms and events with logs in the period), most logged first. */
 export function analysableTypes(diary: Diary, entryTypes: EntryType[], from: string, to: string): Array<{ type: EntryType; days: number }> {

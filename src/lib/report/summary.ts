@@ -34,7 +34,7 @@ export interface TypeSummary {
 	per30: number | null;
 	avgIntensity: number | null;
 	avgDurationMinutes: number | null;
-	/** Triggers and weather with a likely or possible link, or fewer symptoms, strongest first. */
+	/** Triggers, foods, weather and pollen with a likely link or fewer symptoms, strongest first. */
 	links: NamedLink[];
 }
 
@@ -124,7 +124,7 @@ export function buildReport(input: ReportInput, format: ReportFormat): Report {
 				avgDurationMinutes: average(logs.map(durationMinutes).filter((v): v is number => v !== null)),
 				links: analysed
 					? links(diary, entryType.id, input.from, input.to, input.weather)
-							.filter((l) => ['likely', 'possible', 'fewer'].includes(l.label))
+							.filter((l) => l.label === 'likely' || l.label === 'fewer')
 							.map(named)
 					: []
 			};

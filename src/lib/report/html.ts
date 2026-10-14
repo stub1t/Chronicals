@@ -55,7 +55,7 @@ export function reportToHtml(report: Report, { t, date, number, lang, dir, creat
 			percent(l.withRate),
 			percent(l.withoutRate),
 			l.exposedDays,
-			t(`insights_label_${l.label as 'likely' | 'possible' | 'fewer'}`)
+			t(`insights_label_${l.label as 'likely' | 'fewer'}`)
 		])
 	);
 	const linksBody = links.length
