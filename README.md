@@ -143,16 +143,6 @@ gh run watch      # optional: follow the build, which takes about four minutes
 
 The workflow can also be started from the Actions tab. It builds and signs the APK, creates the tag and publishes the release with notes generated from the commits. To build the APK of an existing release again, run `gh workflow run android-release.yml -f rebuild_tag=v2026.10.13`.
 
-### Signing key
-
-The APK is signed with a release key that is not part of the repository. Keep a backup of it, because Android only installs an update if it is signed with the same key as the installed app. The workflow reads the key from four repository secrets. With the keystore in `.signing/`, they can be set with this command:
-
-```bash
-P=$(awk '/Store password/{print $3}' .signing/credentials.txt) && base64 < .signing/chronicals-release.jks | tr -d '\n' | gh secret set ANDROID_KEYSTORE_BASE64 && gh secret set ANDROID_KEYSTORE_PASSWORD --body "$P" && gh secret set ANDROID_KEY_PASSWORD --body "$P" && gh secret set ANDROID_KEY_ALIAS --body chronicals
-```
-
-The same values can be entered under Settings, Secrets and variables, Actions.
-
 ## License
 
 Copyright (C) 2026 stub1t
