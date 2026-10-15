@@ -54,7 +54,7 @@ describe('ensureEnvData', () => {
 	it('fetches each place once, keeps past days, and refetches when a day moves', async () => {
 		const { db } = useTestDatabase();
 		const { userProfile, entries } = await import('../db/schema.js');
-		db.update(userProfile).set({ locationLat: 48.2, locationLon: 16.37, locationName: 'Wien' }).run();
+		db.update(userProfile).set({ weatherEnabled: true, locationLat: 48.2, locationLon: 16.37, locationName: 'Wien' }).run();
 		db.insert(entries).values({ id: 'trip', date: '2026-03-05', locationLat: 41.39, locationLon: 2.17, locationName: 'Barcelona', locationSource: 'manual' }).run();
 		const calls = fakeOpenMeteo();
 
@@ -80,7 +80,7 @@ describe('ensureEnvData', () => {
 	it('copes with two requests fetching the same day at once', async () => {
 		const { db } = useTestDatabase();
 		const { userProfile } = await import('../db/schema.js');
-		db.update(userProfile).set({ locationLat: 48.2, locationLon: 16.37 }).run();
+		db.update(userProfile).set({ weatherEnabled: true, locationLat: 48.2, locationLon: 16.37 }).run();
 		fakeOpenMeteo();
 		// Today's screen and the analysis both ask before either has stored the day.
 		await expect(Promise.all([ensureEnvData(['2026-03-10']), ensureEnvData(days('2026-03-01', 14))])).resolves.toBeDefined();
@@ -90,7 +90,7 @@ describe('ensureEnvData', () => {
 	it('takes old days from the archive and recent ones from the forecast', async () => {
 		const { db } = useTestDatabase();
 		const { userProfile } = await import('../db/schema.js');
-		db.update(userProfile).set({ locationLat: 48.2, locationLon: 16.37 }).run();
+		db.update(userProfile).set({ weatherEnabled: true, locationLat: 48.2, locationLon: 16.37 }).run();
 		const calls = fakeOpenMeteo();
 		await ensureEnvData(days('2025-12-01', 100));
 		const hosts = calls.filter((u) => !u.hostname.startsWith('air-quality')).map((u) => u.hostname);
@@ -106,7 +106,7 @@ describe('ensureEnvData', () => {
 		vi.stubGlobal('fetch', vi.fn(async () => new Response('down', { status: 503 })));
 		const { db } = useTestDatabase();
 		const { userProfile } = await import('../db/schema.js');
-		db.update(userProfile).set({ locationLat: 48.2, locationLon: 16.37 }).run();
+		db.update(userProfile).set({ weatherEnabled: true, locationLat: 48.2, locationLon: 16.37 }).run();
 		await expect(ensureEnvData(['2026-03-01'])).resolves.toBeUndefined();
 		expect(getEnvDataInRange('2026-03-01', '2026-03-01')).toEqual([]);
 	});

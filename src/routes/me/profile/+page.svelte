@@ -101,10 +101,15 @@
 		<Card>
 			<div class="fields">
 				<div class="ui-field">
-					<label class="ui-label" for="city-search">{t('profile_location')}</label>
-					<p class="ui-hint">{t('profile_location_hint')}</p>
-
-					<LocationSearch bind:value={place} id="city-search" />
+					{#if data.profile.weatherEnabled}
+						<label class="ui-label" for="city-search">{t('profile_location')}</label>
+						<p class="ui-hint">{t('profile_location_hint')}</p>
+						<LocationSearch bind:value={place} id="city-search" />
+					{:else}
+						<span class="ui-label">{t('profile_location')}</span>
+						<!-- The search sends the typed name to Open-Meteo, so it waits for the opt-in. -->
+						<p class="ui-hint"><a href="/me#weather">{t('profile_location_off')}</a></p>
+					{/if}
 				</div>
 			</div>
 		</Card>

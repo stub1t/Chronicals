@@ -57,6 +57,13 @@
       "when": 1791984757544,
       "tag": "0007_bright_boomer",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792078282491,
+      "tag": "0008_groovy_domino",
+      "breakpoints": true
     }
   ]
 }

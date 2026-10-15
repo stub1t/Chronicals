@@ -6,7 +6,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Project
 
-**Chronicals**: self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, auto-fetches weather/pollen/pressure from Open-Meteo, and surfaces correlations in an Analysis tab.
+**Chronicals**: self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, fetches weather/pollen/pressure from Open-Meteo once the user turns that on, and surfaces correlations in an Analysis tab.
 
 Ships two ways from one codebase: the self-hosted web app (Docker) and a standalone Android app (Capacitor) that keeps all data on the phone, with no server.
 
@@ -112,6 +112,7 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
 - **Report**: `src/lib/report/summary.ts` builds the report (pure), `csv.ts` and `pdf.ts` render it. jsPDF's built-in font is Latin-1 only, so PDF text goes through `latin1()`. Files are saved with `saveFile()` in `src/lib/files.ts` (download on web, share sheet on Android).
 - **Search** filters on the device (`src/lib/search.ts`) over entries from `GET /api/entries?from=&to=`, matching stored and translated names.
 - **Version and license**: `__APP_VERSION__` (vite `define`) is the release version from `CHRONICALS_VERSION_NAME` in CI, otherwise `dev-<commit>`; the Android app shows `App.getInfo().version` instead. Settings → About shows it with the AGPL-3.0 notice and the source link (AGPL §13). The project is AGPL-3.0-or-later; keep new files compatible.
+- **Privacy, no outside connections by default**: `user_profile.weather_enabled` (off on a fresh install) gates every Open-Meteo call in the data layer: `ensureEnvData` returns early and `/api/profile/location-search` answers 403 while it is off. Any new outside request must go through the same switch or a new opt-in. The web CSP allows `connect-src 'self'` only (the server fetches). Location on Android comes from the in-app `LocationPlugin.java` (Android's LocationManager, registered in `MainActivity`), not a Play Services plugin; don't add dependencies that pull in `com.google.android.gms` or Firebase. The diary is excluded from Google cloud backup (`res/xml/data_extraction_rules.xml`, `backup_rules.xml`) and the WebView has Safe Browsing and metrics off (manifest meta-data).
 - **Host allowlist**: `hooks.server.ts` returns 421 unless the Host header is the `ORIGIN` host name, `localhost`, an IP address or listed in `ALLOWED_HOSTS` (DNS rebinding protection). It is skipped in dev and at build time.
 
 ## Tests and CI

@@ -33,7 +33,7 @@ import {
 	createMedicationChange
 } from './queries/profile.js';
 import { getAllTriggers, getTrigger, getTriggersByCategory, createTrigger, updateTrigger, deleteTrigger } from './queries/triggers.js';
-import { datesBetween, ensureEnvData, getEnvDataForDate, getEnvDataInRange } from './weather.js';
+import { datesBetween, ensureEnvData, getEnvDataForDate, getEnvDataInRange, isWeatherEnabled } from './weather.js';
 import { backup } from './db.js';
 import { BACKUP_CONTENT_TYPE, MAX_BACKUP_BYTES, assertSqliteFile, backupFilename } from './backup.js';
 import {
@@ -340,7 +340,8 @@ const routes: Route[] = [
 				...(body.bloodType !== undefined && { bloodType: assertBloodType(body.bloodType) }),
 				...(body.locationLat !== undefined && { locationLat: optionalNumber(body.locationLat, 'locationLat', -90, 90) }),
 				...(body.locationLon !== undefined && { locationLon: optionalNumber(body.locationLon, 'locationLon', -180, 180) }),
-				...(body.locationName !== undefined && { locationName: optionalText(body.locationName, 160) })
+				...(body.locationName !== undefined && { locationName: optionalText(body.locationName, 160) }),
+				...(body.weatherEnabled !== undefined && { weatherEnabled: assertBoolean(body.weatherEnabled, 'weatherEnabled') })
 			});
 			return json(profile);
 		}
@@ -348,6 +349,8 @@ const routes: Route[] = [
 
 	route('/api/profile/location-search', {
 		GET: async ({ url, fetch }) => {
+			// The search text goes to Open-Meteo, so only with weather turned on.
+			if (!isWeatherEnabled()) return json({ message: 'Weather is turned off' }, { status: 403 });
 			const query = requiredText(url.searchParams.get('q'), 'q', 120);
 			const searchUrl = new URL('https://geocoding-api.open-meteo.com/v1/search');
 			searchUrl.searchParams.set('name', query);

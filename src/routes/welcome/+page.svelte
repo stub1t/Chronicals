@@ -33,6 +33,8 @@
 	let reminders = $state<ReminderSettings>({ daily: false, time: '20:00', ongoingHours: 3 });
 	let appLock = $state(false);
 	let autoLocation = $state(false);
+	// svelte-ignore state_referenced_locally
+	let weatherEnabled = $state(data.profile.weatherEnabled);
 
 	onMount(() => {
 		language = localeStore.current;
@@ -50,9 +52,16 @@
 		}
 	}
 
+	// Saved at once: the place search below only works with weather turned on.
+	async function setWeather(on: boolean) {
+		const res = await put('/api/profile', { weatherEnabled: on }).catch(() => null);
+		weatherEnabled = res?.ok ? on : !on;
+		if (!weatherEnabled) autoLocation = false;
+	}
+
 	async function next() {
 		if (step === 1) await put('/api/profile', { displayName: name.trim() || null });
-		if (step === 3) {
+		if (step === 3 && weatherEnabled) {
 			await put('/api/profile', { locationLat: place?.lat ?? null, locationLon: place?.lon ?? null, locationName: place?.name ?? null });
 			if (__NATIVE_APP__ && autoLocation) {
 				const { setAutoLocation } = await import('$lib/mobile/location.js');
@@ -138,10 +147,19 @@
 			<p class="hint">{t('welcome_types_hint')}</p>
 		{:else if step === 3}
 			<h1>{t('welcome_place_title')}</h1>
-			<p class="lead">{t('profile_location_hint')}</p>
-			<LocationSearch bind:value={place} id="welcome-place" />
-			{#if __NATIVE_APP__}
-				<Toggle label={t('settings_auto_location')} description={t('settings_auto_location_note')} bind:checked={autoLocation} />
+			<p class="lead">{t('settings_weather_note')}</p>
+			<Toggle
+				label={t('settings_weather')}
+				description={weatherEnabled ? t('settings_weather_on') : t('settings_weather_off')}
+				checked={weatherEnabled}
+				onchange={setWeather}
+			/>
+			{#if weatherEnabled}
+				<label class="ui-label" for="welcome-place">{t('welcome_place_label')}</label>
+				<LocationSearch bind:value={place} id="welcome-place" />
+				{#if __NATIVE_APP__}
+					<Toggle label={t('settings_auto_location')} description={t('settings_auto_location_note')} bind:checked={autoLocation} />
+				{/if}
 			{/if}
 		{:else}
 			<h1>{t('welcome_reminders_title')}</h1>

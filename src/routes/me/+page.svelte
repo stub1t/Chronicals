@@ -28,6 +28,8 @@
 	import { loadReminderSettings, ONGOING_HOURS, saveReminderSettings, type ReminderSettings } from '$lib/reminders.js';
 	import Timer from '@lucide/svelte/icons/timer';
 	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
+	import CloudSun from '@lucide/svelte/icons/cloud-sun';
+	import { api } from '$lib/api.js';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
 	import type { EntryType, Medication, Trigger, UserProfile } from '$lib/types';
 
@@ -45,6 +47,24 @@
 	let version = $state(__APP_VERSION__);
 
 	let autoLocation = $state(false);
+	// svelte-ignore state_referenced_locally
+	let weatherEnabled = $state(data.profile.weatherEnabled);
+
+	// Nothing goes to Open-Meteo until this is on. Turning it off also stops the automatic location.
+	async function toggleWeather(on: boolean) {
+		const res = await api('/api/profile', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ weatherEnabled: on })
+		}).catch(() => null);
+		if (!res?.ok) {
+			weatherEnabled = !on;
+			toasts.show(t('network_error'), 'error');
+			return;
+		}
+		weatherEnabled = on;
+		if (!on && autoLocation) await toggleAutoLocation(false);
+	}
 
 	async function toggleAutoLocation(on: boolean) {
 		const { setAutoLocation } = await import('$lib/mobile/location.js');
@@ -184,6 +204,39 @@
 		/>
 	</MenuGroup>
 
+	<div id="weather" class="with-note">
+		<MenuGroup title={t('settings_online')}>
+			<Toggle
+				icon={CloudSun}
+				color="#e3a13b"
+				label={t('settings_weather')}
+				description={weatherEnabled ? t('settings_weather_on') : t('settings_weather_off')}
+				bind:checked={weatherEnabled}
+				onchange={toggleWeather}
+			/>
+			{#if weatherEnabled}
+				<MenuRow
+					icon={MapPin}
+					color="#d6455d"
+					href="/me/profile"
+					label={t('settings_home_place')}
+					detail={data.profile.locationName?.split(',')[0] ?? t('settings_home_place_unset')}
+				/>
+				{#if __NATIVE_APP__}
+					<Toggle
+						icon={LocateFixed}
+						color="#3aa6b9"
+						label={t('settings_auto_location')}
+						description={t('settings_auto_location_note')}
+						bind:checked={autoLocation}
+						onchange={toggleAutoLocation}
+					/>
+				{/if}
+			{/if}
+		</MenuGroup>
+		<p class="ui-hint">{t('settings_weather_note')}</p>
+	</div>
+
 	<MenuGroup title={t('me_app')}>
 		{#if __NATIVE_APP__}
 			<div>
@@ -230,16 +283,6 @@
 						<p class="ui-hint">{t('settings_reminder_ongoing_note')}</p>
 					</div>
 				{/if}
-			</div>
-			<div>
-				<Toggle
-					icon={LocateFixed}
-					color="#3aa6b9"
-					label={t('settings_auto_location')}
-					description={t('settings_auto_location_note')}
-					bind:checked={autoLocation}
-					onchange={toggleAutoLocation}
-				/>
 			</div>
 			<div>
 				<Toggle
@@ -409,6 +452,18 @@
 
 	.time {
 		max-width: 160px;
+	}
+
+	.with-note {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		scroll-margin-top: var(--space-4);
+	}
+
+	.with-note > p {
+		margin: 0;
+		padding: 0 var(--space-1);
 	}
 
 	.note {

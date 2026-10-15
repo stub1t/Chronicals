@@ -143,6 +143,8 @@ export interface UserProfile {
 	locationLat: number | null;
 	locationLon: number | null;
 	locationName: string | null;
+	/** Weather and pollen from Open-Meteo; nothing is sent while this is off. */
+	weatherEnabled: boolean;
 	updatedAt: string;
 }
 

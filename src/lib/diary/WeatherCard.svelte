@@ -30,9 +30,11 @@
 		day: DiaryDay;
 		/** The home place from the profile, if set. */
 		home: Place | null;
+		/** Off: nothing is fetched and only a pointer to the setting is shown. */
+		enabled: boolean;
 	}
 
-	let { day, home }: Props = $props();
+	let { day, home, enabled }: Props = $props();
 
 	let weather = $state<EnvironmentalData | null>(null);
 	let loaded = $state(false);
@@ -49,7 +51,7 @@
 
 	// Fetch again when the day or its place changes.
 	$effect(() => {
-		const key = place ? `${place.lat},${place.lon}` : null;
+		const key = enabled && place ? `${place.lat},${place.lon}` : null;
 		if (!key) return;
 		loaded = false;
 		api(`/api/environmental?date=${day.date}`)
@@ -106,7 +108,15 @@
 	}
 </script>
 
-{#if !place}
+{#if !enabled}
+	<div class="card hint-card">
+		<span class="hint">
+			<CloudSun size={20} />
+			<span>{t('today_weather_off')}</span>
+		</span>
+		<a class="change" href="/me#weather">{t('today_weather_turn_on')}</a>
+	</div>
+{:else if !place}
 	<div class="card hint-card">
 		<a class="hint" href="/me/profile">
 			<MapPin size={20} />
@@ -241,6 +251,12 @@
 		font-size: var(--text-sm);
 		font-weight: 800;
 		cursor: pointer;
+	}
+
+	a.change {
+		display: inline-flex;
+		align-items: center;
+		text-decoration: none;
 	}
 
 	.weather {

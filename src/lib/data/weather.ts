@@ -59,6 +59,11 @@ export interface Place {
 /** About 5 km: closer places share their weather. */
 const samePlace = (a: Place, b: Place) => Math.abs(a.lat - b.lat) < 0.05 && Math.abs(a.lon - b.lon) < 0.05;
 
+/** Off until the user turns it on under Me. While off, nothing is sent to Open-Meteo. */
+export function isWeatherEnabled(): boolean {
+	return !!db.select({ on: userProfile.weatherEnabled }).from(userProfile).get()?.on;
+}
+
 function homePlace(): Place | null {
 	const profile = db.select().from(userProfile).get();
 	return profile?.locationLat != null && profile.locationLon != null ? { lat: profile.locationLat, lon: profile.locationLon } : null;
@@ -182,8 +187,10 @@ async function fetchRange(place: Place, from: string, to: string, today: string)
 /**
  * Make sure every given date (not in the future) has weather for its place.
  * Today is refreshed after 3 hours. Network failures leave what is stored.
+ * Does nothing while weather is turned off.
  */
 export async function ensureEnvData(dates: string[]): Promise<void> {
+	if (!isWeatherEnabled()) return;
 	const today = localToday();
 	const wanted = [...new Set(dates)].filter((d) => d <= today);
 	if (!wanted.length) return;

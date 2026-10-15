@@ -2,10 +2,21 @@
  * The phone's approximate position (Android app), and the optional daily
  * "where am I" for weather while travelling.
  */
-import { Geolocation } from '@capacitor/geolocation';
+import { registerPlugin, type PermissionState } from '@capacitor/core';
 import { api } from '$lib/api.js';
 import type { Entry, UserProfile } from '$lib/types/index.js';
 import { toDateString } from '$lib/utils/date';
+
+/**
+ * Android's own LocationManager (android/app/.../LocationPlugin.java), so the
+ * app needs no Google Play Services. Coarse location only.
+ */
+interface LocationPlugin {
+	checkPermissions(): Promise<{ coarseLocation: PermissionState }>;
+	requestPermissions(): Promise<{ coarseLocation: PermissionState }>;
+	getCurrentPosition(options: { timeout: number; maximumAge: number }): Promise<{ lat: number; lon: number }>;
+}
+const Location = registerPlugin<LocationPlugin>('Location');
 
 const AUTO_KEY = 'chronicals-auto-location';
 /** Farther than this from home counts as away. */
@@ -32,9 +43,9 @@ export async function setAutoLocation(on: boolean): Promise<boolean> {
 }
 
 export async function requestLocationPermission(): Promise<boolean> {
-	const status = await Geolocation.checkPermissions();
+	const status = await Location.checkPermissions();
 	if (status.coarseLocation === 'granted') return true;
-	const asked = await Geolocation.requestPermissions({ permissions: ['coarseLocation'] });
+	const asked = await Location.requestPermissions();
 	return asked.coarseLocation === 'granted';
 }
 
@@ -42,8 +53,7 @@ export async function requestLocationPermission(): Promise<boolean> {
 export async function currentPosition(): Promise<{ lat: number; lon: number } | null> {
 	try {
 		if (!(await requestLocationPermission())) return null;
-		const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 15_000, maximumAge: 3_600_000 });
-		return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+		return await Location.getCurrentPosition({ timeout: 15_000, maximumAge: 3_600_000 });
 	} catch {
 		return null;
 	}
@@ -66,7 +76,7 @@ export async function updateTodaysPlace(): Promise<void> {
 	const [profileRes, entryRes] = await Promise.all([api('/api/profile'), api(`/api/entries?date=${date}`)]);
 	const profile: UserProfile = await profileRes.json();
 	const entry: Entry | null = await entryRes.json();
-	if (entry?.locationSource === 'manual') return;
+	if (!profile.weatherEnabled || entry?.locationSource === 'manual') return;
 	const here = await currentPosition();
 	if (!here) return;
 	const home = profile.locationLat != null && profile.locationLon != null ? { lat: profile.locationLat, lon: profile.locationLon } : null;

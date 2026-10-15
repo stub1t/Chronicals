@@ -31,12 +31,14 @@
 		triggerRanking: string[];
 		/** The home place from the profile, for the weather. */
 		home: { lat: number; lon: number; name: string } | null;
+		/** Weather and pollen turned on under Me. */
+		weatherEnabled: boolean;
 		isToday: boolean;
 		/** Offered under "Taken anything for it?" in the log sheet. */
 		medications?: Medication[];
 	}
 
-	let { day, entryTypes, triggers = $bindable(), typeRanking, triggerRanking, home, isToday, medications = [] }: Props = $props();
+	let { day, entryTypes, triggers = $bindable(), typeRanking, triggerRanking, home, weatherEnabled, isToday, medications = [] }: Props = $props();
 
 	// Own copy: new types ("+ New") and own options change it while the page stays.
 	// svelte-ignore state_referenced_locally
@@ -143,7 +145,7 @@
 
 	<section>
 		<h2 class="section-title">{t('today_weather')}</h2>
-		<WeatherCard {day} {home} />
+		<WeatherCard {day} {home} enabled={weatherEnabled} />
 	</section>
 
 	<section>

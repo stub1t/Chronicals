@@ -137,3 +137,21 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - Found in the browser run: the Me tab was also highlighted on /meals (`startsWith('/me')`); fixed.
 - Checks: svelte-check 0 problems, 98 unit tests, web and mobile builds, 33 browser checks in German and 10 in English on the web build, 5 on the mobile build (introduction, meals on the device, reload).
 - README screenshots still show the mood faces and the old headache icon.
+
+## Privacy: nothing leaves the device unless turned on (2026-10-15)
+
+- [x] P1. Profile setting "Wetter und Pollen" (`weather_enabled`), off on a fresh install. Existing installs that already have a place keep it on.
+- [x] P2. Data layer refuses to contact Open-Meteo while it is off: no weather fetch, no place search (web server and app alike)
+- [x] P3. UI: toggle under Me with what is sent; place search and automatic location only when it is on; Today shows a short "off" line; introduction asks first
+- [x] P4. Android: replace @capacitor/geolocation (Google Play Services) with a small plugin on Android's LocationManager
+- [x] P5. Android: drop the google-services Gradle plugin; WebView Safe Browsing and metrics off; diary not in Google cloud backup (device to device transfer stays)
+- [x] P6. Web: CSP without Open-Meteo (the server fetches, the browser never does)
+- [x] P7. README privacy section, AGENTS.md, tests
+- [x] Also: npm overrides for cookie, uuid (Capacitor CLI) and esbuild (drizzle-kit), so the three Dependabot alerts are fixed; Referrer-Policy no-referrer
+
+### Review
+
+- Existing installs with a home place or a day elsewhere keep weather on (migration 0008); fresh installs start with it off. Old stored weather stays readable when it is turned off.
+- Checked: unit test that no fetch happens while off and the place search answers 403; 19 browser checks on the web build and 19 on the app build (no request to any other host on six pages, switch, profile, introduction, turning it off again); the place, welcome, me and bug suites still pass where they test current screens.
+- The debug APK builds with JDK 21 and SDK 36; it contains no com.google.android.gms or Firebase classes, and the manifest has the backup rules and the WebView meta-data. The location plugin was not tried on a phone (no emulator here).
+- Old browser scripts today.mjs and calendar.mjs still look for the mood faces removed in round 3; they need updating separately.

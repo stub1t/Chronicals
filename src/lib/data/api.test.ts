@@ -1,5 +1,5 @@
 import { isHttpError } from '@sveltejs/kit';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTestDatabase } from '$lib/server/testing.js';
 import { handleApiRequest } from './api.js';
 
@@ -235,6 +235,29 @@ describe('handleApiRequest', () => {
 		const profile = await (await call('PUT', '/api/profile', { locationLat: 48.2, locationLon: 16.37, locationName: 'Wien' })).json();
 		expect(profile).toMatchObject({ displayName: 'Sam', bloodType: 'O+', locationName: 'Wien' });
 		expect(await (await call('PUT', '/api/profile', { displayName: null })).json()).toMatchObject({ displayName: null, locationName: 'Wien' });
+	});
+
+	describe('weather opt-in', () => {
+		afterEach(() => vi.restoreAllMocks());
+
+		const openMeteo = () =>
+			vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ daily: { time: [] }, results: [] }));
+
+		it('sends nothing to Open-Meteo until weather is turned on', async () => {
+			const fetchSpy = openMeteo();
+			expect((await (await call('GET', '/api/profile')).json()).weatherEnabled).toBe(false);
+			await call('PUT', '/api/profile', { locationLat: 48.2, locationLon: 16.37, locationName: 'Wien' });
+			await call('GET', '/api/environmental?date=2026-03-01');
+			await call('GET', '/api/environmental?from=2026-03-01&to=2026-03-31&fill=1');
+			expect(await status(call('GET', '/api/profile/location-search?q=Wien'))).toBe(403);
+			expect(fetchSpy).not.toHaveBeenCalled();
+
+			expect((await (await call('PUT', '/api/profile', { weatherEnabled: true })).json()).weatherEnabled).toBe(true);
+			await call('GET', '/api/environmental?date=2026-03-01');
+			expect(String(fetchSpy.mock.calls[0][0])).toContain('open-meteo.com');
+			expect(await status(call('GET', '/api/profile/location-search?q=Wien'))).toBe(200);
+			expect(await status(call('PUT', '/api/profile', { weatherEnabled: 'yes' }))).toBe(400);
+		});
 	});
 
 	it('deletes only unused custom entry types', async () => {

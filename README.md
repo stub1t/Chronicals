@@ -31,7 +31,7 @@ It runs as an Android app that keeps all data on the phone, or as a web app that
 - Six built-in entry types: headache, stomachache, allergy or hay fever, blood sugar, period and note. Each has its own form. A headache entry, for example, asks for intensity, location, accompanying symptoms and painkillers. Options and painkillers of your own can be added with "+ New".
 - Your own entry types with a name, icon and colour, recording intensity (1 to 5) and a note. Any type you don't use can be hidden from Today.
 - Triggers in four groups: food, environment, activity and your own.
-- Daily weather from [Open-Meteo](https://open-meteo.com): temperature, air pressure and its change since the day before, UV index, conditions and pollen by plant. This needs a location in your profile.
+- Daily weather from [Open-Meteo](https://open-meteo.com): temperature, air pressure and its change since the day before, UV index, conditions and pollen by plant. It is off until you turn it on under Me, and it needs a place.
 - Insights: how you are doing compared with the period before, which triggers and weather go along with a symptom, when it happens, and how the weeks around a medication change compare. See below.
 - A medication list with dose changes and their history.
 - A doctor report for any period, to print or save as a PDF from the print dialog, and every entry as a CSV spreadsheet.
@@ -51,6 +51,17 @@ The third card shows the share of days with the symptom per weekday, the time of
 The last card puts the 30 days before each medication start or dose change next to the 30 days after, once both sides have at least 10 recorded days.
 
 These are patterns in your own diary, not proof of a cause and not medical advice. Several triggers checked at once will sometimes show a link by chance, so a link that holds up over a few months means more than one that appears in a single month.
+
+## Privacy
+
+The diary stays on the phone, or on your own server for the web app. There are no accounts, ads, analytics or crash reports.
+
+The app connects to one outside service, [Open-Meteo](https://open-meteo.com), and only after you turn on "Weather and pollen" under Me or in the introduction. It then sends the coordinates of your home place, or of the place you were on a given day, and the dates it needs weather for. The place search sends the name you type. Entries, notes, names and medications are never sent. While the switch is off, the app makes no connections. In the web app the server contacts Open-Meteo, not the browser.
+
+- Automatic location for days away from home belongs to the same switch. It asks Android for the approximate location only, through Android's own location service.
+- The Android app contains no Google Play Services or Firebase, and every library in it is open source. The font (Nunito) and the icons are part of the app.
+- The app's WebView has Safe Browsing and usage statistics turned off, because it only shows the app's own files.
+- The source code link under Me opens GitHub in the browser when you tap it.
 
 ## Installation
 
@@ -72,9 +83,7 @@ Download `chronicals-<version>.apk` from the [latest release](../../releases/lat
 
 Either way, a new version installs over the old one and keeps your entries.
 
-The diary is stored in the app's private storage. Android's device backup includes it if backup is turned on. Uninstalling the app deletes the data, so export a backup first (see [Backups](#backups)).
-
-The app only contacts Open-Meteo: for the place search in the profile settings, and for weather data once a location is saved.
+The diary is stored in the app's private storage. It is left out of Google's cloud backup. On Android 12 and newer, moving your data to a new phone by cable or Wi-Fi still includes it. Uninstalling the app deletes the data, so export a backup first (see [Backups](#backups)).
 
 ### Self-hosted web app
 

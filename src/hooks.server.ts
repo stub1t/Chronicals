@@ -27,9 +27,8 @@ function isAllowedHost(host: string | null): boolean {
 }
 
 function buildCsp(): string {
-	const connectSources = dev
-		? "'self' ws: wss: https://api.open-meteo.com https://geocoding-api.open-meteo.com"
-		: "'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com";
+	// The browser only talks to this server. Open-Meteo is called by the server, and only with weather turned on.
+	const connectSources = dev ? "'self' ws: wss:" : "'self'";
 
 	return [
 		"default-src 'self'",
@@ -63,7 +62,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	response.headers.set('X-Content-Type-Options', 'nosniff');
 	response.headers.set('X-Frame-Options', 'DENY');
-	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+	response.headers.set('Referrer-Policy', 'no-referrer');
 	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 	response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 	response.headers.set('Content-Security-Policy', buildCsp());

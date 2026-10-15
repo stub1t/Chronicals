@@ -48,6 +48,7 @@
 		bind:triggers
 		typeRanking={data.typeRanking}
 		triggerRanking={data.triggerRanking}
+		weatherEnabled={data.profile.weatherEnabled}
 		home={data.profile.locationLat != null && data.profile.locationLon != null
 			? { lat: data.profile.locationLat, lon: data.profile.locationLon, name: data.profile.locationName ?? '' }
 			: null}

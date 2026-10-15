@@ -117,6 +117,8 @@ export const userProfile = sqliteTable('user_profile', {
 	locationLat: real('location_lat'),
 	locationLon: real('location_lon'),
 	locationName: text('location_name'),
+	/** Weather and pollen from Open-Meteo. Off until turned on: nothing is sent while it is off. */
+	weatherEnabled: integer('weather_enabled', { mode: 'boolean' }).notNull().default(false),
 	updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
 });
 
