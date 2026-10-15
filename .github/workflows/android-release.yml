@@ -34,7 +34,7 @@ jobs:
     env:
       REBUILD_TAG: ${{ inputs.rebuild_tag }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.rebuild_tag }}
 
