@@ -258,9 +258,9 @@ const BUILT_IN_ENTRY_TYPES = [
 				{
 					key: 'flow',
 					label: 'Flow',
-					type: 'select',
+					type: 'slider',
 					required: false,
-					config: { options: ['light', 'medium', 'heavy'] }
+					config: { min: 1, max: 5, step: 1 }
 				},
 				{
 					key: 'symptoms',
@@ -268,6 +268,7 @@ const BUILT_IN_ENTRY_TYPES = [
 					type: 'checklist',
 					required: false,
 					config: {
+						extendable: true,
 						options: [
 							'cramps',
 							'bloating',
@@ -304,7 +305,7 @@ const BUILT_IN_ENTRY_TYPES = [
 					label: 'Meal',
 					type: 'select',
 					required: false,
-					config: { options: ['breakfast', 'lunch', 'dinner', 'snack', 'drink'] }
+					config: { options: ['breakfast', 'lunch', 'dinner', 'snack'] }
 				},
 				{
 					key: 'foods',
@@ -426,6 +427,7 @@ export function seedBuiltIns(db: AppDatabase) {
 
 	upgradeLogValues(db);
 	addBloodSugarDirection(db);
+	periodFlowToScale(db);
 
 	// Merge accidental custom period duplicates into the built-in type so old logs survive.
 	const duplicatePeriods = db
@@ -488,6 +490,27 @@ function addBloodSugarDirection(db: AppDatabase) {
 		if ('direction' in values) continue;
 		db.update(schema.entryTypeLogs)
 			.set({ metricValues: JSON.stringify({ direction: 'too low', ...values }) })
+			.where(eq(schema.entryTypeLogs.id, row.id))
+			.run();
+	}
+}
+
+/** A period's flow was light, medium or heavy; it is a 1 to 5 scale now. */
+const FLOW_WORDS: Record<string, number> = { light: 2, medium: 3, heavy: 4 };
+
+function periodFlowToScale(db: AppDatabase) {
+	const rows = db
+		.select({ id: schema.entryTypeLogs.id, metricValues: schema.entryTypeLogs.metricValues })
+		.from(schema.entryTypeLogs)
+		.where(and(eq(schema.entryTypeLogs.entryTypeId, 'builtin-period'), sql`${schema.entryTypeLogs.metricValues} like '%"flow":"%'`))
+		.all();
+	for (const row of rows) {
+		const values = JSON.parse(row.metricValues) as Record<string, unknown>;
+		if (typeof values.flow !== 'string') continue;
+		const { flow, ...rest } = values;
+		const level = FLOW_WORDS[flow];
+		db.update(schema.entryTypeLogs)
+			.set({ metricValues: JSON.stringify(level ? { ...rest, flow: level } : rest) })
 			.where(eq(schema.entryTypeLogs.id, row.id))
 			.run();
 	}

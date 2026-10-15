@@ -4,7 +4,7 @@
 
 # Chronicals
 
-Chronicals is a symptom diary. Each day you note how you feel, log symptoms such as headaches or stomach aches, and tap what happened, for example poor sleep, stress or caffeine. Over time the app shows which of those things go along with your symptoms, when the symptoms tend to come, and whether a medication change made a difference.
+Chronicals is a symptom diary. You log pain such as headaches or stomach aches, tap what happened that day, for example poor sleep, stress or caffeine, and write down what you ate. Over time the app shows which of those things go along with your symptoms, when the symptoms tend to come, and whether a medication change made a difference.
 
 It runs as an Android app that keeps all data on the phone, or as a web app that you host yourself with Docker.
 
@@ -25,12 +25,13 @@ It runs as an Android app that keeps all data on the phone, or as a web app that
 
 ## Features
 
-- Today as the home screen: rate how you feel on five faces, log a symptom in two taps, end one that is still going, tap the day's triggers, see the weather and write a note.
+- Today as the home screen: log a symptom in two taps, end one that is still going, tap the day's triggers, see the weather and write a note.
+- Meals in their own tab, sorted into breakfast, lunch, dinner and snacks. It opens on today, and the arrows go back to earlier days.
 - Calendar with a month view tinted by your symptoms and mood, a week list and a page for each day. Search finds days by note, symptom, form value or trigger.
-- Seven built-in entry types: headache, stomachache, allergy or hay fever, low blood sugar, medication change, period and note. Each has its own form. A headache entry, for example, asks for intensity, location and accompanying symptoms.
+- Six built-in entry types: headache, stomachache, allergy or hay fever, blood sugar, period and note. Each has its own form. A headache entry, for example, asks for intensity, location, accompanying symptoms and painkillers. Options and painkillers of your own can be added with "+ New".
 - Your own entry types with a name, icon and colour, recording intensity (1 to 5) and a note. Any type you don't use can be hidden from Today.
 - Triggers in four groups: food, environment, activity and your own.
-- Daily weather from [Open-Meteo](https://open-meteo.com): temperature, air pressure and its change since the day before, UV index and conditions. This needs a location in your profile.
+- Daily weather from [Open-Meteo](https://open-meteo.com): temperature, air pressure and its change since the day before, UV index, conditions and pollen by plant. This needs a location in your profile.
 - Insights: how you are doing compared with the period before, which triggers and weather go along with a symptom, when it happens, and how the weeks around a medication change compare. See below.
 - A medication list with dose changes and their history.
 - A doctor report for any period, to print or save as a PDF from the print dialog, and every entry as a CSV spreadsheet.

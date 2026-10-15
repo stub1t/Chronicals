@@ -202,7 +202,7 @@
 
 <SubPage title={t('medications_title')}>
 	{#snippet action()}
-		<Button size="sm" onclick={openAdd}><Plus size={18} />{t('medications_add')}</Button>
+		<Button size="sm" onclick={openAdd}><Plus size={18} />{t('add_new')}</Button>
 	{/snippet}
 
 	{#if activeMeds.length === 0}

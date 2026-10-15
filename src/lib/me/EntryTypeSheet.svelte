@@ -11,6 +11,7 @@
 	import Sheet from '$lib/ui/Sheet.svelte';
 	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { ENTRY_ICONS } from '$lib/ui/entry-icons.js';
+	import { RELIEF_KEY, reliefLabelKey } from '$lib/diary/categories.js';
 	import { localizeBuiltInText, t } from '$lib/i18n';
 	import type { EntryType } from '$lib/types/index.js';
 
@@ -48,9 +49,12 @@
 
 	const builtIn = $derived(!!editing?.isBuiltIn);
 	const ownOptions = $derived(
-		(editing?.metricSchema.fields ?? [])
+		[
+			...(editing?.metricSchema.fields ?? []).map((f) => ({ key: f.key, label: localizeBuiltInText(f.label) })),
+			{ key: RELIEF_KEY, label: t(reliefLabelKey(editing?.id)) }
+		]
 			.filter((f) => (extraOptions[f.key] ?? []).length > 0)
-			.map((f) => ({ key: f.key, label: localizeBuiltInText(f.label), options: extraOptions[f.key] }))
+			.map((f) => ({ ...f, options: extraOptions[f.key] }))
 	);
 
 	function schemaFor(kind: 'symptom' | 'event') {

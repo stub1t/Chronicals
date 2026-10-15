@@ -2,11 +2,11 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	/**
-	 * Everything about one day: how you felt, quick logging, the day's entries,
-	 * triggers, weather and note. Used by Today and by the calendar's day page.
+	 * Everything about one day: quick logging, the day's entries, triggers,
+	 * weather and note. Used by Today and by the calendar's day page. Meals
+	 * have their own tab, so they get no tile here.
 	 */
 	import Card from '$lib/ui/Card.svelte';
-	import WellbeingScale from '$lib/ui/WellbeingScale.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import Sprout from '@lucide/svelte/icons/sprout';
@@ -58,9 +58,9 @@
 	let noteTimer: ReturnType<typeof setTimeout> | undefined;
 	let noteSaved = $state(false);
 
-	// Most used entry types first; unused ones keep the configured order. Hidden types get no tile.
+	// Most used entry types first; unused ones keep the configured order. Hidden types and meals get no tile.
 	const quickTypes = $derived(
-		types.filter((type) => !type.hidden).sort((a, b) => {
+		types.filter((type) => !type.hidden && type.category !== 'meal').sort((a, b) => {
 			const rank = (id: string) => {
 				const i = typeRanking.indexOf(id);
 				return i === -1 ? Infinity : i;
@@ -95,15 +95,6 @@
 		toasts.show(t('log_ended', { name: localizeBuiltInText(log.entryType?.name ?? '') }), 'success');
 	}
 
-	async function rate(value: number) {
-		await day.setWellbeing(value);
-		const symptomFree = !(day.entry?.logs ?? []).some((l) => l.entryType?.category === 'symptom');
-		if (value >= 4 && symptomFree) {
-			hapticSuccess();
-			toasts.show(t('today_good_day'), 'success');
-		}
-	}
-
 	function onNoteInput(value: string) {
 		note = value;
 		noteSaved = false;
@@ -116,18 +107,9 @@
 </script>
 
 <div class="day-view">
-	<Card>
-		<h2 class="card-title">{isToday ? t('today_how_are_you') : t('day_how_were_you')}</h2>
-		<WellbeingScale
-			value={day.entry?.wellbeing ?? null}
-			labels={[t('wellbeing_1'), t('wellbeing_2'), t('wellbeing_3'), t('wellbeing_4'), t('wellbeing_5')]}
-			groupLabel={isToday ? t('today_how_are_you') : t('day_how_were_you')}
-			onchange={rate}
-		/>
-	</Card>
-
 	<section>
 		<h2 class="section-title">{t('today_log_something')}</h2>
+		<p class="section-hint">{t('today_log_hint')}</p>
 		<div class="tiles">
 			{#each quickTypes as type (type.id)}
 				<button type="button" class="tile" style="--type: {type.color ?? 'var(--accent)'}" onclick={() => openNew(type)}>
@@ -137,7 +119,7 @@
 			{/each}
 			<button type="button" class="tile new" style="--type: var(--text-muted)" onclick={() => (newTypeOpen = true)}>
 				<span class="new-icon" aria-hidden="true"><Plus size={22} /></span>
-				<span class="tile-name">{t('day_new_type')}</span>
+				<span class="tile-name">{t('add_new')}</span>
 			</button>
 		</div>
 	</section>
@@ -148,7 +130,7 @@
 			<LogList logs={day.entry.logs} onopen={openLog} onend={endLog} />
 		{:else}
 			<Card padding="sm">
-				<EmptyState icon={Sprout} compact color="var(--positive)" title={t('today_nothing_logged')} text={t('today_nothing_logged_hint')} />
+				<EmptyState icon={Sprout} compact color="var(--positive)" title={t('today_nothing_logged')} />
 			</Card>
 		{/if}
 	</section>
@@ -198,12 +180,6 @@
 		gap: var(--space-6);
 	}
 
-	.card-title {
-		margin: 0 0 var(--space-4);
-		font-size: var(--text-lg);
-		font-weight: 800;
-	}
-
 	.section-title {
 		display: flex;
 		align-items: baseline;
@@ -228,6 +204,8 @@
 	.tiles {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+		/* Every row as tall as the tallest tile, so all tiles have one size. */
+		grid-auto-rows: 1fr;
 		gap: var(--space-2);
 	}
 

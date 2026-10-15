@@ -95,7 +95,7 @@
 	{/each}
 	<button type="button" class="more" onclick={() => (showAll = true)}>
 		<Plus size={16} />
-		{t('triggers_more')}
+		{t('add_new')}
 	</button>
 </div>
 

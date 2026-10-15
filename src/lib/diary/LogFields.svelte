@@ -23,7 +23,7 @@
 
 	const optionsOf = (f: MetricField) => [...new Set([...(f.config.options ?? []), ...(extra[f.key] ?? [])])];
 
-	// The "+ Own" field that is open, and what is typed in it.
+	// The "+ New" field that is open, and what is typed in it.
 	let adding = $state<string | null>(null);
 	let draft = $state('');
 
@@ -148,7 +148,7 @@
 								<input class="add-input" bind:value={draft} aria-label={t('log_own_option')} placeholder={t('log_own_option')} maxlength="80" autofocus onblur={() => addOption(field)} />
 							</form>
 						{:else}
-							<button type="button" class="option own" onclick={() => (adding = field.key)}>+ {t('log_own_option')}</button>
+							<button type="button" class="option own" onclick={() => (adding = field.key)}>+ {t('add_new')}</button>
 						{/if}
 					{/if}
 				</div>
@@ -179,7 +179,7 @@
 								<input class="add-input" bind:value={draft} aria-label={t('log_own_option')} placeholder={t('log_own_option')} maxlength="80" autofocus onblur={() => addOption(field)} />
 							</form>
 						{:else}
-							<button type="button" class="option own" onclick={() => (adding = field.key)}>+ {t('log_own_option')}</button>
+							<button type="button" class="option own" onclick={() => (adding = field.key)}>+ {t('add_new')}</button>
 						{/if}
 					{/if}
 				</div>

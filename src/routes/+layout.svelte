@@ -11,6 +11,7 @@
 	import { isAppLockEnabled } from '$lib/app-lock.js';
 	import Toaster from '$lib/ui/Toaster.svelte';
 	import House from '@lucide/svelte/icons/house';
+	import Utensils from '@lucide/svelte/icons/utensils';
 	import CalendarDays from '@lucide/svelte/icons/calendar-days';
 	import ChartColumn from '@lucide/svelte/icons/chart-no-axes-column';
 	import CircleUser from '@lucide/svelte/icons/circle-user-round';
@@ -82,6 +83,7 @@
 	const path = () => page.url.pathname;
 	const tabs = [
 		{ href: '/', icon: House, label: () => t('nav_today'), active: () => path() === '/' },
+		{ href: '/meals', icon: Utensils, label: () => t('nav_meals'), active: () => path().startsWith('/meals') },
 		{
 			href: '/calendar',
 			icon: CalendarDays,
@@ -89,7 +91,7 @@
 			active: () => path().startsWith('/calendar') || path().startsWith('/search')
 		},
 		{ href: '/insights', icon: ChartColumn, label: () => t('nav_insights'), active: () => path().startsWith('/insights') },
-		{ href: '/me', icon: CircleUser, label: () => t('nav_me'), active: () => path().startsWith('/me') }
+		{ href: '/me', icon: CircleUser, label: () => t('nav_me'), active: () => path() === '/me' || path().startsWith('/me/') }
 	];
 </script>
 

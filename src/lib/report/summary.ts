@@ -123,7 +123,10 @@ function details(log: EntryTypeLog, translate: (text: string) => string): string
 	return Object.entries(values)
 		.filter(([key]) => !HIDDEN_KEYS.has(key) && !key.endsWith('_unit') && !(meal && key === 'meal'))
 		.map(([key, value]) => {
-			const unit = typeof values[`${key}_unit`] === 'string' ? ` ${values[`${key}_unit`]}` : '';
+			const field = fields.find((f) => f.key === key);
+			// A 1 to 5 scale (a period's flow) reads like intensity: "3/5".
+			const scale = field?.type === 'slider' && field.config?.min === 1 && field.config?.max === 5 && typeof value === 'number';
+			const unit = scale ? '/5' : typeof values[`${key}_unit`] === 'string' ? ` ${values[`${key}_unit`]}` : '';
 			return [label(key), show(value) && `${show(value)}${unit}`] as const;
 		})
 		.filter(([, value]) => value !== '')

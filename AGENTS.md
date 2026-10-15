@@ -77,6 +77,7 @@ src/
 │       └── trigger/         ← TriggerLogger
 ├── routes/
 │   ├── calendar/            ← Month view (+page.svelte) + week/ + day/[date]/
+│   ├── meals/               ← Meals tab: a day's meal logs by kind, opens on today
 │   ├── analysis/            ← Correlation analysis tab
 │   ├── settings/            ← profile/, medications/, entry-types/, triggers/
 │   └── api/[...path]/       ← Catch-all that mounts $lib/data/api.ts on the server

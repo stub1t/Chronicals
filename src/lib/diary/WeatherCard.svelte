@@ -22,7 +22,7 @@
 	import LocationSearch, { type Place } from '$lib/me/LocationSearch.svelte';
 	import { toasts } from '$lib/ui/toast.svelte.js';
 	import { formatNumber, t, type MessageKey } from '$lib/i18n';
-	import { POLLEN, POLLEN_FIELD, pollenLevel } from '$lib/weather/pollen.js';
+	import { POLLEN, POLLEN_FIELD, pollenLevel, type PollenLevel, type PollenSpecies } from '$lib/weather/pollen.js';
 	import type { DiaryDay } from './day.svelte.js';
 	import type { EnvironmentalData } from '$lib/types';
 
@@ -77,12 +77,15 @@
 		weather?.weatherCondition ? t(`env_weather_${weather.weatherCondition.replaceAll(' ', '_')}` as MessageKey) : ''
 	);
 	const bigDrop = $derived((weather?.pressureDeltaHpa ?? 0) <= -5);
+	// Every measured pollen by name, the highest first.
+	const RANK = { high: 0, moderate: 1, low: 2 } as const;
 	const pollen = $derived(
 		weather
-			? POLLEN.map((species) => ({ species, level: pollenLevel(species, weather?.[POLLEN_FIELD[species]]) })).filter((p) => p.level)
+			? POLLEN.map((species) => ({ species, level: pollenLevel(species, weather?.[POLLEN_FIELD[species]]) }))
+					.filter((p): p is { species: PollenSpecies; level: PollenLevel } => !!p.level)
+					.sort((a, b) => RANK[a.level] - RANK[b.level])
 			: []
 	);
-	const notable = $derived(pollen.filter((p) => p.level !== 'low'));
 
 	async function choose(next: Place | null) {
 		sheetOpen = false;
@@ -141,13 +144,9 @@
 			{#if pollen.length}
 				<div class="pollen">
 					<Flower2 size={15} />
-					{#if notable.length}
-						{#each notable as p (p.species)}
-							<span class="level {p.level}">{t(`pollen_${p.species}`)} {t(`pollen_${p.level as 'moderate' | 'high'}`)}</span>
-						{/each}
-					{:else}
-						<span class="level low">{t('pollen_all_low')}</span>
-					{/if}
+					{#each pollen as p (p.species)}
+						<span class="level {p.level}">{t(`pollen_${p.species}`)} {t(`pollen_${p.level}`)}</span>
+					{/each}
 				</div>
 			{/if}
 		{:else if loaded}

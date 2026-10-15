@@ -110,7 +110,7 @@
 
 <SubPage title={t('triggers_title')}>
 	{#snippet action()}
-		<Button size="sm" onclick={() => openNew()}><Plus size={18} />{t('entry_types_new_short')}</Button>
+		<Button size="sm" onclick={() => openNew()}><Plus size={18} />{t('add_new')}</Button>
 	{/snippet}
 
 	<p class="ui-hint">{t('triggers_hint')}</p>

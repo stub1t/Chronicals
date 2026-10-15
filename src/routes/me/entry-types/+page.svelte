@@ -57,14 +57,14 @@
 
 <SubPage title={t('entry_types_title')}>
 	{#snippet action()}
-		<Button size="sm" onclick={openNew}><Plus size={18} />{t('entry_types_new_short')}</Button>
+		<Button size="sm" onclick={openNew}><Plus size={18} />{t('add_new')}</Button>
 	{/snippet}
 
 	<p class="ui-hint">{t('entry_types_hint')}</p>
 
 	<ul class="list">
 		{#each entryTypes as type (type.id)}
-			<li class="row" class:hidden={type.hidden}>
+			<li class="row" class:hidden={type.hidden && type.category !== 'meal'}>
 				{#if type.isBuiltIn && !hasOwnOptions(type)}
 					<span class="main">
 						<EntryTypeIcon entryType={type} size={42} badge />
@@ -83,12 +83,15 @@
 						<ChevronRight size={18} class="flip-rtl chevron" />
 					</button>
 				{/if}
-				<Switch
-					checked={!type.hidden}
-					color={type.color}
-					label={t('entry_types_show', { name: localizeBuiltInText(type.name) })}
-					onchange={(on) => setShown(type, on)}
-				/>
+				<!-- Meals have their own tab instead of a tile on Today. -->
+				{#if type.category !== 'meal'}
+					<Switch
+						checked={!type.hidden}
+						color={type.color}
+						label={t('entry_types_show', { name: localizeBuiltInText(type.name) })}
+						onchange={(on) => setShown(type, on)}
+					/>
+				{/if}
 			</li>
 		{/each}
 	</ul>

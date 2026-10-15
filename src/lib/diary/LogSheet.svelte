@@ -10,7 +10,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import EntryTypeIcon from '$lib/components/entry/EntryTypeIcon.svelte';
 	import LogFields from './LogFields.svelte';
-	import { hasDuration } from './categories.js';
+	import { hasDuration, RELIEF_KEY, reliefLabelKey } from './categories.js';
 	import { DiaryDay, localDateTime, localTime } from './day.svelte.js';
 	import { localizeBuiltInText, t } from '$lib/i18n';
 	import { toasts } from '$lib/ui/toast.svelte.js';
@@ -24,13 +24,15 @@
 		entryType: EntryType | null;
 		/** An existing log to edit; null to add a new one. */
 		log?: EntryTypeLog | null;
-		/** Active ones are offered under "Taken anything for it?". */
+		/** Active ones are offered under "Painkillers". */
 		medications?: Medication[];
 		/** The type changed (an own option was added). */
 		ontypechange?: (type: EntryType) => void;
+		/** Values a new log starts with, e.g. the meal picked by the section it was added in. */
+		preset?: Record<string, unknown>;
 	}
 
-	let { open = $bindable(), day, entryType, log = null, medications = [], ontypechange }: Props = $props();
+	let { open = $bindable(), day, entryType, log = null, medications = [], ontypechange, preset = {} }: Props = $props();
 
 	async function addOption(key: string, option: string) {
 		if (!entryType) return;
@@ -57,7 +59,12 @@
 	let addingRelief = $state(false);
 	const relief = $derived(Array.isArray(values.relief) ? (values.relief as string[]) : []);
 	const reliefOptions = $derived([
-		...new Set([...medications.filter((m) => m.isActive).map((m) => m.name), PAINKILLER, ...relief])
+		...new Set([
+			...medications.filter((m) => m.isActive).map((m) => m.name),
+			PAINKILLER,
+			...(entryType?.extraOptions?.[RELIEF_KEY] ?? []),
+			...relief
+		])
 	]);
 
 	function toggleRelief(name: string) {
@@ -65,11 +72,16 @@
 		hapticTap();
 	}
 
+	/** Picks what was typed and keeps it on the type, so it is offered next time. */
 	function addRelief() {
-		const name = reliefInput.trim();
-		if (name && !relief.includes(name)) values = { ...values, relief: [...relief, name] };
+		const typed = reliefInput.trim();
 		reliefInput = '';
 		addingRelief = false;
+		if (!typed) return;
+		const known = reliefOptions.find((o) => o.toLowerCase() === typed.toLowerCase() || localizeBuiltInText(o).toLowerCase() === typed.toLowerCase());
+		if (!known) addOption(RELIEF_KEY, typed);
+		const name = known ?? typed;
+		if (!relief.includes(name)) values = { ...values, relief: [...relief, name] };
 	}
 
 	// Reset the form whenever the sheet opens, and only then: the type also
@@ -96,11 +108,14 @@
 			// Symptoms usually start without a known end; events like a hypo are short.
 			duration = entryType.category === 'event' ? 30 : 'ongoing';
 			endTime = time;
-			values = Object.fromEntries(
-				entryType.metricSchema.fields
-					.filter((f) => f.type === 'slider' && f.required)
-					.map((f) => [f.key, Math.round(((f.config.min ?? 0) + (f.config.max ?? 10)) / 2)])
-			);
+			values = {
+				...Object.fromEntries(
+					entryType.metricSchema.fields
+						.filter((f) => f.type === 'slider' && f.required)
+						.map((f) => [f.key, Math.round(((f.config.min ?? 0) + (f.config.max ?? 10)) / 2)])
+				),
+				...preset
+			};
 		}
 	}
 
@@ -236,7 +251,7 @@
 
 			{#if entryType.category === 'symptom'}
 				<section class="when">
-					<span class="label" id="relief-label">{t('log_relief')}</span>
+					<span class="label" id="relief-label">{t(reliefLabelKey(entryType.id))}</span>
 					<div class="chips" role="group" aria-labelledby="relief-label">
 						{#each reliefOptions as option (option)}
 							<button
@@ -253,7 +268,7 @@
 								<input class="relief-input" bind:value={reliefInput} placeholder={t('log_relief_placeholder')} aria-label={t('log_relief_other')} maxlength="80" autofocus onblur={addRelief} />
 							</form>
 						{:else}
-							<button type="button" class="option add" onclick={() => (addingRelief = true)}>+ {t('log_relief_other')}</button>
+							<button type="button" class="option add" onclick={() => (addingRelief = true)}>+ {t('add_new')}</button>
 						{/if}
 					</div>
 				</section>

@@ -112,3 +112,28 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - [x] Calendar months with fewer than 31 days, broken dates in day and week URLs
 - [x] Offline queue gives up on server errors after 10 tries; unused date helpers removed
 - [x] Checks: 95 unit tests, all browser suites plus a new regression suite (16 checks) on web and app
+
+## Round 3: feedback from a Signal screenshot (2026-10-15)
+
+- [x] F1. Introduction: Meal no longer in the list of types (meals get their own tab)
+- [x] F2. "Nachfragen, wenn Schmerz noch anhält" instead of "wenn etwas noch anhält"
+- [x] F3. Today: no "Wie geht es dir heute?" card (also not on the calendar day page; old ratings stay)
+- [x] F4. Today: "Eintragen" becomes "Schmerzart", with the hint "Tippe auf eine Kachel, wenn du Schmerzen hast"
+- [x] F5. Tiles all the same size; the Meal tile goes (F1)
+- [x] F6. "+ Neu" everywhere: triggers ("+ Mehr"), own options ("+ Eigenes"), relief ("+ Andere")
+- [x] F7. Weather: name the pollen even when all are low
+- [x] F8. Today: no "Diese Woche" strip
+- [x] F9. New drawn headache icon
+- [x] F10. "Etwas dagegen genommen?" becomes "Schmerzmittel" for pain types; own entries are kept on the type
+- [x] F11. Period: own symptoms with "+ Neu", bleeding as a 1 to 5 scale (light/medium/heavy upgraded), painkillers
+- [x] F12. Meals tab: always opens on today, sections Frühstück, Mittagessen, Abendessen, Snacks, each with "+ Neu"
+- [x] Checks: unit tests, svelte-check, both builds, browser run on web and app build, commit, container rebuild
+
+## Review
+
+- Meals stay entry type logs of `builtin-meal`, so insights (foods as exposures), the report and the calendar keep working. The tab ignores the type's hidden flag; the Me list shows Meal without a switch.
+- Old period logs: light, medium, heavy become 2, 3, 4 on start (seed, tested). The report shows the scale as x/5.
+- Own painkillers are stored in the type's extra options under `relief` and can be removed under Me, like other own options.
+- Found in the browser run: the Me tab was also highlighted on /meals (`startsWith('/me')`); fixed.
+- Checks: svelte-check 0 problems, 98 unit tests, web and mobile builds, 33 browser checks in German and 10 in English on the web build, 5 on the mobile build (introduction, meals on the device, reload).
+- README screenshots still show the mood faces and the old headache icon.

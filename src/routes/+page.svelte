@@ -1,7 +1,5 @@
 <script lang="ts">
-	import Card from '$lib/ui/Card.svelte';
 	import DayView from '$lib/diary/DayView.svelte';
-	import WeekStrip from '$lib/diary/WeekStrip.svelte';
 	import { DiaryDay } from '$lib/diary/day.svelte.js';
 	import { dateLocale, t } from '$lib/i18n';
 	import type { Entry, EntryType, Medication, Trigger, UserProfile } from '$lib/types';
@@ -35,11 +33,6 @@
 	});
 
 	const dateLine = new Date().toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
-
-	const recentWithToday = $derived([
-		...data.recent.filter((e) => e.date !== data.today),
-		...(day.entry ? [day.entry] : [])
-	]);
 </script>
 
 <div class="page">
@@ -60,13 +53,6 @@
 			: null}
 		isToday
 	/>
-
-	<section>
-		<h2 class="section-title">{t('today_this_week')}</h2>
-		<Card padding="sm">
-			<WeekStrip entries={recentWithToday} today={data.today} label={t('today_this_week')} />
-		</Card>
-	</section>
 </div>
 
 <style>
@@ -97,11 +83,5 @@
 		font-size: var(--text-2xl);
 		font-weight: 800;
 		line-height: 1.2;
-	}
-
-	.section-title {
-		margin: 0 0 var(--space-3);
-		font-size: var(--text-md);
-		font-weight: 800;
 	}
 </style>

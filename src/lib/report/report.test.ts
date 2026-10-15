@@ -132,6 +132,14 @@ describe('buildReport', () => {
 			['lunch', 'Foods: pasta']
 		]);
 	});
+
+	it('shows a 1 to 5 scale such as a period\'s flow as x/5', () => {
+		const period = { id: 'builtin-period', name: 'Period', category: 'symptom', metricSchema: { fields: [{ key: 'flow', label: 'Flow', type: 'slider', config: { min: 1, max: 5 } }] } } as unknown as EntryType;
+		const day = entry('2026-09-20', []);
+		day.logs = [{ id: 'p', entryId: day.id, entryTypeId: period.id, entryType: period, startTime: '2026-09-20T09:00:00Z', endTime: null, metricValues: { flow: 4 }, intensityCache: null }];
+		const r = buildReport({ ...input, entries: [day], entryTypes: [period] }, format);
+		expect(r.days[0].entries[0].details).toBe('Flow: 4/5');
+	});
 });
 
 describe('reportToCsv', () => {

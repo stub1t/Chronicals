@@ -21,8 +21,9 @@
 	let language = $state<LanguageCode>('en');
 	// svelte-ignore state_referenced_locally
 	let name = $state(data.profile.displayName ?? '');
+	// Meals have their own tab, so they are not switched on or off here.
 	// svelte-ignore state_referenced_locally
-	let types = $state<EntryType[]>(data.entryTypes.filter((type) => type.isBuiltIn));
+	let types = $state<EntryType[]>(data.entryTypes.filter((type) => type.isBuiltIn && type.category !== 'meal'));
 	// svelte-ignore state_referenced_locally
 	let place = $state<Place | null>(
 		data.profile.locationLat != null && data.profile.locationLon != null
