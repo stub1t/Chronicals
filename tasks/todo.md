@@ -172,3 +172,14 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 
 - Browser checks on web and app builds: blob still with reduced motion and floating without, Today moves to the new day on return and logs go there, notification link opens the sheet (web), weather stored across a restart (app; the old code fetched 3 times). Privacy suite 19/19 on both builds.
 - Unit test for B6 fails without the fix. svelte-check 0, 100 tests.
+
+## New logo (2026-10-16)
+
+- [x] L1. An open diary with coloured entry lines and a sprout growing from the spine, on the purple tile (replaces the C with three dots)
+- [x] L2. static/icon.svg, icon-192/512.png, docs/assets/icon.svg, Capacitor sources in assets/, Android launcher icons and splash via @capacitor/assets (manifest restored afterwards)
+- [x] L3. Notification icon redrawn as the same book and sprout silhouette
+- [x] L4. README banner re-rendered from docs/assets/src/banner.html
+
+### Review
+
+- Checked at 256 to 32 px on light and dark, as adaptive icon in circle and rounded-square masks, the splash in light and dark, the introduction screen, and a debug APK build.

@@ -1,5 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Chronicals: a C whose open end turns into three coloured days -->
+  <!-- Chronicals: an open diary with coloured entries and a sprout growing from the spine -->
   <defs><linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9787f5"/><stop offset="1" stop-color="#6a55e3"/></linearGradient></defs>
-  <rect width="512" height="512" rx="116" fill="url(#tile)"/><g transform="translate(250 256) scale(1.04) translate(-256 -256)"><path d="M309.1 381.2A136 136 0 1 1 309.1 130.8" fill="none" stroke="#fffaf3" stroke-width="62" stroke-linecap="round"/><circle cx="367.4" cy="178" r="30" fill="#f472b6"/><circle cx="392" cy="256" r="30" fill="#f6b13b"/><circle cx="367.4" cy="334" r="30" fill="#3cbf88"/></g>
+  <rect width="512" height="512" rx="116" fill="url(#tile)"/>
+  <g transform="translate(256 252) scale(1.06) translate(-256 -252)">
+  <path d="M256 216c-44 -36 -104 -42 -156 -26v196c52 -16 112 -10 156 26z" fill="#fffaf3"/>
+  <path d="M256 216c44 -36 104 -42 156 -26v196c-52 -16 -112 -10 -156 26z" fill="#fffaf3"/>
+  <path d="M256 222v186" stroke="#ddd5f8" stroke-width="8" stroke-linecap="round"/>
+  <path d="M140 266h70" stroke="#f472b6" stroke-width="16" stroke-linecap="round"/>
+  <path d="M140 306h50" stroke="#f6b13b" stroke-width="16" stroke-linecap="round"/>
+  <path d="M140 346h62" stroke="#cfc7f4" stroke-width="16" stroke-linecap="round"/>
+  <path d="M302 266h62" stroke="#cfc7f4" stroke-width="16" stroke-linecap="round"/>
+  <path d="M302 306h52" stroke="#3cbf88" stroke-width="16" stroke-linecap="round"/>
+  <path d="M302 346h68" stroke="#cfc7f4" stroke-width="16" stroke-linecap="round"/>
+  <path d="M256 218v-72" stroke="#2fae78" stroke-width="16" stroke-linecap="round"/>
+  <path d="M256 162c0 -50 36 -78 86 -78c0 50 -36 78 -86 78z" fill="#3cbf88"/>
+  <path d="M256 178c0 -40 -30 -62 -70 -62c0 40 30 62 70 62z" fill="#8ad9b4"/>
+  </g>
 </svg>
