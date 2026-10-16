@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +57,7 @@ private val CUSTOM_ICONS: Map<String, ImageVector> = mapOf(
     "coffee" to Icons.Outlined.Coffee,
     "wine" to Icons.Outlined.WineBar,
     "dumbbell" to Icons.Outlined.FitnessCenter,
-    "footprints" to Icons.Outlined.DirectionsWalk,
+    "footprints" to Icons.AutoMirrored.Outlined.DirectionsWalk,
     "baby" to Icons.Outlined.ChildCare,
     "sparkles" to Icons.Outlined.AutoAwesome,
     "notebook-pen" to Icons.Outlined.EditNote,

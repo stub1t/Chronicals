@@ -28,7 +28,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.DirectionsWalk
+import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Restaurant
@@ -143,7 +143,7 @@ private class Group(val value: String, val icon: ImageVector, val color: Color)
 private val GROUPS = listOf(
     Group("food", Icons.Outlined.Restaurant, Color(0xFFD9822B)),
     Group("environment", Icons.Outlined.WbCloudy, Color(0xFF3AA6B9)),
-    Group("activity", Icons.Outlined.DirectionsWalk, Color(0xFF7462E8)),
+    Group("activity", Icons.AutoMirrored.Outlined.DirectionsWalk, Color(0xFF7462E8)),
     Group("medication", Icons.Outlined.Medication, Color(0xFFE0679A)),
     Group("custom", Icons.Outlined.AutoAwesome, Color(0xFF94A3B8)),
 )

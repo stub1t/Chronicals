@@ -66,6 +66,12 @@ android {
     }
 }
 
+// No Compose group mapping file for R8: it only helps reading minified stack traces, and the release
+// build would otherwise need one more artifact from Maven Central.
+composeCompiler {
+    includeComposeMappingFile.set(false)
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
