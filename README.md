@@ -142,17 +142,6 @@ cd android && ./gradlew assembleDebug   # APK in android/app/build/outputs/apk/d
 
 Both versions share the same code. The database queries live in `src/lib/data` and every `/api` route is defined once in `src/lib/data/api.ts`. The web server runs them against SQLite through `better-sqlite3`. The Android app is a static build that answers the same routes inside the app with `sql.js`, a WebAssembly build of SQLite, and saves the database file after each change. [`AGENTS.md`](AGENTS.md) describes the conventions in more detail.
 
-## Releases
-
-Release versions are dates in UTC, for example `v2026.10.13`. A second release on the same day becomes `v2026.10.13.2`. To publish a release from `main`:
-
-```bash
-npm run release   # starts the "Android release" workflow
-gh run watch      # optional: follow the build, which takes about four minutes
-```
-
-The workflow can also be started from the Actions tab. It builds and signs the APK, creates the tag and publishes the release with notes generated from the commits. To build the APK of an existing release again, run `gh workflow run android-release.yml -f rebuild_tag=v2026.10.13`.
-
 ## License
 
 Copyright (C) 2026 stub1t
