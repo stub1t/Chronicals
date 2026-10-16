@@ -186,7 +186,7 @@ async function fetchRange(place: Place, from: string, to: string, today: string)
 
 /**
  * Make sure every given date (not in the future) has weather for its place.
- * Today is refreshed after 3 hours. Network failures leave what is stored.
+ * Today is refreshed after 3 hours, and once more after it is over. Network failures leave what is stored.
  * Does nothing while weather is turned off.
  */
 export async function ensureEnvData(dates: string[]): Promise<void> {
@@ -208,7 +208,9 @@ export async function ensureEnvData(dates: string[]): Promise<void> {
 		const row = stored.get(date);
 		// Rows from before places were stored were fetched for home.
 		const rowPlace = row && (row.lat != null && row.lon != null ? { lat: row.lat, lon: row.lon } : home);
-		const fresh = row && (date < today || Date.now() - Date.parse(`${row.fetchedAt.replace(' ', 'T')}${row.fetchedAt.includes('Z') ? '' : 'Z'}`) < 3 * 3_600_000);
+		const fetchedAt = row ? Date.parse(`${row.fetchedAt.replace(' ', 'T')}${row.fetchedAt.includes('Z') ? '' : 'Z'}`) : 0;
+		// A past day is final once fetched after it ended; before that it held a forecast for the rest of the day.
+		const fresh = row && (date < today ? fetchedAt >= new Date(`${addDays(date, 1)}T00:00:00`).getTime() : Date.now() - fetchedAt < 3 * 3_600_000);
 		if (row && fresh && rowPlace && samePlace(rowPlace, place)) continue;
 		const key = `${place.lat.toFixed(2)},${place.lon.toFixed(2)}`;
 		const group = groups.get(key) ?? { place, dates: [] };

@@ -183,7 +183,10 @@ textarea {
 	*::before,
 	*::after {
 		animation-duration: 0.01ms !important;
+		/* Without this an endless animation restarts every 0.01ms and jitters. */
+		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
 	}
 }
 

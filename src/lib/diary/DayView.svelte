@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	/**
 	 * Everything about one day: quick logging, the day's entries, triggers,
@@ -78,11 +78,15 @@
 		sheetOpen = true;
 	}
 
-	// A tapped "still going?" notification opens that log (?log=<id>).
-	onMount(() => {
+	// A tapped "still going?" notification opens that log (?log=<id>), also when
+	// the page is already open and only the address changes.
+	$effect(() => {
 		const id = page.url.searchParams.get('log');
-		const log = id ? day.entry?.logs?.find((item) => item.id === id) : null;
-		if (log) openLog(log);
+		if (!id) return;
+		untrack(() => {
+			const log = day.entry?.logs?.find((item) => item.id === id);
+			if (log) openLog(log);
+		});
 	});
 
 	function openLog(log: EntryTypeLog) {

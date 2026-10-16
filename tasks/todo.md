@@ -155,3 +155,20 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 - Checked: unit test that no fetch happens while off and the place search answers 403; 19 browser checks on the web build and 19 on the app build (no request to any other host on six pages, switch, profile, introduction, turning it off again); the place, welcome, me and bug suites still pass where they test current screens.
 - The debug APK builds with JDK 21 and SDK 36; it contains no com.google.android.gms or Firebase classes, and the manifest has the backup rules and the WebView meta-data. The location plugin was not tried on a phone (no emulator here).
 - Old browser scripts today.mjs and calendar.mjs still look for the mood faces removed in round 3; they need updating separately.
+
+## Bug sweep (2026-10-16)
+
+- [x] B1. Today "Noch nichts eingetragen": with reduced motion on (Android "Remove animations"), the floating blobs restarted every 0.01ms and jittered. Endless animations now run once and stop.
+- [x] B2. The app left open overnight still showed yesterday on Today, and new logs landed on yesterday. Coming back on a new day reloads the data and rebuilds the page.
+- [x] B3. A "still going?" notification tapped while Today was open did not open the log's sheet (only checked on mount).
+- [x] B4. The daily reminder opened the calendar day page instead of Today.
+- [x] B5. Android app: weather fetched by a page load was never written to disk, so every start fetched it again.
+- [x] B6. A past day keeps the forecast it was fetched with during that day; it is now fetched once more after the day is over.
+- [x] B7. The place search asked Open-Meteo for German names in English too.
+- [x] B8. vitest started directly (not via npm test) ran in UTC, so one report test failed; the time zone is now in the vitest config.
+- [x] B9. Stale comment said Android backup includes the database.
+
+### Review
+
+- Browser checks on web and app builds: blob still with reduced motion and floating without, Today moves to the new day on return and logs go there, notification link opens the sheet (web), weather stored across a restart (app; the old code fetched 3 times). Privacy suite 19/19 on both builds.
+- Unit test for B6 fails without the fix. svelte-check 0, 100 tests.

@@ -355,7 +355,9 @@ const routes: Route[] = [
 			const searchUrl = new URL('https://geocoding-api.open-meteo.com/v1/search');
 			searchUrl.searchParams.set('name', query);
 			searchUrl.searchParams.set('count', '5');
-			searchUrl.searchParams.set('language', 'de');
+			// Place names in the app's language; Open-Meteo knows the two-letter codes.
+			const lang = url.searchParams.get('lang');
+			searchUrl.searchParams.set('language', lang && /^[a-z]{2}$/.test(lang) ? lang : 'en');
 			searchUrl.searchParams.set('format', 'json');
 
 			const response = await fetch(searchUrl, {

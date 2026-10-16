@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { needsOnboarding } from '$lib/onboarding.js';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
@@ -9,6 +9,7 @@
 	import { language, t, timeFormat } from '$lib/i18n';
 	import { flush, pendingCount } from '$lib/utils/offline-queue.js';
 	import { isAppLockEnabled } from '$lib/app-lock.js';
+	import { toDateString } from '$lib/utils/date';
 	import Toaster from '$lib/ui/Toaster.svelte';
 	import House from '@lucide/svelte/icons/house';
 	import Utensils from '@lucide/svelte/icons/utensils';
@@ -24,8 +25,22 @@
 	let appLocked = $state(__NATIVE_APP__ && browser && isAppLockEnabled());
 	let unlock: () => Promise<boolean> = async () => true;
 
+	// The app often stays open in the background overnight. Coming back on a new
+	// day reloads the data and rebuilds the page, so Today is today again.
+	let shownDay = $state(toDateString(new Date()));
+	async function checkNewDay() {
+		const today = toDateString(new Date());
+		if (today === shownDay) return;
+		await invalidateAll();
+		shownDay = today;
+	}
+
 	onMount(() => {
 		themeStore.init();
+
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'visible') checkNewDay();
+		});
 
 		// A fresh install starts with the introduction.
 		if (page.url.pathname !== '/welcome') {
@@ -54,7 +69,9 @@
 				m.updateTodaysPlace().catch(console.error);
 				import('@capacitor/app').then(({ App }) =>
 					App.addListener('appStateChange', ({ isActive }) => {
-						if (isActive) m.updateTodaysPlace().catch(console.error);
+						if (!isActive) return;
+						checkNewDay();
+						m.updateTodaysPlace().catch(console.error);
 					})
 				);
 			});
@@ -116,7 +133,9 @@
 			</div>
 		{:else}
 			<main class="content">
-				{@render children()}
+				{#key shownDay}
+					{@render children()}
+				{/key}
 			</main>
 
 			{#if path() !== '/welcome'}

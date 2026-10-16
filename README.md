@@ -56,7 +56,7 @@ These are patterns in your own diary, not proof of a cause and not medical advic
 
 The diary stays on the phone, or on your own server for the web app. There are no accounts, ads, analytics or crash reports.
 
-The app connects to one outside service, [Open-Meteo](https://open-meteo.com), and only after you turn on "Weather and pollen" under Me or in the introduction. It then sends the coordinates of your home place, or of the place you were on a given day, and the dates it needs weather for. The place search sends the name you type. Entries, notes, names and medications are never sent. While the switch is off, the app makes no connections. In the web app the server contacts Open-Meteo, not the browser.
+The app connects to one outside service, [Open-Meteo](https://open-meteo.com), and only after you turn on "Weather and pollen" under Me or in the introduction. It then sends the coordinates of your home place, or of the place you were on a given day, and the dates it needs weather for. The place search sends the name you type and the app language. Entries, notes, names and medications are never sent. While the switch is off, the app makes no connections. In the web app the server contacts Open-Meteo, not the browser.
 
 - Automatic location for days away from home belongs to the same switch. It asks Android for the approximate location only, through Android's own location service.
 - The Android app contains no Google Play Services or Firebase, and every library in it is open source. The font (Nunito) and the icons are part of the app.

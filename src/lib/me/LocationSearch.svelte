@@ -6,7 +6,8 @@
 	import { api } from '$lib/api.js';
 	import Button from '$lib/ui/Button.svelte';
 	import { toasts } from '$lib/ui/toast.svelte.js';
-	import { t } from '$lib/i18n';
+	import { language, t } from '$lib/i18n';
+	import { get } from 'svelte/store';
 
 	export interface Place {
 		lat: number;
@@ -42,7 +43,7 @@
 		loading = true;
 		results = [];
 		try {
-			const res = await api(`/api/profile/location-search?q=${encodeURIComponent(q)}`);
+			const res = await api(`/api/profile/location-search?q=${encodeURIComponent(q)}&lang=${get(language)}`);
 			if (res.ok) results = (await res.json()).results ?? [];
 		} catch {
 			toasts.show(t('network_error'), 'error');

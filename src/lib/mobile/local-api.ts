@@ -4,7 +4,7 @@
  */
 import { isHttpError, json } from '@sveltejs/kit';
 import { handleApiRequest } from '../data/api.js';
-import { openDatabase, persist } from './database.js';
+import { changeCount, openDatabase, persist } from './database.js';
 
 export async function localFetch(path: string, init?: RequestInit): Promise<Response> {
 	const url = new URL(path, location.origin);
@@ -12,8 +12,11 @@ export async function localFetch(path: string, init?: RequestInit): Promise<Resp
 
 	try {
 		await openDatabase();
+		const before = changeCount();
 		const response = await handleApiRequest({ request, url, fetch });
 
+		// A GET can store too: weather fetched for a day is kept for the next start.
+		if (request.method === 'GET' && changeCount() !== before) await persist();
 		if (request.method !== 'GET' && response.ok) {
 			await persist();
 			// Reminders follow the medications, ongoing logs and a restored backup.

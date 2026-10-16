@@ -77,6 +77,25 @@ describe('ensureEnvData', () => {
 		expect(calls.filter((u) => !u.hostname.startsWith('air-quality')).map((u) => [u.searchParams.get('latitude'), u.searchParams.get('start_date')])).toEqual([['48.2', '2026-03-04']]);
 	});
 
+	it('fetches today again once it is over, then keeps it', async () => {
+		const { db } = useTestDatabase();
+		const { userProfile } = await import('../db/schema.js');
+		db.update(userProfile).set({ weatherEnabled: true, locationLat: 48.2, locationLon: 16.37 }).run();
+		const calls = fakeOpenMeteo();
+		const weatherCalls = () => calls.filter((u) => !u.hostname.startsWith('air-quality')).length;
+		const today = new Date().toLocaleDateString('sv');
+
+		await ensureEnvData([today]);
+		expect(weatherCalls()).toBe(1);
+
+		// The next day, the morning forecast for the day before is replaced once.
+		vi.setSystemTime(Date.now() + 86_400_000);
+		await ensureEnvData([today]);
+		expect(weatherCalls()).toBe(2);
+		await ensureEnvData([today]);
+		expect(weatherCalls()).toBe(2);
+	});
+
 	it('copes with two requests fetching the same day at once', async () => {
 		const { db } = useTestDatabase();
 		const { userProfile } = await import('../db/schema.js');

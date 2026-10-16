@@ -3,8 +3,8 @@
  *
  * sql.js (SQLite compiled to WebAssembly) runs the same synchronous Drizzle
  * queries as better-sqlite3 on the server. The database lives in memory and is
- * written to the app's private files directory after every mutation; Android
- * auto-backup includes that directory.
+ * written to the app's private files directory after every change. That
+ * directory is left out of Google's cloud backup (res/xml/data_extraction_rules.xml).
  */
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
@@ -88,6 +88,11 @@ function restore(bytes: Uint8Array): void {
 	sqlite.close();
 	sqlite = candidate;
 	useDatabase(db);
+}
+
+/** Rows changed since the database was opened; tells whether a GET stored something (fetched weather). */
+export function changeCount(): number {
+	return Number(sqlite.exec('SELECT total_changes()')[0]?.values[0]?.[0] ?? 0);
 }
 
 /** Write the current database to disk. Calls are serialised; each writes the latest state. */

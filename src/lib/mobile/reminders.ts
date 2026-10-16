@@ -77,11 +77,11 @@ export async function requestReminderPermission(): Promise<boolean> {
 	return (await LocalNotifications.requestPermissions()).display === 'granted';
 }
 
-/** Tapping the daily reminder opens today's day view. */
+/** Tapping the daily reminder opens Today. */
 export function listenForReminderTaps(): void {
 	LocalNotifications.addListener('localNotificationActionPerformed', ({ notification }) => {
 		const extra = notification.extra ?? {};
-		if (extra.kind === 'daily') goto(`/calendar/day/${toDateString(new Date())}`);
+		if (extra.kind === 'daily') goto('/');
 		// "Still going?": open that day with the log's sheet, to enter the end.
 		if (extra.kind === 'ongoing') {
 			const base = extra.date === toDateString(new Date()) ? '/' : `/calendar/day/${extra.date}`;

@@ -59,6 +59,8 @@ export default defineConfig({
 	],
 	test: {
 		include: ['src/**/*.test.ts'],
-		environment: 'node'
+		environment: 'node',
+		// Far from UTC, so date bugs from converting to UTC show up, also when vitest is started directly.
+		env: { TZ: 'Pacific/Auckland' }
 	}
 });
