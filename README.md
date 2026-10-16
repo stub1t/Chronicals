@@ -4,22 +4,22 @@
 
 # Chronicals
 
-Chronicals is a symptom diary. You log pain such as headaches or stomach aches, tap what happened that day, for example poor sleep, stress or caffeine, and write down what you ate. Over time the app shows which of those things go along with your symptoms, when the symptoms tend to come, and whether a medication change made a difference.
+Chronicals is a symptom diary for Android. You log pain such as headaches or stomach aches, tap what happened that day, for example poor sleep, stress or caffeine, and write down what you ate. Over time the app shows which of those things go along with your symptoms, when the symptoms tend to come, and whether a medication change made a difference.
 
-It runs as an Android app that keeps all data on the phone, or as a web app that you host yourself with Docker.
+All data stays on the phone. The app is written in Kotlin with Jetpack Compose and takes its colours from your wallpaper on Android 12 and newer.
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/today-light.png" alt="Today screen with the symptom tiles, a headache that is still going and the day's triggers"></td>
-    <td><img src="docs/screenshots/log-light.png" alt="Sheet for logging a headache with start time, duration, intensity and location"></td>
+    <td><img src="docs/screenshots/today-light.png" alt="Today with the symptom tiles, a headache that is still going and the day's triggers"></td>
+    <td><img src="docs/screenshots/log-light.png" alt="Logging a headache: start time, how long, intensity and where it hurts"></td>
     <td><img src="docs/screenshots/calendar-light.png" alt="Month view with days tinted by symptom and the summary of a selected day"></td>
-    <td><img src="docs/screenshots/insights-light.png" alt="Analysis for headaches: 22 of 84 recorded days, 7.9 per 30 days, fewer than before, and a grid of every day"></td>
+    <td><img src="docs/screenshots/insights-light.png" alt="Analysis for headaches: 22 of 83 recorded days, 8 per 30 days, fewer than before, and a grid of every day"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/triggers-dark.png" alt="Triggers that go along with headaches, each with the share of days with and without it"></td>
+    <td><img src="docs/screenshots/triggers-dark.png" alt="What goes along with headaches: poor sleep as a likely link, weather change and dairy worth watching, in dark mode"></td>
     <td><img src="docs/screenshots/day-dark.png" alt="A past day with the symptom tiles, two entries and its triggers, in dark mode"></td>
-    <td><img src="docs/screenshots/medications-dark.png" alt="Medication list with dose and change history, in dark mode"></td>
-    <td><img src="docs/screenshots/me-dark.png" alt="The Me screen with profile, health settings and the weather switch, in dark mode"></td>
+    <td><img src="docs/screenshots/medications-dark.png" alt="Medications with their doses and the change history, in dark mode"></td>
+    <td><img src="docs/screenshots/me-dark.png" alt="The Me tab with profile, health settings and the weather switch, in dark mode"></td>
   </tr>
 </table>
 
@@ -27,45 +27,43 @@ It runs as an Android app that keeps all data on the phone, or as a web app that
 
 - Today as the home screen: log a symptom in two taps, end one that is still going, tap the day's triggers, see the weather and write a note.
 - Meals in their own tab, sorted into breakfast, lunch, dinner and snacks. It opens on today, and the arrows go back to earlier days.
-- Calendar with a month view tinted by your symptoms and mood, a week list and a page for each day. Search finds days by note, symptom, form value or trigger.
+- Calendar with a month view tinted by your symptoms, a week list and a page for each day. Search finds days by note, symptom, form value or trigger.
 - Six built-in entry types: headache, stomachache, allergy or hay fever, blood sugar, period and note. Each has its own form. A headache entry, for example, asks for intensity, location, accompanying symptoms and painkillers. Options and painkillers of your own can be added with "+ New".
 - Your own entry types with a name, icon and colour, recording intensity (1 to 5) and a note. Any type you don't use can be hidden from Today.
-- Triggers in four groups: food, environment, activity and your own.
+- Triggers in five groups: food and drink, environment, activity, medication and your own.
 - Daily weather from [Open-Meteo](https://open-meteo.com): temperature, air pressure and its change since the day before, UV index, conditions and pollen by plant. It is off until you turn it on under Me, and it needs a place.
-- Insights: how you are doing compared with the period before, which triggers and weather go along with a symptom, when it happens, and how the weeks around a medication change compare. See below.
+- Analysis: how you are doing compared with the period before, which triggers, foods, weather and pollen go along with a symptom, when it happens, and how the weeks around a medication change compare. See below.
 - A medication list with dose changes and their history.
-- A doctor report for any period, to print or save as a PDF from the print dialog, and every entry as a CSV spreadsheet.
-- In the Android app, optional reminders (a daily one and per medication) and an optional app lock.
-- English and German, light and dark theme.
+- A report for your doctor for any period, to print or save as a PDF from the print dialog, and every entry as a CSV spreadsheet.
+- Optional reminders (a daily one, one per medication time, and a question when pain you logged is still going) and an optional app lock.
+- English and German, light and dark theme, themed launcher icon and start screen.
 
-## How Insights works
+## How Analysis works
 
-Insights looks at one entry type over 3, 6 or 12 months or everything. Only days with some record count: a log, a trigger, a note or a mood rating. A day you didn't open the app is left out instead of being counted as a day without symptoms.
+Analysis looks at one entry type, or all of them side by side, over 3, 6 or 12 months or everything. Only days with some record count: a log, a trigger or a note. A day you didn't open the app is left out instead of being counted as a day without symptoms.
 
-The first card shows days with the symptom per 30 recorded days, compared with the period of the same length just before. It says "fewer" or "more" when the rate changed by at least a fifth and by at least one day a month. Below are the average intensity, the hours with the symptom, a bar per week, every day in a grid and your weekly mood.
+The first card shows the days with the symptom, the average intensity and how often you took something against it. It compares the days per 30 recorded days with the period of the same length just before and says "fewer" or "more" when the rate changed by at least a fifth, by at least one day a month, and a one-sided [Fisher exact test](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) makes chance unlikely. Up to half a year shows every day in a grid, longer periods a bar per month.
 
-The second card compares, for each trigger, the share of days with the symptom when the trigger was there with the share on all other days. Each trigger is checked for the same day and for the day after, and the stronger of the two is shown. Air pressure drops of 5 hPa or more, days of 28 °C or more and a UV index of 6 or more are checked the same way. A one-sided [Fisher exact test](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) decides the label: "likely link" below p = 0.05 with at least 1.5 times as many symptom days, "possible link" below p = 0.2 with at least 1.25 times as many, and "fewer symptoms" when the symptom is clearly rarer with the trigger. With fewer than 5 days on either side, a trigger is listed under "not enough days yet".
+The second card compares, for each trigger, each food eaten on at least 5 days, air pressure drops of 5 hPa or more, days of 28 °C or more, a UV index of 6 or more and high pollen, the share of days with the symptom when it was there with the share on all other days. Each is checked for the same day and for the day after, and the stronger of the two is shown. Because many things are checked at once, the p-values are corrected (Benjamini-Hochberg). "Likely link" needs p below 0.05 (0.01 for weather and pollen, which come in seasonal streaks), at least 1.5 times as many symptom days and at least 3 such days. "Worth watching" marks weaker signs, and "fewer symptoms" what goes along with clearly fewer symptom days. With fewer than 5 days on either side, it is listed as not enough days yet.
 
-The third card shows the share of days with the symptom per weekday, the time of day it started and, with at least two logged periods, the phase of the cycle: the 3 days before, period days 1 to 3, later period days and other days.
+The third card names a weekday or a time of day only when one clearly stands out, and, with at least two logged periods, shows the phase of the cycle: the 3 days before, period days 1 to 3, later period days and other days.
 
-The last card puts the 30 days before each medication start or dose change next to the 30 days after, once both sides have at least 10 recorded days.
+The last card puts the 30 days before each medication start or dose change next to the days after, once both sides have at least 10 recorded days.
 
-These are patterns in your own diary, not proof of a cause and not medical advice. Several triggers checked at once will sometimes show a link by chance, so a link that holds up over a few months means more than one that appears in a single month.
+These are patterns in your own diary, not proof of a cause and not medical advice.
 
 ## Privacy
 
-The diary stays on the phone, or on your own server for the web app. There are no accounts, ads, analytics or crash reports.
+The diary stays on the phone. There are no accounts, ads, analytics or crash reports.
 
-The app connects to one outside service, [Open-Meteo](https://open-meteo.com), and only after you turn on "Weather and pollen" under Me or in the introduction. It then sends the coordinates of your home place, or of the place you were on a given day, and the dates it needs weather for. The place search sends the name you type and the app language. Entries, notes, names and medications are never sent. While the switch is off, the app makes no connections. In the web app the server contacts Open-Meteo, not the browser.
+The app connects to one outside service, [Open-Meteo](https://open-meteo.com), and only after you turn on "Weather and pollen" under Me or in the introduction. It then sends the coordinates of your home place, or of the place you were on a given day, and the dates it needs weather for. The place search sends the name you type and the app language. Entries, notes, names and medications are never sent. While the switch is off, the app makes no connections.
 
 - Automatic location for days away from home belongs to the same switch. It asks Android for the approximate location only, through Android's own location service.
-- The Android app contains no Google Play Services or Firebase, and every library in it is open source. The font (Nunito) and the icons are part of the app.
-- The app's WebView has Safe Browsing and usage statistics turned off, because it only shows the app's own files.
+- The app contains no Google Play Services or Firebase, and every library in it is open source (AndroidX and Kotlin).
+- The report is laid out by Android's WebView only to print it; it loads nothing from the internet.
 - The source code link under Me opens GitHub in the browser when you tap it.
 
 ## Installation
-
-### Android
 
 Android 7.0 or newer is required. There are two ways to install the app.
 
@@ -85,62 +83,33 @@ Either way, a new version installs over the old one and keeps your entries.
 
 The diary is stored in the app's private storage. It is left out of Google's cloud backup. On Android 12 and newer, moving your data to a new phone by cable or Wi-Fi still includes it. Uninstalling the app deletes the data, so export a backup first (see [Backups](#backups)).
 
-### Self-hosted web app
-
-```bash
-git clone https://github.com/stub1t/Chronicals.git
-cd Chronicals
-docker compose up -d
-```
-
-The app is then available at <http://localhost:3000>. The SQLite database is stored in the Docker volume `chronicals_data`. Browsers can install the web app as a PWA.
-
-| Variable | Default | Description |
-|---|---|---|
-| `ORIGIN` | `http://localhost:3000` | Public URL of the app. Set it when running behind a reverse proxy, otherwise changes are rejected by the CSRF check. |
-| `DATABASE_PATH` | `/data/chronicals.db` | Location of the SQLite file inside the container |
-| `PORT` | `3000` | Port the server listens on |
-| `ALLOWED_HOSTS` | empty | Extra host names the server answers to, comma-separated |
-| `BODY_SIZE_LIMIT` | `50M` in the Docker image | Largest accepted upload. Backups are uploaded in one request. |
-
-The server only answers requests addressed to the host name in `ORIGIN`, `localhost` or an IP address, and returns 421 for anything else. This blocks DNS rebinding, where a malicious website points its own domain at your server to read the diary through your browser. If a reverse proxy forwards a different host name, add that name to `ALLOWED_HOSTS`.
-
 ## Reminders and app lock
 
-Both are only in the Android app and are off until you turn them on under Me.
+Both are off until you turn them on under Me.
 
-- The daily reminder asks you to log your day at a time you choose. Each medication can have up to six reminder times; they stop when the medication is stopped. Android may deliver a reminder a few minutes late, because the app does not use exact alarms.
+- The daily reminder asks you to log your day at a time you choose. Each medication can have reminder times; they stop when the medication is stopped. If pain you logged is still going after a few hours, the app asks whether it is over. Android may deliver a reminder a few minutes late, because the app does not use exact alarms.
 - The app lock asks for your fingerprint, face or the phone's screen lock when the app opens and after more than a minute in the background. While it is on, the app is hidden in the recent apps view and screenshots are blocked. It keeps someone holding your unlocked phone out of the diary. It does not encrypt the data.
 
 ## Backups
 
 The Data section under Me has two buttons:
 
-- Export backup saves the whole database as one SQLite file, `chronicals-YYYY-MM-DD.db`. The web app downloads it. The Android app opens the share sheet, from where the file can be saved to Files or Google Drive or sent somewhere else.
+- Export backup saves the whole database as one SQLite file, `chronicals-YYYY-MM-DD.db`, wherever you choose: the phone's storage, a USB stick or a cloud folder.
 - Import backup replaces all data with the contents of such a file, after a confirmation.
 
-The same file works in the Android app and the web app, so a backup can also move the diary from the server to the phone or back. Older backups are upgraded to the current database version during import. Files from a newer version of Chronicals, damaged files and other SQLite databases are refused.
+Backups from earlier versions of Chronicals, including the web app, can be imported and are upgraded on the way. Files from a newer version of Chronicals, damaged files and other SQLite databases are refused.
 
 ## Development
 
-```bash
-npm install
-npm run dev     # development server on http://localhost:5173
-npm run check   # type check
-npm test        # unit tests (vitest)
-npm run build   # production build of the web app
-```
-
-The tests run with the time zone set to Pacific/Auckland, so date bugs from converting local dates to UTC show up. GitHub Actions runs the type check, the tests, both builds and a debug Android build on every push.
-
-Building the Android app needs JDK 21 and the Android SDK with platform 36:
+The app is in `android/`. Building it needs JDK 17 or newer and the Android SDK with platform 36.
 
 ```bash
-npm run android:sync                    # builds the web assets and copies them into android/
-cd android && ./gradlew assembleDebug   # APK in android/app/build/outputs/apk/debug/
+cd android
+./gradlew testDebugUnitTest   # unit tests (or `npm test` from the top folder)
+./gradlew assembleDebug       # APK in android/app/build/outputs/apk/debug/
 ```
 
-Both versions share the same code. The database queries live in `src/lib/data` and every `/api` route is defined once in `src/lib/data/api.ts`. The web server runs them against SQLite through `better-sqlite3`. The Android app is a static build that answers the same routes inside the app with `sql.js`, a WebAssembly build of SQLite, and saves the database file after each change. [`AGENTS.md`](AGENTS.md) describes the conventions in more detail.
+GitHub Actions runs the tests and a debug build on every push. [`AGENTS.md`](AGENTS.md) describes the structure and conventions in more detail.
 
 ## License
 
@@ -148,4 +117,4 @@ Copyright (C) 2026 stub1t
 
 Chronicals is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [`LICENSE`](LICENSE).
 
-If you run a modified version as a web service, the AGPL requires you to offer your users its source code. The About section under Me links to the source of this repository; point it at your fork if you change the code.
+The About section under Me links to the source of this repository; point it at your fork if you change the code.

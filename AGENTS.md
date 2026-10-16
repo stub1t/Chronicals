@@ -6,121 +6,83 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Project
 
-**Chronicals**: self-hosted personal health diary with a calendar UI. Logs symptoms (headache, stomachache, allergy, hypo, medication changes) with start/stop times, fetches weather/pollen/pressure from Open-Meteo once the user turns that on, and surfaces correlations in an Analysis tab.
+**Chronicals**: a personal health diary for Android. Logs symptoms (headache, stomachache, allergy, blood sugar, period) with start and end times, meals, triggers and medications, fetches weather, pollen and air pressure from Open-Meteo once the user turns that on, and shows patterns in an Analysis tab. All data stays on the phone; there is no server.
 
-Ships two ways from one codebase: the self-hosted web app (Docker) and a standalone Android app (Capacitor) that keeps all data on the phone, with no server.
+Until October 2026 it was a SvelteKit web app shipped as a Docker server and as a Capacitor Android app. The native app replaced both; it opens the Capacitor app's database file in place, so an update keeps the diary. The web code is in the git history before the switch.
 
 ## Tech Stack
 
-- **Framework**: SvelteKit (TypeScript, Svelte 5 runes)
-- **Database**: SQLite via Drizzle ORM: `better-sqlite3` on the server, `sql.js` (WASM) in the Android app
-- **Styling**: TailwindCSS v4 (`@tailwindcss/vite` plugin)
-- **Deployment**: Docker + docker-compose (web); Capacitor 8 Android APK via GitHub Releases
+- **Language and UI**: Kotlin, Jetpack Compose, Material 3 (dynamic colour on Android 12+, brand colours before)
+- **Database**: SQLite through Android's own `SQLiteDatabase`, no ORM
+- **Libraries**: AndroidX and Kotlin only (FOSS). No Google Play Services, no Firebase, no analytics
+- **Build**: Gradle 8.14, Android Gradle plugin 8.13, compileSdk/targetSdk 36, minSdk 24. Newer Compose and Navigation releases need AGP 9.1 and SDK 37, so the versions in `android/app/build.gradle.kts` are the newest that build with these
+- **Releases**: signed APK on GitHub Releases, installed with Obtainium or by hand
 
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (http://localhost:5173)
-npm run build        # Production build
-npm run preview      # Preview production build
-
-npx drizzle-kit generate   # Generate migration after schema changes
-npx drizzle-kit migrate    # Apply migrations (also runs on startup automatically)
-npx svelte-kit sync        # Regenerate $types after adding routes
-
-docker compose up -d       # Start self-hosted (port 3000, SQLite in volume)
-docker compose up --build  # Rebuild and start
-
-npm test                   # vitest unit tests (TZ=Pacific/Auckland)
-npm run build:mobile       # Static SPA for the Android app → build-mobile/
-npm run android:sync       # build:mobile + copy into android/ (run before any Gradle build)
-npm run android:open       # Open android/ in Android Studio
-npm run release            # Start a date-versioned Android release from main (needs gh)
-cd android && ./gradlew assembleDebug   # Debug APK (needs JDK 21 + Android SDK 36)
+npm test                                  # Kotlin unit tests (runs ./gradlew testDebugUnitTest in android/)
+cd android && ./gradlew assembleDebug     # Debug APK (needs JDK 17+ and the Android SDK with platform 36)
+cd android && ./gradlew assembleStaging   # Optimised like a release but signed with the debug key, for trying real speed
+npm run release                           # Start a date-versioned Android release from main (needs gh)
 ```
 
-> **Build tip**: If `npm run build` fails with `ENOENT: service-worker.js not found`, the real cause is usually a Svelte compile error in a component. The PWA plugin's `closeBundle` hook masks the original error. Check for `{@const}` in invalid positions (must be an immediate child of `{#each}`, `{#if}`, `{:else}`, etc. - not inside HTML elements).
+`package.json` only exists so the CI and release workflows keep working without changes: `npm ci` installs nothing and `npm run android:sync` does nothing.
 
 ## Architecture
 
 ```
-src/
-├── lib/
-│   ├── api.ts               ← api()/getJson(): client transport for /api/* (fetch on web, in-process on Android)
-│   ├── db/
-│   │   └── schema.ts        ← All Drizzle table definitions (9 tables)
-│   ├── server/
-│   │   └── db.ts            ← better-sqlite3 connection (WAL + FK), auto-migrate, seed; loaded by hooks.server.ts
-│   ├── mobile/
-│   │   ├── database.ts      ← sql.js connection, bundled migrations, seed, persistence via @capacitor/filesystem
-│   │   └── local-api.ts     ← localFetch(): answers /api/* in-process on Android
-│   ├── data/                ← Platform-neutral (runs on the server and in the Android WebView, no Node APIs)
-│   │   ├── db.ts            ← `db` live binding + useDatabase(); AppDatabase = any sync Drizzle SQLite DB
-│   │   ├── api.ts           ← The single /api/* route table + handleApiRequest()
-│   │   ├── security.ts      ← Request validation helpers (+ CSRF check used by hooks.server.ts)
-│   │   ├── seed.ts          ← Built-in entry types (headache/stomachache/allergy/hypo/med-change/note) + triggers
-│   │   ├── weather.ts       ← Open-Meteo fetch (weather + pollen + pressure delta)
-│   │   └── queries/         ← DB query functions (synchronous Drizzle)
-│   │       ├── entries.ts         ← Entry CRUD + dot data for calendar
-│   │       ├── entryTypeLogs.ts   ← Per-log CRUD
-│   │       ├── entryTypes.ts      ← Entry type CRUD
-│   │       ├── triggers.ts        ← Trigger CRUD
-│   │       ├── profile.ts         ← User profile + medications + medication changes
-│   │       └── analysis.ts        ← Phi coefficient correlations + stats + pressure series
-│   ├── types/index.ts       ← All shared TypeScript interfaces
-│   ├── stores/theme.ts      ← System/light/dark theme (localStorage)
-│   ├── utils/date.ts        ← Date helpers + intensityColor()
-│   └── components/
-│       ├── calendar/        ← CalendarMonth, CalendarWeek, CalendarDay, CalendarCell, DayDot, MonthNav
-│       ├── entry/           ← EntryTypePicker, EntryDrawer, EnvironmentalCard
-│       ├── symptom/         ← MetricForm (dynamic form from JSON schema)
-│       └── trigger/         ← TriggerLogger
-├── routes/
-│   ├── calendar/            ← Month view (+page.svelte) + week/ + day/[date]/
-│   ├── meals/               ← Meals tab: a day's meal logs by kind, opens on today
-│   ├── analysis/            ← Correlation analysis tab
-│   ├── settings/            ← profile/, medications/, entry-types/, triggers/
-│   └── api/[...path]/       ← Catch-all that mounts $lib/data/api.ts on the server
-migrations/                  ← Drizzle-generated SQL (auto-applied on startup, also bundled into the app)
-Dockerfile                   ← Multi-stage Node 22 Alpine, 256MB mem limit
-docker-compose.yml           ← Port 3000, named volume for SQLite
-capacitor.config.ts          ← Android app id io.github.stub1t.chronicals, webDir build-mobile
-android/                     ← Capacitor Android project (committed; web assets are copied in by cap sync)
-assets/                      ← Icon sources for `npx @capacitor/assets generate --android`; afterwards restore AndroidManifest.xml and mipmap-anydpi-v26/*.xml (vector foreground, colour background, <monochrome>) and delete the generated ic_launcher_foreground/background PNGs. The launcher layers and the start screen icon are vectors in res/drawable; edit those by hand
+android/app/src/main/java/io/github/stub1t/chronicals/
+├── ChronicalsApp.kt      ← Diary and Settings singletons; plans reminders again after changes; app-wide messages
+├── MainActivity.kt       ← Start screen, app lock, permissions, backup files, notification taps
+├── data/
+│   ├── Diary.kt          ← The database (files/chronicals.db): reads, writes, backup, and `changes`, a counter every write bumps
+│   ├── Schema.kt         ← The tables as the old migrations left them; adds missing columns; PRAGMA user_version
+│   ├── Seed.kt           ← Built-in types and triggers (BuiltIns.kt), upgrades of old diaries, the profile row
+│   ├── Insights.kt       ← The statistics behind Analysis (Fisher exact test, Benjamini-Hochberg, cycle phases, medications)
+│   ├── Report.kt         ← Report data, CSV and the printable HTML
+│   ├── Search.kt         ← Day search (accent- and case-insensitive, stored and translated names)
+│   ├── Settings.kt       ← Phone-only settings (theme, time format, reminders, app lock, automatic location) in SharedPreferences
+│   ├── Models.kt, Json.kt, Times.kt
+├── platform/
+│   ├── Reminders.kt      ← AlarmManager (inexact) + notifications; ReminderReceiver also runs after a restart
+│   ├── AppLock.kt        ← Android's BiometricPrompt with the screen lock as fallback
+│   ├── Location.kt       ← Rough position from LocationManager; today's place when away from home
+│   └── Weather.kt        ← Open-Meteo weather, pollen and place search
+└── ui/
+    ├── AppScaffold.kt    ← The five tabs (Today, Meals, Calendar, Analysis, Me) with nested routes
+    ├── day/              ← DayContent (Today and the calendar's day page), LogSheet, LogFields, WeatherCard
+    ├── today/, meals/, calendar/, analysis/, me/
+    ├── EntryIcon.kt, DuoIconData.kt, Icons.kt   ← Built-in type icons as SVG path data, custom type icons
+    ├── BuiltInText.kt    ← Translations of built-in names and options, which are stored in English
+    └── theme/Theme.kt
+android/app/src/main/res/  ← Strings (values/, values-de/), launcher icon vectors, start screen colours
+android/app/src/test/      ← JVM unit tests
 .github/workflows/android-release.yml ← Manual run on main → date-versioned signed APK on GitHub Releases
 ```
 
 ## Key Design Decisions
 
-- **Flexible metric schema**: Each entry type stores a `metric_schema` JSON column defining what fields to collect. `MetricForm.svelte` renders these dynamically.
-- **Pain colors by type, not severity**: Each entry type has a fixed hex color; intensity (1–5) controls opacity via `intensityColor(color, intensity)`.
-- **Pressure delta**: `environmental_data.pressure_delta_hpa` = today's pressure minus yesterday's. Computed on fetch.
-- **Special event markers**: Hypo (⚡) and Medication Change (💊) rendered as icon markers on calendar cells, not dots.
-- **Analysis**: Phi coefficient (φ) for binary correlations. φ > 0.2 = "possible", φ > 0.4 = "strong". Environmental variables binned at median before Phi calculation.
-
-## Web + Android from one codebase
-
-- **One API surface**: every `/api/*` route lives in `src/lib/data/api.ts`. Add or change endpoints there, never as new `+server.ts` files, because the Android app would not see them.
-- **Always call the API via `api()` / `getJson()` from `$lib/api.ts`**, never bare `fetch('/api/…')`. On Android there is no server; `api()` routes to the on-device database.
-- **Loads are universal (`+page.ts`)** and read through `getJson(fetch, '/api/…')`. Don't add `+page.server.ts` / form actions: the Android build is a static SPA (`ssr = false` via `__NATIVE_APP__`).
-- **`src/lib/data` must stay platform-neutral**: synchronous Drizzle queries on the shared `db`, no `node:*`/`better-sqlite3` imports.
-- **`__NATIVE_APP__`** (vite `define`, true when `CHRONICALS_TARGET=mobile`) gates Android-only code so it is tree-shaken out of the web bundle. Import Capacitor/sql.js only behind it.
-- **Migrations** are applied on Android from the bundled `migrations/` folder on app start, exactly like the server. `npx drizzle-kit generate` covers both.
-- **Persistence on Android**: sql.js runs in memory; `localFetch` awaits `persist()` after every successful mutation (atomic tmp-file swap in the app's private files dir, included in Android auto-backup).
-- **Backups**: `GET/POST /api/backup` export or replace the whole database as an SQLite file. Each platform registers `useBackup({ exportBytes, restore })` next to `useDatabase` (`src/lib/server/db.ts`, `src/lib/mobile/database.ts`). Uploads go through `assertSqliteFile` and `assertRestorable` in `src/lib/data/backup.ts` (Chronicals tables, no triggers or views, integrity and foreign key checks, not from a newer migration), then are migrated and seeded before they replace the live database. A schema change that adds triggers or views must update `assertRestorable`. The service worker must never cache `/api/backup`.
-- **Android-only features** (reminders, app lock) live in `src/lib/mobile/*` and are only imported behind `__NATIVE_APP__`, so their plugins stay out of the web bundle. Their settings are device-only (localStorage via `src/lib/reminders.ts` and `src/lib/app-lock.ts`). `localFetch` calls `syncReminders()` after any successful change to `/api/medications`, `/api/medication-changes` or `/api/backup`. Reminders use `isExactNotification: false`; do not reintroduce exact alarms (the manifest removes `SCHEDULE_EXACT_ALARM`).
-- **Report**: `src/lib/report/summary.ts` builds the report (pure), `csv.ts` and `pdf.ts` render it. jsPDF's built-in font is Latin-1 only, so PDF text goes through `latin1()`. Files are saved with `saveFile()` in `src/lib/files.ts` (download on web, share sheet on Android).
-- **Search** filters on the device (`src/lib/search.ts`) over entries from `GET /api/entries?from=&to=`, matching stored and translated names.
-- **Version and license**: `__APP_VERSION__` (vite `define`) is the release version from `CHRONICALS_VERSION_NAME` in CI, otherwise `dev-<commit>`; the Android app shows `App.getInfo().version` instead. Settings → About shows it with the AGPL-3.0 notice and the source link (AGPL §13). The project is AGPL-3.0-or-later; keep new files compatible.
-- **Privacy, no outside connections by default**: `user_profile.weather_enabled` (off on a fresh install) gates every Open-Meteo call in the data layer: `ensureEnvData` returns early and `/api/profile/location-search` answers 403 while it is off. Any new outside request must go through the same switch or a new opt-in. The web CSP allows `connect-src 'self'` only (the server fetches). Location on Android comes from the in-app `LocationPlugin.java` (Android's LocationManager, registered in `MainActivity`), not a Play Services plugin; don't add dependencies that pull in `com.google.android.gms` or Firebase. The diary is excluded from Google cloud backup (`res/xml/data_extraction_rules.xml`, `backup_rules.xml`) and the WebView has Safe Browsing and metrics off (manifest meta-data).
-- **Host allowlist**: `hooks.server.ts` returns 421 unless the Host header is the `ORIGIN` host name, `localhost`, an IP address or listed in `ALLOWED_HOSTS` (DNS rebinding protection). It is skipped in dev and at build time.
+- **Tabs keep their state**: each tab has its own view model and the navigation saves and restores state, with no transition animation, so switching is instant. Screens reload off the main thread when `Diary.changes` moves.
+- **Flexible metric schema**: each entry type stores its form in `entry_types.metric_schema` (JSON). `LogFields` renders it: 1 to 5 scales as five buttons, up to 12 options as chips, more as a menu.
+- **Stored formats are the web app's**: times are UTC ISO strings with milliseconds (`Times.iso`), ids UUID v4, JSON columns as before. Built-in names and options are stored in English and translated when shown. Keep it that way so old backups and the diary of the Capacitor app stay readable.
+- **One diary file**: `files/chronicals.db`, the path the Capacitor app used. `Schema.apply` creates missing tables and columns on every start, then `Seed.run` refreshes the built-ins. Schema changes go into `Schema.kt` as new columns (and a higher `Schema.VERSION` when an old app could not read the result).
+- **Backups** are the database file. Import checks the SQLite header, the Chronicals tables, no triggers or views, integrity and foreign keys, and refuses files with a newer `user_version`. A schema change that adds triggers or views must update `Diary.restoreFrom`.
+- **Report**: `Report.kt` builds the data; the PDF is the HTML printed through the system print dialog (a WebView lays it out and loads nothing from the internet); the CSV neutralises cells a spreadsheet would run as formulas.
+- **Pain colours by type, not severity**: each entry type has a fixed colour; intensity changes how strong it is drawn.
+- **Pressure delta**: `environmental_data.pressure_delta_hpa` is today's pressure minus yesterday's, computed when fetched.
+- **Privacy, no outside connections by default**: `user_profile.weather_enabled` (off on a fresh install) gates every Open-Meteo request in `platform/Weather.kt`, and the place search returns nothing while it is off. Any new outside request needs the same switch or a new opt-in. Location comes from Android's LocationManager; don't add dependencies that pull in `com.google.android.gms` or Firebase. The diary is excluded from Google cloud backup (`res/xml/data_extraction_rules.xml`, `backup_rules.xml`).
+- **Reminders** use inexact alarms (`setAndAllowWhileIdle`); don't add `SCHEDULE_EXACT_ALARM`. `ChronicalsApp` plans them again half a second after any diary or reminder setting change.
+- **App lock**: on start and after more than a minute in the background; while on, `FLAG_SECURE` hides the app in recent apps and blocks screenshots.
+- **Icons**: the built-in type icons are SVG path data in `DuoIconData.kt` (soft fill, 2 px strokes, solid details). Parse each path with its own `addPathNodes` call: `PathParser.toNodes()` hands out the parser's own list.
+- **Launcher icon and start screen**: vector layers in `res/drawable` (`ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `splash_icon.xml`); the start screen takes wallpaper colours on Android 12+ (`values-v31/splash.xml`).
+- **Version and license**: the version shown under Me is `BuildConfig.VERSION_NAME`, from `CHRONICALS_VERSION_NAME` in CI. The project is AGPL-3.0-or-later; keep new files compatible.
 
 ## Tests and CI
 
-- `npm test` runs vitest over `src/**/*.test.ts` with `TZ=Pacific/Auckland`.
-- Data-layer tests call `useTestDatabase()` from `src/lib/server/testing.ts`: a fresh in-memory, migrated and seeded database registered with `useDatabase()`. Then call query functions or `handleApiRequest()` directly.
-- Keep logic that can be tested pure and separate from plugins and Svelte (see `src/lib/reminders.ts` vs `src/lib/mobile/reminders.ts`).
-- `.github/workflows/ci.yml` runs check, tests, both builds and `assembleDebug` on every push.
+- `android/app/src/test` holds JVM tests for the stored formats, search, the insights engine and the report; the insights and report cases are the ones the web app had, so the statistics did not change in the port. Keep logic that can be tested free of Android classes.
+- `.github/workflows/ci.yml` runs `npm test` (the unit tests) and `assembleDebug` on every push. The workflow files can't be pushed with the stored token (no `workflow` scope).
+- Android has no emulator with acceleration here: an unaccelerated one works for checking screens (the accessibility tree via `uiautomator dump` when frames are slow), but its WebView crashes, so printing can only be checked on a phone.
 
 ## Android releases
 
@@ -135,18 +97,7 @@ assets/                      ← Icon sources for `npx @capacitor/assets generat
    (it pins the signing certificate hash). If the repo URL, app id or signing key changes, update the JSON and
    regenerate the link: `https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/` + `encodeURIComponent(JSON.stringify(config))`.
    Obtainium reads the version from the release tag (`vYYYY.MM.DD` without the `v`), so versionName must stay equal to the tag.
-4. Local signed build: export `CHRONICALS_KEYSTORE_FILE`, `CHRONICALS_KEYSTORE_PASSWORD`, `CHRONICALS_KEY_ALIAS`, `CHRONICALS_KEY_PASSWORD` (and optionally `CHRONICALS_VERSION_NAME`/`_CODE`) before `./gradlew assembleRelease`.
-
-## Environment Variables
-
-```
-DATABASE_PATH   Path to SQLite file (default: ./chronicals.db)
-ORIGIN          Public URL for CSRF protection (default: http://localhost:3000)
-PORT            Server port (default: 3000)
-ALLOWED_HOSTS   Extra host names the server answers to, comma-separated (default: none)
-BODY_SIZE_LIMIT Largest request body; the Docker image sets 50M for backup uploads
-CHRONICALS_TARGET=mobile   Build-time: produce the Android SPA instead of the Node server
-```
+5. Local signed build: export `CHRONICALS_KEYSTORE_FILE`, `CHRONICALS_KEYSTORE_PASSWORD`, `CHRONICALS_KEY_ALIAS`, `CHRONICALS_KEY_PASSWORD` (and optionally `CHRONICALS_VERSION_NAME`/`_CODE`) before `./gradlew assembleRelease`.
 
 ---
 
@@ -216,4 +167,4 @@ CHRONICALS_TARGET=mobile   Build-time: produce the Android SPA instead of the No
 
 ## Local Workflow Rules
 - Always commit repository changes after completing a change set.
-- After committing, always rebuild and restart the `chronicals` web UI container so the latest changes are visible locally.
+- After committing, run the unit tests and build the debug APK (`npm test`, `cd android && ./gradlew assembleDebug`). There is no web app or container any more.

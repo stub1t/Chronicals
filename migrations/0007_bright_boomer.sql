@@ -1,1 +1,0 @@
-ALTER TABLE `medications` ADD `for_types` text;

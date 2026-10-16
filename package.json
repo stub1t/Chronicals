@@ -2,70 +2,14 @@
 	"name": "chronicals",
 	"private": true,
 	"license": "AGPL-3.0-or-later",
-	"version": "0.1.0",
-	"type": "module",
+	"version": "1.0.0",
+	"description": "A native Android symptom diary. The app lives in android/; these scripts keep the CI and release workflows working.",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"build:mobile": "CHRONICALS_TARGET=mobile vite build",
-		"android:sync": "npm run build:mobile && cap sync android",
-		"android:open": "cap open android",
-		"release": "gh workflow run android-release.yml --ref main && echo 'Started. Follow it with: gh run watch'",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"test": "TZ=Pacific/Auckland vitest run",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
-	},
-	"devDependencies": {
-		"@capacitor/android": "^8.5.3",
-		"@capacitor/app": "^8.1.2",
-		"@capacitor/cli": "^8.5.3",
-		"@capacitor/core": "^8.5.3",
-		"@capacitor/filesystem": "^8.1.4",
-		"@capacitor/haptics": "^8.0.2",
-		"@capacitor/local-notifications": "^8.3.1",
-		"@capacitor/privacy-screen": "^2.0.1",
-		"@capacitor/share": "^8.0.3",
-		"@capgo/capacitor-native-biometric": "^8.8.2",
-		"@fontsource-variable/nunito": "^5.3.0",
-		"@lucide/svelte": "^1.56.0",
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.70.3",
-		"@sveltejs/vite-plugin-svelte": "^6.2.4",
-		"@tailwindcss/vite": "^4.3.3",
-		"@types/better-sqlite3": "^7.6.13",
-		"@types/sql.js": "^1.4.11",
-		"@types/uuid": "^10.0.0",
-		"autoprefixer": "^10.6.1",
-		"drizzle-kit": "^0.31.11",
-		"postcss": "^8.5.30",
-		"sql.js": "^1.14.2",
-		"svelte": "^5.57.2",
-		"svelte-check": "^4.7.6",
-		"tailwindcss": "^4.3.3",
-		"typescript": "^5.9.3",
-		"vite": "^7.3.7",
-		"vitest": "^5.0.4"
-	},
-	"dependencies": {
-		"@capgo/capacitor-printer": "^8.1.7",
-		"@sveltejs/adapter-node": "^5.5.7",
-		"@vite-pwa/sveltekit": "^1.1.0",
-		"better-sqlite3": "^12.11.1",
-		"drizzle-orm": "^0.45.4",
-		"uuid": "^14.0.3",
-		"workbox-precaching": "^7.4.1",
-		"workbox-routing": "^7.4.1",
-		"workbox-strategies": "^7.4.1"
-	},
-	"overrides": {
-		"cookie": "^0.7.2",
-		"xcode": {
-			"uuid": "^11.1.1"
-		},
-		"@esbuild-kit/core-utils": {
-			"esbuild": "^0.25.0"
-		}
+		"check": "echo 'The Kotlin code is checked by the Gradle build.'",
+		"test": "cd android && ./gradlew --no-daemon testDebugUnitTest",
+		"build": "echo 'Nothing to build outside android/.'",
+		"build:mobile": "echo 'Nothing to build outside android/.'",
+		"android:sync": "echo 'The Android app is native: nothing to sync.'",
+		"release": "gh workflow run android-release.yml --ref main && echo 'Started. Follow it with: gh run watch'"
 	}
 }
