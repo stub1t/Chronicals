@@ -113,7 +113,7 @@
     <string name="error_fallback">An unexpected error occurred.</string>
     <string name="error_go_calendar">Go to Calendar</string>
     <string name="welcome_title">Welcome to Chronicals</string>
-    <string name="welcome_text">A diary for symptoms and what may set them off. Your entries stay with you: on your phone, or on your own server. Pick your language to start.</string>
+    <string name="welcome_text">A diary for symptoms and what may set them off. Your entries stay on your phone. Pick your language to start.</string>
     <string name="welcome_skip">Skip</string>
     <string name="welcome_back">Back</string>
     <string name="welcome_next">Next</string>

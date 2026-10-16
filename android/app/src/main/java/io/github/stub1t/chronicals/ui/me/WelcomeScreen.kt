@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -73,7 +74,9 @@ fun WelcomeScreen(vm: MeViewModel, settings: Settings, actions: MeActions, place
         if (step < STEPS - 1) step++ else finish()
     }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).statusBarsPadding().navigationBarsPadding().imePadding().padding(horizontal = 20.dp)) {
+    // A Surface, so text gets the theme's colour also when this is shown before the tabs' scaffold.
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().padding(horizontal = 20.dp)) {
         Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
             if (step > 0) IconButton(onClick = { step-- }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.welcome_back)) }
             else Spacer(Modifier.width(48.dp))
@@ -88,7 +91,11 @@ fun WelcomeScreen(vm: MeViewModel, settings: Settings, actions: MeActions, place
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             when (step) {
                 0 -> {
-                    Image(painterResource(R.mipmap.ic_launcher_round), null, Modifier.size(96.dp).align(Alignment.CenterHorizontally))
+                    // The launcher icon is an adaptive icon, which painterResource can't draw: its vector foreground on the tile colour instead.
+                    Box(Modifier.size(96.dp).clip(RoundedCornerShape(26.dp)).background(io.github.stub1t.chronicals.ui.theme.Brand).align(Alignment.CenterHorizontally),
+                        contentAlignment = Alignment.Center) {
+                        Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(144.dp))
+                    }
                     Title(stringResource(R.string.welcome_title))
                     Lead(stringResource(R.string.welcome_text))
                     OutlinedButton(onClick = actions.openLanguage, modifier = Modifier.align(Alignment.CenterHorizontally)) {
@@ -148,6 +155,7 @@ fun WelcomeScreen(vm: MeViewModel, settings: Settings, actions: MeActions, place
         Button(onClick = ::next, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(52.dp)) {
             Text(stringResource(if (step == STEPS - 1) R.string.welcome_done else R.string.welcome_next), fontWeight = FontWeight.Bold)
         }
+    }
     }
 }
 

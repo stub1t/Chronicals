@@ -112,7 +112,7 @@
     <string name="error_fallback">Ein unerwarteter Fehler ist aufgetreten.</string>
     <string name="error_go_calendar">Zum Kalender</string>
     <string name="welcome_title">Willkommen bei Chronicals</string>
-    <string name="welcome_text">Ein Tagebuch für Beschwerden und das, was sie auslösen könnte. Deine Einträge bleiben bei dir: auf deinem Handy oder auf deinem eigenen Server. Wähle zuerst deine Sprache.</string>
+    <string name="welcome_text">Ein Tagebuch für Beschwerden und das, was sie auslösen könnte. Deine Einträge bleiben auf deinem Handy. Wähle zuerst deine Sprache.</string>
     <string name="welcome_skip">Überspringen</string>
     <string name="welcome_back">Zurück</string>
     <string name="welcome_next">Weiter</string>
