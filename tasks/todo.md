@@ -194,3 +194,15 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 ### Review
 
 - Checked the launcher icon, three tinted themed versions, the notification icon at 24 px and the splash in light and dark; debug APK builds and its ic_launcher.xml has the monochrome layer. Not tried on a phone.
+
+## Pain category icons (2026-10-16)
+
+- [x] P1. Headache: head in profile with three short pain rays instead of a bolt inside the head
+- [x] P2. Stomachache: rounder stomach with the same pain rays
+- [x] P3. Low blood sugar: drop with a solid arrow pointing down instead of up and down arrows
+- [x] P4. Period: one bigger drop with a small solid drop; hay fever: symmetrical flower with pollen
+- [x] P5. README screenshots and banner re-shot with the new icons
+
+### Review
+
+- Compared old and new at 96, 23 (tile badge), 18 and 14 px on light and dark. Today, log sheet, calendar, day page and Analysis checked in the web build; mobile build compiles.
