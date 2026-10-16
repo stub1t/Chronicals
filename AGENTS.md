@@ -86,7 +86,7 @@ Dockerfile                   ← Multi-stage Node 22 Alpine, 256MB mem limit
 docker-compose.yml           ← Port 3000, named volume for SQLite
 capacitor.config.ts          ← Android app id io.github.stub1t.chronicals, webDir build-mobile
 android/                     ← Capacitor Android project (committed; web assets are copied in by cap sync)
-assets/                      ← Icon sources for `npx @capacitor/assets generate --android`
+assets/                      ← Icon sources for `npx @capacitor/assets generate --android`; afterwards restore AndroidManifest.xml and the <monochrome> layer in mipmap-anydpi-v26/*.xml, which it overwrites
 .github/workflows/android-release.yml ← Manual run on main → date-versioned signed APK on GitHub Releases
 ```
 

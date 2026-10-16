@@ -1,19 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Chronicals: an open diary with coloured entries and a sprout growing from the spine -->
-  <defs><linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9787f5"/><stop offset="1" stop-color="#6a55e3"/></linearGradient></defs>
-  <rect width="512" height="512" rx="116" fill="url(#tile)"/>
-  <g transform="translate(256 252) scale(1.06) translate(-256 -252)">
-  <path d="M256 216c-44 -36 -104 -42 -156 -26v196c52 -16 112 -10 156 26z" fill="#fffaf3"/>
-  <path d="M256 216c44 -36 104 -42 156 -26v196c-52 -16 -112 -10 -156 26z" fill="#fffaf3"/>
-  <path d="M256 222v186" stroke="#ddd5f8" stroke-width="8" stroke-linecap="round"/>
-  <path d="M140 266h70" stroke="#f472b6" stroke-width="16" stroke-linecap="round"/>
-  <path d="M140 306h50" stroke="#f6b13b" stroke-width="16" stroke-linecap="round"/>
-  <path d="M140 346h62" stroke="#cfc7f4" stroke-width="16" stroke-linecap="round"/>
-  <path d="M302 266h62" stroke="#cfc7f4" stroke-width="16" stroke-linecap="round"/>
-  <path d="M302 306h52" stroke="#3cbf88" stroke-width="16" stroke-linecap="round"/>
-  <path d="M302 346h68" stroke="#cfc7f4" stroke-width="16" stroke-linecap="round"/>
-  <path d="M256 218v-72" stroke="#2fae78" stroke-width="16" stroke-linecap="round"/>
-  <path d="M256 162c0 -50 36 -78 86 -78c0 50 -36 78 -86 78z" fill="#3cbf88"/>
-  <path d="M256 178c0 -40 -30 -62 -70 -62c0 40 30 62 70 62z" fill="#8ad9b4"/>
+  <!-- Chronicals: an open diary with two sparkles above it -->
+  <rect width="512" height="512" rx="116" fill="#7462e8"/>
+  <g transform="translate(256 256) scale(1.06) translate(-256 -248)">
+  <path d="M250 216c-44 -36 -104 -42 -156 -26v196c52 -16 112 -10 156 26z" fill="#fffaf3"/>
+  <path d="M262 216c44 -36 104 -42 156 -26v196c-52 -16 -112 -10 -156 26z" fill="#fffaf3"/>
+  <path d="M256 72C262 112 272 122 312 128C272 134 262 144 256 184C250 144 240 134 200 128C240 122 250 112 256 72z" fill="#ffc857"/>
+  <path d="M330 66C332.5 82 336 85.5 352 88C336 90.5 332.5 94 330 110C327.5 94 324 90.5 308 88C324 85.5 327.5 82 330 66z" fill="#ffe3a3"/>
   </g>
 </svg>

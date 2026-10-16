@@ -183,3 +183,14 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 ### Review
 
 - Checked at 256 to 32 px on light and dark, as adaptive icon in circle and rounded-square masks, the splash in light and dark, the introduction screen, and a debug APK build.
+
+## Logo from the design canvas (2026-10-16)
+
+- [x] D1. Icon from the "Funkeln" board of the Chronicals Logo canvas: open diary with two gold sparkles on a flat purple tile
+- [x] D2. Web icons, Capacitor sources, Android launcher icons and splash regenerated (manifest restored)
+- [x] D3. Themed icon layer (`<monochrome>`, drawable/ic_launcher_monochrome.xml) so Android 13+ tints it from the wallpaper
+- [x] D4. Notification icon and README banner updated
+
+### Review
+
+- Checked the launcher icon, three tinted themed versions, the notification icon at 24 px and the splash in light and dark; debug APK builds and its ic_launcher.xml has the monochrome layer. Not tried on a phone.
