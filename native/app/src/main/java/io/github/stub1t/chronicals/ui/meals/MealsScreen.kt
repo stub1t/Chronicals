@@ -112,7 +112,7 @@ fun MealsScreen(diary: Diary) {
                         ) {
                             Text(clock(context, log.startTime), style = MaterialTheme.typography.labelLarge, color = color, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(12.dp))
-                            Text(foods.ifEmpty { localize(mealType.name) }, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                            Text(foods.ifEmpty { localize(mealType.name) }.replaceFirstChar { it.titlecase() }, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                             Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -120,7 +120,7 @@ fun MealsScreen(diary: Diary) {
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         sheetLog = null; sheetPreset = mapOf("meal" to meal)
                     }) {
-                        Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Text(" " + stringResource(R.string.add_new))
+                        Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.add_new))
                     }
                 }
             }

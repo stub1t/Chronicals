@@ -179,7 +179,7 @@ fun LogSheet(
                             onPick = { values[RELIEF_KEY] = if (it in relief) relief - it else relief + it },
                             onAddOption = { _, typed -> onAddOption(RELIEF_KEY, typed) },
                             onAdded = { if (it !in relief) values[RELIEF_KEY] = relief + it },
-                            addLabel = stringResource(R.string.log_relief_placeholder))
+                            addLabel = stringResource(R.string.log_relief_placeholder), capitalize = false)
                     }
                 }
                 Box(Modifier.padding(4.dp))
@@ -222,7 +222,7 @@ fun LogSheet(
 @Composable
 fun TimeDialog(initial: LocalTime, onDismiss: () -> Unit, onPick: (LocalTime) -> Unit) {
     val context = LocalContext.current
-    val state = rememberTimePickerState(initial.hour, initial.minute, android.text.format.DateFormat.is24HourFormat(context))
+    val state = rememberTimePickerState(initial.hour, initial.minute, io.github.stub1t.chronicals.ui.is24Hour(context))
     AlertDialog(
         onDismissRequest = onDismiss,
         text = { TimePicker(state) },

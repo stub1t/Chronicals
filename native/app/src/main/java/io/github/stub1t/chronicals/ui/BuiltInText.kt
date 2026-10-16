@@ -7,6 +7,10 @@ import java.util.Locale
  * typed is returned as is. Generated from the builtIn tables in src/lib/i18n/locales.
  */
 object BuiltInText {
+    private val EN = mapOf(
+        "Flow" to "Bleeding",
+    )
+
     private val DE = mapOf(
         "Painkiller" to "Schmerzmittel",
         "Taken" to "Genommen",
@@ -160,7 +164,7 @@ object BuiltInText {
         if (text.isNullOrEmpty()) return text ?: ""
         return when (Locale.getDefault().language) {
             "de" -> DE[text] ?: text
-            else -> text
+            else -> EN[text] ?: text
         }
     }
 }

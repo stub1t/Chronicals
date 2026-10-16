@@ -160,6 +160,8 @@ fun Chips(
     onAddOption: ((String, String) -> Unit)?,
     onAdded: (String) -> Unit,
     addLabel: String? = null,
+    /** Form options are stored in lower case and start with a capital on screen. */
+    capitalize: Boolean = true,
 ) {
     val haptics = LocalHapticFeedback.current
     var adding by remember { mutableStateOf(false) }
@@ -168,7 +170,7 @@ fun Chips(
             FilterChip(
                 selected = picked(option),
                 onClick = { onPick(option); haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) },
-                label = { Text(localize(option)) },
+                label = { Text(localize(option).let { if (capitalize) it.replaceFirstChar { c -> c.titlecase() } else it }) },
                 colors = FilterChipDefaults.filterChipColors(selectedContainerColor = color.copy(alpha = 0.2f)),
             )
         }
@@ -216,7 +218,7 @@ private fun Dropdown(options: List<String>, value: String?, onPick: (String?) ->
     var open by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = open, onExpandedChange = { open = it }) {
         OutlinedTextField(
-            value = value?.let { localize(it) } ?: stringResource(R.string.metric_choose),
+            value = value?.let { localize(it).replaceFirstChar { c -> c.titlecase() } } ?: stringResource(R.string.metric_choose),
             onValueChange = {},
             readOnly = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(open) },
@@ -224,7 +226,7 @@ private fun Dropdown(options: List<String>, value: String?, onPick: (String?) ->
         )
         ExposedDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(text = { Text(stringResource(R.string.metric_choose)) }, onClick = { onPick(null); open = false })
-            for (option in options) DropdownMenuItem(text = { Text(localize(option)) }, onClick = { onPick(option); open = false })
+            for (option in options) DropdownMenuItem(text = { Text(localize(option).replaceFirstChar { it.titlecase() }) }, onClick = { onPick(option); open = false })
         }
     }
 }

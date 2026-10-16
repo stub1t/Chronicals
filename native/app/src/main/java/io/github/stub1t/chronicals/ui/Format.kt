@@ -6,9 +6,20 @@ import io.github.stub1t.chronicals.data.Times
 import java.text.NumberFormat
 import java.util.Date
 
-/** Clock time in the phone's 12 or 24 hour setting. */
-fun clock(context: Context, iso: String): String =
-    android.text.format.DateFormat.getTimeFormat(context).format(Date.from(Times.parse(iso)))
+/** auto (the phone's 12 or 24 hour setting), 24 or 12; set from the settings. */
+@Volatile var clockFormat = "auto"
+
+/** Clock time in the chosen format. */
+fun clock(context: Context, iso: String): String {
+    val pattern = when (clockFormat) {
+        "24" -> "H:mm"
+        "12" -> android.text.format.DateFormat.getBestDateTimePattern(java.util.Locale.getDefault(), "hmma")
+        else -> return android.text.format.DateFormat.getTimeFormat(context).format(Date.from(Times.parse(iso)))
+    }
+    return java.time.format.DateTimeFormatter.ofPattern(pattern).format(Times.local(iso))
+}
+
+fun is24Hour(context: Context) = when (clockFormat) { "24" -> true; "12" -> false; else -> android.text.format.DateFormat.is24HourFormat(context) }
 
 fun number(value: Double): String = NumberFormat.getInstance().apply { maximumFractionDigits = 1 }.format(value)
 

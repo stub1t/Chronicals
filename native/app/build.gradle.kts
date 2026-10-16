@@ -56,6 +56,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // No dependency metadata blob in the APK: it is only readable by Google Play.

@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,16 +62,20 @@ private val CUSTOM_ICONS: Map<String, ImageVector> = mapOf(
     "notebook-pen" to Icons.Outlined.EditNote,
 )
 
+/** Icon keys offered for own types, in the order of the picker. */
+val CUSTOM_ICON_KEYS: List<String> get() = CUSTOM_ICONS.keys.toList()
+
 fun hexColor(hex: String?, fallback: Color): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
 
 @Composable
 fun typeColor(type: EntryType?): Color = hexColor(type?.color, MaterialTheme.colorScheme.onSurfaceVariant)
 
+// Each path is parsed on its own: PathParser.toNodes() hands out the parser's own list, so a shared
+// parser turns every path into the last one.
 private fun duoVector(data: DuoIconData, color: Color): ImageVector =
     ImageVector.Builder(defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
-        val parser = PathParser()
-        fun nodes(d: String) = parser.parsePathString(d).toNodes()
+        fun nodes(d: String) = addPathNodes(d)
         data.fill.forEach { addPath(nodes(it.d), fill = SolidColor(color), fillAlpha = 0.22f * it.opacity) }
         data.stroke.forEach {
             addPath(nodes(it.d), stroke = SolidColor(color), strokeAlpha = it.opacity, strokeLineWidth = 2f,

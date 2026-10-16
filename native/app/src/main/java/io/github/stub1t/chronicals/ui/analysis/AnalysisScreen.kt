@@ -26,6 +26,8 @@ import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.FilterChip
@@ -76,7 +78,7 @@ private fun fmt(date: String, skeleton: String) =
 /** Port of src/routes/insights/+page.svelte and the cards in src/lib/insights. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AnalysisScreen(diary: Diary) {
+fun AnalysisScreen(diary: Diary, openReport: () -> Unit = {}) {
     val vm: AnalysisViewModel = viewModel { AnalysisViewModel(diary) }
     val state by vm.state.collectAsStateWithLifecycle()
     val period by vm.period.collectAsStateWithLifecycle()
@@ -124,6 +126,20 @@ fun AnalysisScreen(diary: Diary) {
             Section(stringResource(R.string.insights_links)) { LinksCard(name, color, result.links, state.triggerNames) }
             Section(stringResource(R.string.insights_when)) { WhenCard(name, color, result) }
             if (result.meds.isNotEmpty()) Section(stringResource(R.string.insights_meds)) { MedsCard(name, color, result.meds) }
+        }
+
+        Surface(onClick = openReport, shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(42.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.Description, null, tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.report_title), fontWeight = FontWeight.Bold)
+                    Muted(stringResource(R.string.insights_report_text), small = true)
+                }
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null)
+            }
         }
     }
 }

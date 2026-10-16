@@ -228,15 +228,16 @@ Goal: Android only, rebuilt in Kotlin with Jetpack Compose so tabs switch instan
 - [x] N3. Meals tab
 - [x] N4. Calendar: month, week, day page, search
 - [x] N5. Analysis: port insights engine (frequency, trend, links with Fisher test, timing, period, medications) and draw the charts with Canvas
-- [ ] N6. Me: profile, medications and dose changes, entry types, triggers, theme, language, weather and home place
-- [ ] N7. Android parts: reminders and notifications, app lock, location, weather fetch, backup and restore, CSV and PDF report, share
-- [ ] N8. Introduction screen
+- [x] N6. Me: profile, medications and dose changes, entry types, triggers, theme, language, weather and home place
+- [x] N7. Android parts: reminders and notifications, app lock, location, weather fetch, backup and restore, CSV and PDF report, share
+- [x] N8. Introduction screen
 - [ ] N9. Switch: native app replaces android/, release workflow builds it (workflow change has to be pushed by the user, the token has no workflow scope), remove the web app, server, Docker and PWA
 
 ### Notes so far
 
 - Library versions are the newest that build with AGP 8.13 and SDK 36 (Compose BOM 2026.05, Navigation 2.9.8); newer ones need AGP 9.1 and SDK 37.
-- Still to do from N2: the "+ New" tile (needs the entry type editor from N6) and the weather card (N7).
 - Settings that lived in the WebView's localStorage (theme, language, time format, app lock, reminders, automatic location) do not carry over; the switch notes have to say so.
 - 26 JVM unit tests: time and JSON formats, search, and every case of the web app's insights tests.
 - Checked on an Android 14 emulator without acceleration: the native app opens the Capacitor app's diary file in place and Today shows the same tiles and triggers in the same order. That emulator draws app windows black and drops touches, so the screens are checked through the accessibility tree.
+- Report: summary, CSV and the printable HTML ported with their tests; the PDF goes through the system print dialog like before. The emulator's WebView crashes, so printing is untested here; a crashed renderer now shows an error instead of ending the app.
+- 37 JVM unit tests in native/ (formats, search, insights, report).

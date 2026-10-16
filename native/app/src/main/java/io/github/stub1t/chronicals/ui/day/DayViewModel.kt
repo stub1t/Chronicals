@@ -27,12 +27,13 @@ data class DayState(
     val triggerRanking: List<String> = emptyList(),
     val medications: List<Medication> = emptyList(),
     val profile: Profile? = null,
+    val weather: io.github.stub1t.chronicals.data.Weather? = null,
 ) {
     fun hasTrigger(id: String) = entry?.triggers?.any { it.triggerId == id } == true
 }
 
 /** One diary day for Today and the calendar's day page. Reloads off the main thread after every change to the diary. */
-class DayViewModel(private val diary: Diary, val date: LocalDate) : ViewModel() {
+class DayViewModel(val diary: Diary, val date: LocalDate) : ViewModel() {
     val state: StateFlow<DayState> = diary.changes
         .map { load() }
         .flowOn(Dispatchers.IO)
@@ -49,7 +50,13 @@ class DayViewModel(private val diary: Diary, val date: LocalDate) : ViewModel() 
             triggerRanking = rank(recent.flatMap { e -> e.triggers.map { it.triggerId } }),
             medications = diary.medications(),
             profile = diary.profile(),
+            weather = diary.weatherBetween(date.toString(), date.toString()).firstOrNull(),
         )
+    }
+
+    /** Fetches the day's weather if it is on and missing or stale; the state follows when it is stored. */
+    fun loadWeather() {
+        viewModelScope.launch(Dispatchers.IO) { io.github.stub1t.chronicals.platform.WeatherSource.ensure(diary, listOf(date.toString())) }
     }
 
     /** Runs a write on a background thread; the state follows through [Diary.changes]. */

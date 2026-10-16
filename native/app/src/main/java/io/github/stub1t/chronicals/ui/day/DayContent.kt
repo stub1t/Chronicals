@@ -75,7 +75,7 @@ import java.time.Instant
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DayContent(vm: DayViewModel, isToday: Boolean) {
+fun DayContent(vm: DayViewModel, isToday: Boolean, openLogId: String? = null, onLogOpened: () -> Unit = {}, openSettings: () -> Unit = {}) {
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
@@ -83,6 +83,22 @@ fun DayContent(vm: DayViewModel, isToday: Boolean) {
     val scope = rememberCoroutineScope()
     var sheetType by remember { mutableStateOf<EntryType?>(null) }
     var sheetLog by remember { mutableStateOf<Log?>(null) }
+    var newTypeOpen by remember { mutableStateOf(false) }
+    var createdType by remember { mutableStateOf<String?>(null) }
+    // A type made with "+ New" opens its log sheet as soon as it is loaded.
+    LaunchedEffect(createdType, state.types) {
+        val id = createdType ?: return@LaunchedEffect
+        state.types.firstOrNull { it.id == id }?.let { sheetLog = null; sheetType = it; createdType = null }
+    }
+
+    // A tapped "still there?" notification opens that log once the day has loaded.
+    LaunchedEffect(openLogId, state.loaded) {
+        if (openLogId == null || !state.loaded) return@LaunchedEffect
+        state.entry?.logs?.firstOrNull { it.id == openLogId }?.let { log ->
+            sheetLog = log; sheetType = state.types.firstOrNull { it.id == log.entryTypeId }
+        }
+        onLogOpened()
+    }
 
     fun rank(list: List<String>, id: String) = list.indexOf(id).let { if (it == -1) Int.MAX_VALUE else it }
     val quickTypes = state.types.filter { !it.hidden && it.category != "meal" }
@@ -95,8 +111,9 @@ fun DayContent(vm: DayViewModel, isToday: Boolean) {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                     sheetLog = null; sheetType = type
                 }
+                NewTile(Modifier.weight(1f)) { newTypeOpen = true }
                 // Keeps the last row's tiles the same width as the others.
-                repeat((4 - quickTypes.size % 4) % 4) { Spacer(Modifier.weight(1f)) }
+                repeat((4 - (quickTypes.size + 1) % 4) % 4) { Spacer(Modifier.weight(1f)) }
             }
         }
 
@@ -124,8 +141,12 @@ fun DayContent(vm: DayViewModel, isToday: Boolean) {
             stringResource(if (isToday) R.string.today_triggers_hint else R.string.day_triggers_hint),
         ) { TriggerChips(state, vm) }
 
+        Section(stringResource(R.string.today_weather)) { WeatherCard(state, vm, openSettings) }
+
         Section(stringResource(R.string.today_note)) { NoteField(vm, state.entry?.note, state.loaded) }
     }
+
+    if (newTypeOpen) io.github.stub1t.chronicals.ui.me.EntryTypeSheet(vm.diary, null, state.types.size, onCreated = { createdType = it }) { newTypeOpen = false }
 
     sheetType?.let { type ->
         LogSheet(
@@ -188,6 +209,26 @@ private fun Tile(type: EntryType, modifier: Modifier, onClick: () -> Unit) {
 }
 
 @Composable
+private fun NewTile(modifier: Modifier, onClick: () -> Unit) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, muted.copy(alpha = 0.35f)),
+        modifier = modifier.height(96.dp),
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Box(Modifier.size(40.dp).background(muted.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Outlined.Add, null, tint = muted)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.add_new), style = MaterialTheme.typography.labelMedium, color = muted)
+        }
+    }
+}
+
+@Composable
 fun Empty(text: String) {
     Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 24.dp)) {
@@ -230,7 +271,7 @@ fun LogRow(log: Log, type: EntryType?, onOpen: () -> Unit, onEnd: () -> Unit) {
                 val relief = (log.values[RELIEF_KEY] as? List<*>)?.map { localize(it.toString()) }.orEmpty()
                 if (relief.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Medication, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(" " + relief.joinToString(", "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.width(6.dp)); Text(relief.joinToString(", "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             log.intensity?.let { level ->

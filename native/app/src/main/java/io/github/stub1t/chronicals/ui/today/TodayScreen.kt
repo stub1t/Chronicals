@@ -30,7 +30,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun TodayScreen(diary: Diary) {
+fun TodayScreen(diary: Diary, openLog: io.github.stub1t.chronicals.ui.OpenLog? = null, onLogOpened: () -> Unit = {}, openSettings: () -> Unit = {}) {
     // Back from the background after midnight: Today moves on to the new day.
     var today by remember { mutableStateOf(Times.today()) }
     LifecycleResumeEffect(Unit) {
@@ -48,7 +48,7 @@ fun TodayScreen(diary: Diary) {
         )
         Text(greeting(state.profile?.displayName), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
         Spacer(Modifier.height(24.dp))
-        DayContent(vm, isToday = true)
+        DayContent(vm, isToday = true, openLogId = openLog?.takeIf { it.date == today }?.logId, onLogOpened = onLogOpened, openSettings = openSettings)
     }
 }
 

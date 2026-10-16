@@ -328,7 +328,7 @@
     <string name="entry_types_kind_symptom">Something you feel, rated from 1 to 5.</string>
     <string name="entry_types_kind_event">Something that happens, with a note.</string>
     <string name="trigger_environment">Environment</string>
-    <string name="triggers_hint">Tap triggers on Today when they happen. the analysis then shows which ones go along with your symptoms.</string>
+    <string name="triggers_hint">Tap triggers on Today when they happen. The analysis then shows which ones go along with your symptoms.</string>
     <string name="triggers_exists">A trigger with this name exists already.</string>
     <plurals name="triggers_deleted">
         <item quantity="one">Deleted trigger (%1$s)</item>

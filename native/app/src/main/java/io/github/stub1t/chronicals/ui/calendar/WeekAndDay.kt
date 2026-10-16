@@ -93,7 +93,7 @@ fun WeekList(start: LocalDate, state: RangeState, today: LocalDate, openDay: (Lo
 
 /** One day from the calendar: the same as Today, for any date. Port of src/routes/calendar/day/[date]. */
 @Composable
-fun DayPage(diary: Diary, date: LocalDate, onBack: () -> Unit, onDate: (LocalDate) -> Unit) {
+fun DayPage(diary: Diary, date: LocalDate, openLog: io.github.stub1t.chronicals.ui.OpenLog?, onLogOpened: () -> Unit, onBack: () -> Unit, onDate: (LocalDate) -> Unit, openSettings: () -> Unit = {}) {
     val today = Times.today()
     val vm: DayViewModel = viewModel(key = "day-page-$date") { DayViewModel(diary, date) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 32.dp)) {
@@ -115,6 +115,6 @@ fun DayPage(diary: Diary, date: LocalDate, onBack: () -> Unit, onDate: (LocalDat
                 Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, stringResource(R.string.next_day))
             }
         }
-        DayContent(vm, isToday = date == today)
+        DayContent(vm, isToday = date == today, openLogId = openLog?.takeIf { it.date == date }?.logId, onLogOpened = onLogOpened, openSettings = openSettings)
     }
 }
