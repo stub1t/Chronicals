@@ -28,3 +28,10 @@ vite.config.ts.timestamp-*
 # Android app
 /build-mobile
 /.signing
+
+# Native Android app
+/native/.gradle
+/native/build
+/native/app/build
+/native/local.properties
+/native/.kotlin
