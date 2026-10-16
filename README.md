@@ -10,16 +10,16 @@ It runs as an Android app that keeps all data on the phone, or as a web app that
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/today-light.png" alt="Today screen with the mood faces, quick-log tiles, a headache that is still going and the day's triggers"></td>
+    <td><img src="docs/screenshots/today-light.png" alt="Today screen with the symptom tiles, a headache that is still going and the day's triggers"></td>
     <td><img src="docs/screenshots/log-light.png" alt="Sheet for logging a headache with start time, duration, intensity and location"></td>
     <td><img src="docs/screenshots/calendar-light.png" alt="Month view with days tinted by symptom and the summary of a selected day"></td>
-    <td><img src="docs/screenshots/insights-light.png" alt="Insights for headaches: 7.9 days per 30 tracked days, fewer than before, with weekly bars"></td>
+    <td><img src="docs/screenshots/insights-light.png" alt="Analysis for headaches: 22 of 84 recorded days, 7.9 per 30 days, fewer than before, and a grid of every day"></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/triggers-dark.png" alt="Triggers that go along with headaches, each with the share of days with and without it"></td>
-    <td><img src="docs/screenshots/day-dark.png" alt="A past day with the mood faces, quick-log tiles and two entries, in dark mode"></td>
+    <td><img src="docs/screenshots/day-dark.png" alt="A past day with the symptom tiles, two entries and its triggers, in dark mode"></td>
     <td><img src="docs/screenshots/medications-dark.png" alt="Medication list with dose and change history, in dark mode"></td>
-    <td><img src="docs/screenshots/me-dark.png" alt="The Me screen with profile, health settings, theme and language, in dark mode"></td>
+    <td><img src="docs/screenshots/me-dark.png" alt="The Me screen with profile, health settings and the weather switch, in dark mode"></td>
   </tr>
 </table>
 
