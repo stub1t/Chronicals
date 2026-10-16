@@ -206,3 +206,14 @@ one API route table serves both the SvelteKit server and an in-process phone tra
 ### Review
 
 - Compared old and new at 96, 23 (tile badge), 18 and 14 px on light and dark. Today, log sheet, calendar, day page and Analysis checked in the web build; mobile build compiles.
+
+## Sharp, themed start screen (2026-10-16)
+
+- [x] S1. Launcher icon layers as vectors (drawable/ic_launcher_foreground.xml, colour background) instead of 192 px PNGs, which Android 12+ scaled up on the start screen
+- [x] S2. Android 12+ start screen in wallpaper colours: neutral background, accent circle, diary and sparkles in one accent tone (values-v31, values-night-v31)
+- [x] S3. Launch theme uses Theme.SplashScreen.IconBackground so the circle colour is applied
+- [x] S4. WebView background follows the system mode, so a dark phone gets no light flash after the start screen
+
+### Review
+
+- Checked on an Android 14 emulator (no hardware acceleration): start screen sharp and tinted with the default, green light and green dark palettes. The emulator's WebView renderer crashed (SIGTRAP in its sandbox), so the app itself could not be checked there.

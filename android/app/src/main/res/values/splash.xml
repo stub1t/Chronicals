@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Start screen colours. Android 12+ uses the wallpaper colours from values-v31 and values-night-v31. -->
+<resources>
+    <color name="splash_background">#FBF7F1</color>
+    <color name="splash_icon_background">#7462E8</color>
+    <color name="splash_icon_foreground">#FFFAF3</color>
+</resources>

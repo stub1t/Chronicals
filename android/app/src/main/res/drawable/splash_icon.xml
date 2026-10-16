@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Start screen icon on Android 12+: the diary and sparkles in one colour, inside the 160 dp circle that the system draws in splash_icon_background. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group android:pivotX="256" android:pivotY="240" android:scaleX="0.66" android:scaleY="0.66" android:translateY="16">
+        <path android:fillColor="@color/splash_icon_foreground" android:pathData="M250,216c-44,-36 -104,-42 -156,-26v196c52,-16 112,-10 156,26z" />
+        <path android:fillColor="@color/splash_icon_foreground" android:pathData="M262,216c44,-36 104,-42 156,-26v196c-52,-16 -112,-10 -156,26z" />
+        <path android:fillColor="@color/splash_icon_foreground" android:pathData="M256,72C262,112 272,122 312,128C272,134 262,144 256,184C250,144 240,134 200,128C240,122 250,112 256,72z" />
+        <path android:fillColor="@color/splash_icon_foreground" android:pathData="M330,66C332.5,82 336,85.5 352,88C336,90.5 332.5,94 330,110C327.5,94 324,90.5 308,88C324,85.5 327.5,82 330,66z" />
+    </group>
+</vector>
