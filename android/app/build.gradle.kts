@@ -97,5 +97,5 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.8")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20250517")
+    testImplementation("org.json:json:20260814")
 }
